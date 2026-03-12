@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
+import { getDatabase, ref, set, get, update, remove, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
@@ -52,6 +52,31 @@ function generateFriendCode() {
 }
 
 /**
+ * 一意なフレンドコードを生成
+ */
+async function generateUniqueFriendCode() {
+    let friendCode;
+    let isUnique = false;
+
+    while (!isUnique) {
+        friendCode = generateFriendCode();
+        const usersRef = ref(database, 'users');
+        const snapshot = await get(usersRef);
+
+        isUnique = true;
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => {
+                if (childSnapshot.val().friendCode === friendCode) {
+                    isUnique = false;
+                }
+            });
+        }
+    }
+
+    return friendCode;
+}
+
+/**
  * ステータスメッセージを表示
  */
 function showStatusMessage(message, type = 'success', duration = 3000) {
@@ -69,9 +94,11 @@ function showStatusMessage(message, type = 'success', duration = 3000) {
 /**
  * UIを更新
  */
-function updateUI(userName, friendCode) {
+function updateUI(userName, friendCode, nameChangesLeft) {
     document.getElementById('nameDisplay').textContent = userName;
     document.getElementById('friendCode').textContent = friendCode;
+    document.getElementById('changeNameInfo').textContent = 
+        `※本日の変更回数: ${5 - nameChangesLeft}/5 回`;
 }
 
 // ==================== 初期化とユーザー認証 ====================
@@ -105,14 +132,18 @@ async function loadUserData() {
             currentUserData = snapshot.val();
         } else {
             // 新規ユーザー作成
-            const anonymousName = `匿名 (${generateRandomNumbers(12)})`;
-            const friendCode = generateFriendCode();
+            const randomId = generateRandomNumbers(12);
+            const anonymousName = `匿名 (${randomId})`;
+            const friendCode = await generateUniqueFriendCode();
+            
+            const today = new Date().toISOString().split('T')[0];
             
             currentUserData = {
                 uid: currentUser.uid,
                 name: anonymousName,
                 friendCode: friendCode,
-                lastNameChangeDate: new Date().toISOString().split('T')[0],
+                nameChanges: 0,
+                lastNameChangeDate: today,
                 createdAt: new Date().toISOString(),
                 online: true,
                 lastSeen: new Date().toISOString()
@@ -121,12 +152,25 @@ async function loadUserData() {
             await set(userRef, currentUserData);
         }
 
-        updateUI(currentUserData.name, currentUserData.friendCode);
+        // 日付が変わった場合はカウンターをリセット
+        const today = new Date().toISOString().split('T')[0];
+        if (currentUserData.lastNameChangeDate !== today) {
+            const userRef = ref(database, `users/${currentUser.uid}`);
+            await update(userRef, {
+                nameChanges: 0,
+                lastNameChangeDate: today
+            });
+            currentUserData.nameChanges = 0;
+            currentUserData.lastNameChangeDate = today;
+        }
+
+        const nameChangesLeft = currentUserData.nameChanges || 0;
+        updateUI(currentUserData.name, currentUserData.friendCode, nameChangesLeft);
         loadFriendRequests();
         loadFriendsList();
     } catch (error) {
         console.error('Error loading user data:', error);
-        showStatusMessage('ユーザーデータの読み込みに失敗しました', 'error');
+        showStatusMessage('ユーザーデータの読み込み��失敗しました', 'error');
     }
 }
 
@@ -181,6 +225,11 @@ const cancelNameChangeBtn = document.getElementById('cancelNameChange');
 const charCountElement = document.getElementById('charCount');
 
 changeNameBtn.addEventListener('click', () => {
+    const nameChangesUsed = currentUserData.nameChanges || 0;
+    if (nameChangesUsed >= 5) {
+        showStatusMessage('本日の名前変更回数の上限に達しました', 'warning');
+        return;
+    }
     nameChangeModal.classList.add('active');
     newNameInput.focus();
 });
@@ -208,26 +257,24 @@ confirmNameChangeBtn.addEventListener('click', async () => {
         return;
     }
 
+    const nameChangesUsed = currentUserData.nameChanges || 0;
+    if (nameChangesUsed >= 5) {
+        showStatusMessage('本日の名前変更回数の上限に達しました', 'warning');
+        return;
+    }
+
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const lastChangeDate = currentUserData.lastNameChangeDate || '';
-
-        if (lastChangeDate === today) {
-            showStatusMessage('名前は1日1回のみ変更可能です', 'warning');
-            return;
-        }
-
         // データベースに更新
         const userRef = ref(database, `users/${currentUser.uid}`);
         await update(userRef, {
             name: newName,
-            lastNameChangeDate: today
+            nameChanges: nameChangesUsed + 1
         });
 
         currentUserData.name = newName;
-        currentUserData.lastNameChangeDate = today;
+        currentUserData.nameChanges = nameChangesUsed + 1;
 
-        updateUI(currentUserData.name, currentUserData.friendCode);
+        updateUI(currentUserData.name, currentUserData.friendCode, currentUserData.nameChanges);
         showStatusMessage('名前を変更しました', 'success');
         
         nameChangeModal.classList.remove('active');
@@ -297,6 +344,20 @@ sendFriendRequestBtn.addEventListener('click', async () => {
             return;
         }
 
+        // 既にフレンド申請済みかチェック
+        const existingRequestRef = ref(database, `friendRequests/${targetUserId}`);
+        const existingSnapshot = await get(existingRequestRef);
+        
+        if (existingSnapshot.exists()) {
+            const requests = existingSnapshot.val();
+            for (const requestId in requests) {
+                if (requests[requestId].fromUserId === currentUser.uid && requests[requestId].status === 'pending') {
+                    showStatusMessage('既にこのユーザーに申請済みです', 'warning');
+                    return;
+                }
+            }
+        }
+
         // フレンド申請を送信
         const requestId = `${currentUser.uid}_${Date.now()}`;
         const requestRef = ref(database, `friendRequests/${targetUserId}/${requestId}`);
@@ -314,7 +375,7 @@ sendFriendRequestBtn.addEventListener('click', async () => {
         loadFriendRequests();
     } catch (error) {
         console.error('Error sending friend request:', error);
-        showStatusMessage('フレンド申��の送信に失敗しました', 'error');
+        showStatusMessage('フレンド申請の送信に失敗しました', 'error');
     }
 });
 
@@ -336,13 +397,20 @@ function loadFriendRequests() {
         }
 
         const requests = snapshot.val();
+        let pendingCount = 0;
+        
         Object.keys(requests).forEach(requestId => {
             const request = requests[requestId];
             if (request.status === 'pending') {
+                pendingCount++;
                 const requestElement = createFriendRequestElement(requestId, request);
                 requestsList.appendChild(requestElement);
             }
         });
+
+        if (pendingCount === 0) {
+            requestsList.innerHTML = '<p class="empty-message">申請はありません</p>';
+        }
     });
 }
 
@@ -536,7 +604,7 @@ let friendToDelete = null;
 function showDeleteConfirmModal(friendId, friendName) {
     friendToDelete = friendId;
     deleteConfirmModal.classList.add('active');
-    deleteConfirmModal.querySelector('p').textContent = `${friendName}を削除しますか？`;
+    deleteConfirmModal.querySelector('p').textContent = `本当に${friendName}を削除しますか？`;
 }
 
 cancelDeleteBtn.addEventListener('click', () => {
