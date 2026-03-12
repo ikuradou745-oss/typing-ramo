@@ -1,268 +1,353 @@
-// script.js (plain JS, no jQuery)
-// Handles: side panel open/close, tab switching, name change modal, friend code copy, initial user data.
+// Firebase設定
+const firebaseConfig = {
+    apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
+    authDomain: "typing-game-28ed0.firebaseapp.com",
+    databaseURL: "https://typing-game-28ed0-default-rtdb.firebaseio.com",
+    projectId: "typing-game-28ed0",
+    storageBucket: "typing-game-28ed0.firebasestorage.app",
+    messagingSenderId: "963797267101",
+    appId: "1:963797267101:web:0d5d700458fb1991021a74",
+    measurementId: "G-CL4B6ZK0SC"
+};
 
-function generateAnonymousName() {
-    const sessionRandom = Math.random().toString(36).substr(2, 5);
-    const timestamp = Date.now().toString(36);
-    const salt = localStorage.getItem('nameSalt') || 'salt';
-    return `匿名-${sessionRandom}-${timestamp}-${salt}`;
+// Firebase初期化
+const app = firebase.initializeApp(firebaseConfig);
+const analytics = firebase.analytics();
+const database = firebase.database();
+
+// ユーザーID (簡易的にローカルストレージで固定)
+let userId = localStorage.getItem('typingGameUserId');
+if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('typingGameUserId', userId);
 }
 
-function generateFriendCode() {
-    // produce a short, readable friend code (11 chars, alphanumeric)
-    const array = new Uint8Array(16);
-    window.crypto.getRandomValues(array);
-    const str = Array.from(array, b => ('0' + (b & 0xff).toString(36)).slice(-2)).join('');
-    return str.replace(/[^a-z0-9]/g, '').substr(0, 11).toUpperCase();
+// 状態管理
+let currentUser = null;
+
+// DOM要素
+const gameArea = document.getElementById('gameArea');
+const friendIcon = document.getElementById('friendIcon');
+const sidePanel = document.getElementById('sidePanel');
+const overlay = document.getElementById('overlay');
+const closePanel = document.getElementById('closePanel');
+const tabs = document.querySelectorAll('.tab');
+const profileTab = document.getElementById('profileTab');
+const friendTab = document.getElementById('friendTab');
+const profileName = document.getElementById('profileName');
+const friendCode = document.getElementById('friendCode');
+const newNameInput = document.getElementById('newName');
+const changeNameBtn = document.getElementById('changeNameBtn');
+const remainingChanges = document.getElementById('remainingChanges');
+const friendCodeInput = document.getElementById('friendCodeInput');
+const sendRequestBtn = document.getElementById('sendRequestBtn');
+const requestsList = document.getElementById('requestsList');
+const friendsList = document.getElementById('friendsList');
+const modal = document.getElementById('modal');
+const modalContent = document.getElementById('modalContent');
+
+// ユーザー作成または取得
+function initializeUser() {
+    const userRef = database.ref('users/' + userId);
+    userRef.once('value', (snapshot) => {
+        if (!snapshot.exists()) {
+            // 新規ユーザー
+            const newName = '匿名' + Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
+            const newFriendCode = Math.floor(Math.random() * 100000000).toString().padStart(8, '0') + 
+                                 Math.random().toString(36).substr(2, 3).toUpperCase();
+            
+            const userData = {
+                name: newName,
+                friendCode: newFriendCode,
+                nameChanges: 0,
+                lastReset: new Date().toISOString(),
+                friends: {},
+                friendRequests: {},
+                online: true
+            };
+            
+            userRef.set(userData);
+            currentUser = userData;
+            updateProfileUI();
+        } else {
+            currentUser = snapshot.val();
+            checkNameReset();
+            updateProfileUI();
+        }
+        
+        // オンライン状態の管理
+        userRef.update({ online: true });
+        userRef.onDisconnect().update({ online: false });
+    });
 }
 
-// Simple status message helper
-function showStatus(message, type = 'success', timeout = 3000) {
-    const el = document.getElementById('statusMessage');
-    if (!el) return;
-    el.textContent = message;
-    el.className = 'status-message show ' + (type || '');
-    setTimeout(() => {
-        el.classList.remove('show', 'success', 'error', 'warning');
-        el.textContent = '';
-    }, timeout);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Elements
-    const friendBtn = document.getElementById('friendBtn');
-    const overlay = document.getElementById('overlay');
-    const sidePanel = document.getElementById('sidePanel');
-    const closePanel = document.getElementById('closePanel');
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const nameDisplay = document.getElementById('nameDisplay');
-    const friendCodeEl = document.getElementById('friendCode');
-    const copyFriendCodeBtn = document.getElementById('copyFriendCode');
-
-    const changeNameBtn = document.getElementById('changeName');
-    const nameChangeModal = document.getElementById('nameChangeModal');
-    const cancelNameChange = document.getElementById('cancelNameChange');
-    const confirmNameChange = document.getElementById('confirmNameChange');
-    const newNameInput = document.getElementById('newNameInput');
-    const charCount = document.getElementById('charCount');
-
-    // Load or create user data
-    let currentUserData = null;
-    try {
-        currentUserData = JSON.parse(localStorage.getItem('currentUserData') || 'null');
-    } catch (e) {
-        currentUserData = null;
-    }
-    if (!currentUserData) {
-        currentUserData = {
-            name: generateAnonymousName(),
-            friendCode: generateFriendCode()
-        };
-        localStorage.setItem('currentUserData', JSON.stringify(currentUserData));
-    }
-
-    // Initialize UI
-    function refreshUserUI() {
-        if (nameDisplay) nameDisplay.textContent = currentUserData.name;
-        if (friendCodeEl) friendCodeEl.textContent = currentUserData.friendCode;
-    }
-    refreshUserUI();
-
-    // Side panel controls
-    function openPanel(tab = 'profile') {
-        overlay.classList.add('active');
-        sidePanel.classList.add('active');
-        setActiveTab(tab);
-    }
-    function closePanelFn() {
-        overlay.classList.remove('active');
-        sidePanel.classList.remove('active');
-    }
-
-    if (friendBtn) {
-        friendBtn.addEventListener('click', () => {
-            // toggle
-            if (sidePanel.classList.contains('active')) {
-                closePanelFn();
-            } else {
-                openPanel('profile');
+// 名前変更リセットチェック
+function checkNameReset() {
+    if (currentUser.lastReset) {
+        const lastReset = new Date(currentUser.lastReset);
+        const now = new Date();
+        const resetHour = 7; // 朝7時リセット
+        
+        if (now.getDate() !== lastReset.getDate() || now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+            if (now.getHours() >= resetHour) {
+                // リセット
+                database.ref('users/' + userId).update({
+                    nameChanges: 0,
+                    lastReset: now.toISOString()
+                });
+                currentUser.nameChanges = 0;
             }
-        });
+        }
     }
-    if (overlay) overlay.addEventListener('click', closePanelFn);
-    if (closePanel) closePanel.addEventListener('click', closePanelFn);
+}
 
-    // Tabs
-    function setActiveTab(tabName) {
-        tabButtons.forEach(btn => {
-            const name = btn.getAttribute('data-tab');
-            if (name === tabName) btn.classList.add('active');
-            else btn.classList.remove('active');
-        });
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(content => {
-            if (content.id === `${tabName}-tab`) content.classList.add('active');
-            else content.classList.remove('active');
-        });
+// UI更新
+function updateProfileUI() {
+    if (currentUser) {
+        profileName.textContent = currentUser.name;
+        friendCode.textContent = currentUser.friendCode;
+        const remaining = 3 - (currentUser.nameChanges || 0);
+        remainingChanges.textContent = `残り${remaining}回（朝7時リセット）`;
+        changeNameBtn.disabled = remaining <= 0;
     }
+}
 
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.getAttribute('data-tab');
-            setActiveTab(tab);
+// 名前変更
+changeNameBtn.addEventListener('click', () => {
+    const newName = newNameInput.value.trim();
+    if (!newName) return;
+    
+    const remaining = 3 - (currentUser.nameChanges || 0);
+    if (remaining <= 0) {
+        alert('本日の名前変更回数が上限に達しました');
+        return;
+    }
+    
+    database.ref('users/' + userId).update({
+        name: newName,
+        nameChanges: (currentUser.nameChanges || 0) + 1
+    }).then(() => {
+        currentUser.name = newName;
+        currentUser.nameChanges = (currentUser.nameChanges || 0) + 1;
+        updateProfileUI();
+        newNameInput.value = '';
+    });
+});
+
+// フレンド申請送信
+sendRequestBtn.addEventListener('click', () => {
+    const targetCode = friendCodeInput.value.trim().toUpperCase();
+    if (!targetCode) return;
+    
+    // 自分のコードでないか確認
+    if (targetCode === currentUser.friendCode) {
+        alert('自分のコードには申請できません');
+        return;
+    }
+    
+    // 相手を検索
+    database.ref('users').orderByChild('friendCode').equalTo(targetCode).once('value', (snapshot) => {
+        let targetId = null;
+        snapshot.forEach((childSnapshot) => {
+            targetId = childSnapshot.key;
+        });
+        
+        if (!targetId) {
+            alert('該当するフレンドコードが見つかりません');
+            return;
+        }
+        
+        // 既にフレンドかチェック
+        if (currentUser.friends && currentUser.friends[targetId]) {
+            alert('既にフレンドです');
+            return;
+        }
+        
+        // 申請送信
+        database.ref('users/' + targetId + '/friendRequests/' + userId).set({
+            name: currentUser.name,
+            friendCode: currentUser.friendCode,
+            timestamp: Date.now()
+        }).then(() => {
+            alert('申請を送信しました');
+            friendCodeInput.value = '';
         });
     });
+});
 
-    // Name change modal
-    function showNameModal() {
-        nameChangeModal.classList.add('active');
-        newNameInput.value = '';
-        charCount.textContent = '0';
-        newNameInput.focus();
-    }
-    function hideNameModal() {
-        nameChangeModal.classList.remove('active');
-    }
-
-    if (changeNameBtn) changeNameBtn.addEventListener('click', showNameModal);
-    if (cancelNameChange) cancelNameChange.addEventListener('click', hideNameModal);
-
-    if (newNameInput) {
-        newNameInput.addEventListener('input', () => {
-            charCount.textContent = newNameInput.value.length;
-        });
-        newNameInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmNameChange && confirmNameChange.click();
-            }
-        });
-    }
-
-    if (confirmNameChange) {
-        confirmNameChange.addEventListener('click', () => {
-            const newName = (newNameInput.value || '').trim();
-            if (!newName) {
-                showStatus('名前を入力してください。', 'error');
-                return;
-            }
-            if (newName.length > 20) {
-                showStatus('名前は20文字以内で入力してください。', 'error');
-                return;
-            }
-            currentUserData.name = newName;
-            localStorage.setItem('currentUserData', JSON.stringify(currentUserData));
-            refreshUserUI();
-            hideNameModal();
-            showStatus('ユーザー名を変更しました。', 'success');
-        });
-    }
-
-    // Copy friend code
-    if (copyFriendCodeBtn) {
-        copyFriendCodeBtn.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(currentUserData.friendCode);
-                showStatus('フレンドコードをコピーしました。', 'success');
-            } catch (e) {
-                showStatus('コピーに失敗しました。', 'error');
-            }
-        });
-    }
-
-    // Basic friend request UI behavior (non-networked placeholder)
-    const sendFriendRequestBtn = document.getElementById('sendFriendRequest');
-    const friendCodeInput = document.getElementById('friendCodeInput');
-    const friendRequestsList = document.getElementById('friendRequestsList');
-    const friendsList = document.getElementById('friendsList');
-
-    function addFriendRequestItem(code) {
-        if (!friendRequestsList) return;
-        const item = document.createElement('div');
-        item.className = 'friend-request-item';
-        item.innerHTML = `
-            <div class="friend-info">
-                <div class="friend-name">From: ${code}</div>
-                <div class="friend-code">${code}</div>
-            </div>
-            <div class="friend-actions">
-                <button class="friend-btn-small friend-btn-accept">承認</button>
-                <button class="friend-btn-small friend-btn-reject">拒否</button>
-            </div>
-        `;
-        friendRequestsList.querySelectorAll('.empty-message').forEach(n => n.remove());
-        friendRequestsList.prepend(item);
-
-        const accept = item.querySelector('.friend-btn-accept');
-        const reject = item.querySelector('.friend-btn-reject');
-
-        accept.addEventListener('click', () => {
-            // move to friends list
-            const fitem = document.createElement('div');
-            fitem.className = 'friend-item';
-            fitem.innerHTML = `
-                <div class="friend-info">
-                    <div class="friend-name">${code}</div>
-                    <div class="friend-code">${code}</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-btn-small friend-btn-delete">削除</button>
+// 申請リスト表示
+function loadRequests() {
+    database.ref('users/' + userId + '/friendRequests').on('value', (snapshot) => {
+        const requests = snapshot.val() || {};
+        if (Object.keys(requests).length === 0) {
+            requestsList.innerHTML = '<p style="color: #888;">申請はありません</p>';
+            return;
+        }
+        
+        let html = '';
+        for (let [reqId, req] of Object.entries(requests)) {
+            html += `
+                <div class="request-item" data-reqid="${reqId}">
+                    <div class="request-name">${req.name}</div>
+                    <div class="request-code">${req.friendCode}</div>
+                    <div class="request-actions">
+                        <button class="btn-small btn accept-request" data-id="${reqId}">許可</button>
+                        <button class="btn-small delete-btn reject-request" data-id="${reqId}">拒否</button>
+                    </div>
                 </div>
             `;
-            friendsList.querySelectorAll('.empty-message').forEach(n => n.remove());
-            friendsList.prepend(fitem);
-            item.remove();
-            showStatus('フレンドを追加しました。', 'success');
-
-            const del = fitem.querySelector('.friend-btn-delete');
-            del.addEventListener('click', () => {
-                // show simple confirm modal (use existing deleteConfirmModal if present)
-                const deleteConfirmModal = document.getElementById('deleteConfirmModal');
-                if (deleteConfirmModal) {
-                    // toggle modal
-                    deleteConfirmModal.classList.add('active');
-                    const confirmDelete = document.getElementById('confirmDelete');
-                    const cancelDelete = document.getElementById('cancelDelete');
-                    const cleanup = () => {
-                        deleteConfirmModal.classList.remove('active');
-                        confirmDelete && confirmDelete.removeEventListener('click', onConfirm);
-                        cancelDelete && cancelDelete.removeEventListener('click', onCancel);
-                    };
-                    const onConfirm = () => {
-                        fitem.remove();
-                        cleanup();
-                        showStatus('フレンドを削除しました。', 'success');
-                    };
-                    const onCancel = () => cleanup();
-
-                    confirmDelete && confirmDelete.addEventListener('click', onConfirm);
-                    cancelDelete && cancelDelete.addEventListener('click', onCancel);
-                } else {
-                    // fallback
-                    if (confirm('本当に削除しますか？')) {
-                        fitem.remove();
-                        showStatus('フレンドを削除しました。', 'success');
-                    }
-                }
+        }
+        requestsList.innerHTML = html;
+        
+        // 許可ボタン
+        document.querySelectorAll('.accept-request').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const reqId = e.target.dataset.id;
+                acceptFriend(reqId);
             });
         });
-
-        reject.addEventListener('click', () => {
-            item.remove();
-            showStatus('申請を拒否しました。', 'warning');
+        
+        // 拒否ボタン
+        document.querySelectorAll('.reject-request').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const reqId = e.target.dataset.id;
+                rejectFriend(reqId);
+            });
         });
-    }
+    });
+}
 
-    if (sendFriendRequestBtn && friendCodeInput) {
-        sendFriendRequestBtn.addEventListener('click', () => {
-            const code = (friendCodeInput.value || '').trim();
-            if (!code) {
-                showStatus('フレンドコードを入力してください。', 'error');
-                return;
-            }
-            addFriendRequestItem(code);
-            friendCodeInput.value = '';
-            showStatus('フレンド申請を送信しました（UI上のみ）。', 'success');
+// フレンドリスト表示
+function loadFriends() {
+    database.ref('users/' + userId + '/friends').on('value', async (snapshot) => {
+        const friends = snapshot.val() || {};
+        if (Object.keys(friends).length === 0) {
+            friendsList.innerHTML = '<p style="color: #888;">フレンドはいません</p>';
+            return;
+        }
+        
+        let html = '';
+        for (let [friendId, friendData] of Object.entries(friends)) {
+            // オンライン状態取得
+            const onlineSnap = await database.ref('users/' + friendId + '/online').once('value');
+            const online = onlineSnap.val() || false;
+            
+            html += `
+                <div class="friend-item" data-friendid="${friendId}">
+                    <div class="friend-name">
+                        <span class="online-status ${online ? 'online' : 'offline'}"></span>
+                        ${friendData.name}
+                    </div>
+                    <div class="friend-code-small">${friendData.friendCode}</div>
+                    <button class="delete-btn delete-friend" data-id="${friendId}" data-name="${friendData.name}">フレンド削除</button>
+                </div>
+            `;
+        }
+        friendsList.innerHTML = html;
+        
+        // 削除ボタン
+        document.querySelectorAll('.delete-friend').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const friendId = e.target.dataset.id;
+                const friendName = e.target.dataset.name;
+                showDeleteConfirm(friendId, friendName);
+            });
         });
-    }
+    });
+}
+
+// フレンド許可
+function acceptFriend(reqId) {
+    database.ref('users/' + reqId).once('value', (snapshot) => {
+        const userData = snapshot.val();
+        if (!userData) return;
+        
+        // 相互にフレンド追加
+        const updates = {};
+        updates['users/' + userId + '/friends/' + reqId] = {
+            name: userData.name,
+            friendCode: userData.friendCode
+        };
+        updates['users/' + reqId + '/friends/' + userId] = {
+            name: currentUser.name,
+            friendCode: currentUser.friendCode
+        };
+        updates['users/' + userId + '/friendRequests/' + reqId] = null;
+        
+        database.ref().update(updates);
+    });
+}
+
+// フレンド拒否
+function rejectFriend(reqId) {
+    database.ref('users/' + userId + '/friendRequests/' + reqId).remove();
+}
+
+// 削除確認モーダル
+function showDeleteConfirm(friendId, friendName) {
+    modalContent.innerHTML = `
+        <h3>フレンド削除</h3>
+        <p>「${friendName}」をフレンドから削除しますか？</p>
+        <div class="modal-buttons">
+            <button class="btn" id="cancelDelete">キャンセル</button>
+            <button class="btn delete-btn" id="confirmDelete">削除</button>
+        </div>
+    `;
+    modal.classList.add('active');
+    
+    document.getElementById('cancelDelete').addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+    
+    document.getElementById('confirmDelete').addEventListener('click', () => {
+        // 相互に削除
+        const updates = {};
+        updates['users/' + userId + '/friends/' + friendId] = null;
+        updates['users/' + friendId + '/friends/' + userId] = null;
+        database.ref().update(updates);
+        modal.classList.remove('active');
+    });
+}
+
+// タブ切り替え
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        if (tab.dataset.tab === 'profile') {
+            profileTab.classList.add('active');
+            friendTab.classList.remove('active');
+        } else {
+            profileTab.classList.remove('active');
+            friendTab.classList.add('active');
+        }
+    });
 });
+
+// パネル開閉
+function openPanel() {
+    sidePanel.classList.add('open');
+    overlay.classList.add('active');
+    gameArea.classList.add('blur');
+}
+
+function closePanelFunc() {
+    sidePanel.classList.remove('open');
+    overlay.classList.remove('active');
+    gameArea.classList.remove('blur');
+}
+
+friendIcon.addEventListener('click', openPanel);
+closePanel.addEventListener('click', closePanelFunc);
+overlay.addEventListener('click', closePanelFunc);
+
+// 初期化
+initializeUser();
+loadRequests();
+loadFriends();
+
+// 定期的にオンライン状態更新
+setInterval(() => {
+    database.ref('users/' + userId).update({ online: true });
+}, 30000);
