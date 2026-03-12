@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>タイピングゲーム - プロフィール＆フレンド</title>
+    <title>タイピングゲーム - プロフィール＆フレンド＆タスク</title>
     <link rel="stylesheet" href="style.css">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -11,20 +11,89 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
 </head>
 <body>
+    <!-- レベルアップ通知 -->
+    <div class="level-up-notification" id="levelUpNotification">
+        <div class="level-up-content">
+            <h2>レベルアップ！</h2>
+            <p id="levelUpMessage">レベル <span id="newLevel">2</span> に上がったよ！</p>
+            <button class="btn" id="closeLevelUp">削除</button>
+        </div>
+    </div>
+
+    <!-- タスククリア通知 -->
+    <div class="task-clear-notification" id="taskClearNotification">
+        <div class="task-clear-content">
+            <h3>タスククリア！</h3>
+            <p id="taskClearMessage"></p>
+            <button class="btn" id="closeTaskClear">削除</button>
+        </div>
+    </div>
+
     <div class="game-area" id="gameArea">
         <header>
-            <div class="friend-icon" id="friendIcon">👥</div>
+            <div class="header-left">
+                <div class="level-display" id="levelDisplay">Lv.1</div>
+                <button class="play-btn" id="playBtn">プレイ</button>
+            </div>
+            <div class="header-right">
+                <button class="task-icon" id="taskIcon">📋</button>
+                <button class="friend-icon" id="friendIcon">👥</button>
+            </div>
         </header>
-        <div class="game-placeholder">
-            タイピングゲームエリア<br>
-            <span class="game-subtext">ここにゲーム画面が入ります</span>
+
+        <!-- コイン表示（左下固定） -->
+        <div class="coin-display" id="coinDisplay">
+            <span class="coin-icon">🪙</span>
+            <span class="coin-amount" id="coinAmount">0</span>
+        </div>
+
+        <!-- XPバー -->
+        <div class="xp-bar-container">
+            <div class="xp-bar" id="xpBar" style="width: 0%"></div>
+            <span class="xp-text" id="xpText">0/100 XP</span>
+        </div>
+
+        <!-- メインゲームエリア -->
+        <div class="game-main" id="gameMain">
+            <!-- 難易度選択画面 -->
+            <div class="difficulty-select" id="difficultySelect">
+                <h2>難易度を選んでください</h2>
+                <div class="difficulty-buttons">
+                    <button class="btn difficulty-btn" data-difficulty="easy">簡単</button>
+                    <button class="btn difficulty-btn" data-difficulty="medium">中級</button>
+                    <button class="btn difficulty-btn" data-difficulty="hard">難しい</button>
+                </div>
+            </div>
+
+            <!-- タイピングゲーム画面 -->
+            <div class="typing-game" id="typingGame" style="display: none;">
+                <div class="game-info">
+                    <div class="timer">残り時間: <span id="timer">60</span>秒</div>
+                    <div class="score">スコア: <span id="score">0</span></div>
+                    <div class="combo">コンボ: <span id="combo">0</span></div>
+                </div>
+                <div class="word-display" id="wordDisplay"></div>
+                <input type="text" class="typing-input" id="typingInput" placeholder="ここに入力" autocomplete="off">
+                <button class="btn end-game-btn" id="endGameBtn">終了</button>
+            </div>
+
+            <!-- リザルト画面 -->
+            <div class="result-screen" id="resultScreen" style="display: none;">
+                <h2>ゲーム終了</h2>
+                <div class="result-stats">
+                    <p>最終スコア: <span id="finalScore">0</span></p>
+                    <p>獲得XP: <span id="earnedXP">0</span></p>
+                    <p>獲得コイン: <span id="earnedCoins">0</span></p>
+                </div>
+                <button class="btn" id="backToDifficultyBtn">難易度選択に戻る</button>
+            </div>
         </div>
     </div>
 
     <!-- 背景オーバーレイ -->
     <div class="overlay" id="overlay"></div>
 
-    <!-- サイドパネル -->
+    <!-- サイドパネル（プロフィール＆フレンド） -->
     <div class="side-panel" id="sidePanel">
         <div class="panel-header">
             <h2>メニュー</h2>
@@ -52,6 +121,18 @@
                 <div class="profile-label">フレンドコード</div>
                 <div class="profile-value" id="friendCode">読み込み中...</div>
             </div>
+            <div class="profile-field">
+                <div class="profile-label">レベル</div>
+                <div class="profile-value" id="profileLevel">1</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">XP</div>
+                <div class="profile-value" id="profileXP">0/100</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">コイン</div>
+                <div class="profile-value" id="profileCoins">0</div>
+            </div>
         </div>
 
         <!-- フレンドタブ -->
@@ -78,6 +159,80 @@
                 <h4>フレンドリスト</h4>
                 <div id="friendsList">
                     <p style="color: #888;">読み込み中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- タスクパネル -->
+    <div class="task-panel" id="taskPanel">
+        <div class="panel-header">
+            <h2>タスク</h2>
+            <span class="close-btn" id="closeTaskPanel">&times;</span>
+        </div>
+
+        <!-- タスクタブ -->
+        <div class="tabs">
+            <div class="tab active" data-task-tab="daily">毎日</div>
+            <div class="tab" data-task-tab="weekly">週間</div>
+        </div>
+
+        <!-- デイリータスク -->
+        <div class="tab-content active" id="dailyTasks">
+            <div class="task-list">
+                <div class="task-item" id="dailyPlayCount">
+                    <div class="task-name">タイピングを5回プレイ</div>
+                    <div class="task-progress">
+                        <span id="dailyPlayProgress">0/5</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン3000, XP500</div>
+                    <button class="btn btn-small claim-btn" id="claimDailyPlay" disabled>受取済み</button>
+                </div>
+                <div class="task-item" id="dailyScore">
+                    <div class="task-name">スコア <span id="dailyScoreTarget">5000</span>以上達成</div>
+                    <div class="task-progress">
+                        <span id="dailyScoreProgress">0/1</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン3000, XP500</div>
+                    <button class="btn btn-small claim-btn" id="claimDailyScore" disabled>受取済み</button>
+                </div>
+                <div class="task-item" id="dailyCombo">
+                    <div class="task-name">コンボ <span id="dailyComboTarget">50</span>以上達成</div>
+                    <div class="task-progress">
+                        <span id="dailyComboProgress">0/1</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン3000, XP500</div>
+                    <button class="btn btn-small claim-btn" id="claimDailyCombo" disabled>受取済み</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ウィークリータスク -->
+        <div class="tab-content" id="weeklyTasks">
+            <div class="task-list">
+                <div class="task-item" id="weeklyPlayCount">
+                    <div class="task-name">タイピングを150回プレイ</div>
+                    <div class="task-progress">
+                        <span id="weeklyPlayProgress">0/150</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン15000, XP2000</div>
+                    <button class="btn btn-small claim-btn" id="claimWeeklyPlay" disabled>受取済み</button>
+                </div>
+                <div class="task-item" id="weeklyScore">
+                    <div class="task-name">スコア <span id="weeklyScoreTarget">5000</span>以上を10回達成</div>
+                    <div class="task-progress">
+                        <span id="weeklyScoreProgress">0/10</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン15000, XP2000</div>
+                    <button class="btn btn-small claim-btn" id="claimWeeklyScore" disabled>受取済み</button>
+                </div>
+                <div class="task-item" id="weeklyCombo">
+                    <div class="task-name">コンボ <span id="weeklyComboTarget">50</span>以上を10回達成</div>
+                    <div class="task-progress">
+                        <span id="weeklyComboProgress">0/10</span>
+                    </div>
+                    <div class="task-reward">報酬: コイン15000, XP2000</div>
+                    <button class="btn btn-small claim-btn" id="claimWeeklyCombo" disabled>受取済み</button>
                 </div>
             </div>
         </div>
