@@ -3,128 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>タイピングゲーム</title>
+    <title>タイピングゲーム - プロフィール＆フレンド</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
 </head>
 <body>
-    <!-- メインコンテンツ -->
-    <div class="main-content">
-        <!-- ゲーム画面 -->
-        <div class="game-container">
-            <h1>タイピングゲーム</h1>
-            <p>ゲーム画面がここに表示されます</p>
+    <div class="game-area" id="gameArea">
+        <header>
+            <div class="friend-icon" id="friendIcon">👥</div>
+        </header>
+        <div class="game-placeholder">
+            タイピングゲームエリア<br>
+            <span class="game-subtext">ここにゲーム画面が入ります</span>
         </div>
-
-        <!-- フレンドボタン -->
-        <button class="friend-btn" id="friendBtn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-        </button>
     </div>
 
     <!-- 背景オーバーレイ -->
     <div class="overlay" id="overlay"></div>
 
-    <!-- プロフィール・フレンドパネル -->
+    <!-- サイドパネル -->
     <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <h2>メニュー</h2>
+            <span class="close-btn" id="closePanel">&times;</span>
+        </div>
+
         <!-- タブ -->
-        <div class="panel-tabs">
-            <button class="tab-btn active" data-tab="profile">プロフィール</button>
-            <button class="tab-btn" data-tab="friends">フレンド</button>
+        <div class="tabs">
+            <div class="tab active" data-tab="profile">プロフィール</div>
+            <div class="tab" data-tab="friend">フレンド</div>
         </div>
 
         <!-- プロフィールタブ -->
-        <div class="tab-content active" id="profile-tab">
-            <div class="profile-container">
-                <!-- 名前設定 -->
-                <div class="profile-section">
-                    <h3>ユーザー名</h3>
-                    <div class="name-display" id="nameDisplay">匿名 (12345678901)</div>
-                    <button class="btn-secondary" id="changeName">名前を変更</button>
-                    <p class="info-text" id="changeNameInfo">※1日5回まで変更可能（20文字まで）</p>
+        <div class="tab-content active" id="profileTab">
+            <div class="profile-field">
+                <div class="profile-label">名前</div>
+                <div class="profile-value" id="profileName">読み込み中...</div>
+                <div class="name-change-area">
+                    <input type="text" class="name-input" id="newName" placeholder="新しい名前" maxlength="20">
+                    <button class="btn btn-small" id="changeNameBtn">変更</button>
                 </div>
-
-                <!-- 名前変更モーダル -->
-                <div class="modal" id="nameChangeModal">
-                    <div class="modal-content">
-                        <h4>ユーザー名を変更</h4>
-                        <input type="text" id="newNameInput" placeholder="新しい名前を入力（20文字まで）" maxlength="20">
-                        <p class="char-count"><span id="charCount">0</span>/20</p>
-                        <div class="modal-buttons">
-                            <button class="btn-primary" id="confirmNameChange">変更</button>
-                            <button class="btn-secondary" id="cancelNameChange">キャンセル</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- フレンドコード -->
-                <div class="profile-section">
-                    <h3>フレンドコード</h3>
-                    <div class="friend-code" id="friendCode">12345678ABC</div>
-                    <button class="btn-secondary" id="copyFriendCode">コピー</button>
-                </div>
-
-                <!-- ステータスメッセージ -->
-                <div class="status-message" id="statusMessage"></div>
+                <div class="remaining-changes" id="remainingChanges">残り3回</div>
+            </div>
+            <div class="profile-field">
+                <div class="profile-label">フレンドコード</div>
+                <div class="profile-value" id="friendCode">読み込み中...</div>
             </div>
         </div>
 
         <!-- フレンドタブ -->
-        <div class="tab-content" id="friends-tab">
-            <div class="friends-container">
-                <!-- フレンド申請セクション -->
-                <div class="friends-section">
-                    <h3>フレンド申請</h3>
-                    <div class="friend-request-input">
-                        <input type="text" id="friendCodeInput" placeholder="フレンドコードを入力" maxlength="11">
-                        <button class="btn-primary" id="sendFriendRequest">申請送信</button>
-                    </div>
-                </div>
-
-                <!-- フレンド受付セクション -->
-                <div class="friends-section">
-                    <h3>フレンド申請受け取り</h3>
-                    <div class="friend-requests-list" id="friendRequestsList">
-                        <p class="empty-message">申請はありません</p>
-                    </div>
-                </div>
-
-                <!-- フレンドリスト -->
-                <div class="friends-section">
-                    <h3>フレンドリスト</h3>
-                    <div class="friends-list" id="friendsList">
-                        <p class="empty-message">フレンドがいません</p>
-                    </div>
+        <div class="tab-content" id="friendTab">
+            <!-- フレンドコード入力 -->
+            <div class="friend-input-area">
+                <h4>フレンドコード入力</h4>
+                <div class="friend-input-group">
+                    <input type="text" class="friend-input" id="friendCodeInput" placeholder="12345678ABC">
+                    <button class="btn btn-small" id="sendRequestBtn">申請</button>
                 </div>
             </div>
-        </div>
 
-        <!-- クローズボタン -->
-        <button class="close-btn" id="closePanel">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-    </div>
+            <!-- フレンド申請リスト -->
+            <div>
+                <h4>フレンド申請</h4>
+                <div id="requestsList">
+                    <p style="color: #888;">読み込み中...</p>
+                </div>
+            </div>
 
-    <!-- 削除確認モーダル -->
-    <div class="modal" id="deleteConfirmModal">
-        <div class="modal-content">
-            <h4>フレンドを削除</h4>
-            <p>本当に削除しますか？</p>
-            <div class="modal-buttons">
-                <button class="btn-primary" id="confirmDelete">削除</button>
-                <button class="btn-secondary" id="cancelDelete">キャンセル</button>
+            <!-- フレンドリスト -->
+            <div style="margin-top: 20px;">
+                <h4>フレンドリスト</h4>
+                <div id="friendsList">
+                    <p style="color: #888;">読み込み中...</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module" src="script.js"></script>
+    <!-- 確認モーダル -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content" id="modalContent">
+            <!-- 動的に内容を挿入 -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
