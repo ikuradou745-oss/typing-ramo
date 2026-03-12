@@ -31,11 +31,13 @@ let gameState = {
     timeLeft: 60,
     score: 0,
     combo: 0,
+    maxCombo: 0,
     currentWord: '',
+    currentIndex: 0,
     words: {
-        easy: ['apple', 'book', 'cat', 'dog', 'fish', 'green', 'house', 'ice', 'jump', 'king', 'lion', 'moon', 'night', 'open', 'pen'],
-        medium: ['mountain', 'ocean', 'planet', 'queen', 'rainbow', 'sunshine', 'thunder', 'umbrella', 'victory', 'window', 'yellow', 'garden', 'forest', 'silver', 'bridge'],
-        hard: ['international', 'understanding', 'communication', 'development', 'environment', 'government', 'professional', 'significant', 'temperature', 'celebration', 'architecture', 'mathematics', 'philosophy', 'psychology', 'technology']
+        easy: ['りんご', 'ねこ', 'いぬ', 'さくら', 'やま', 'かわ', 'うみ', 'そら', 'ほし', 'つき', 'はな', 'き', 'あめ', 'ゆき', 'くも'],
+        medium: ['がっこう', 'としょかん', 'こうえん', 'でんわ', 'じてんしゃ', 'でんしゃ', 'ばす', 'たくしー', 'ほんや', 'コンビニ', 'レストラン', 'スーパー', 'びょういん', 'こうばん', 'えき'],
+        hard: ['おにぎり', 'さんどいっち', 'はんばーがー', 'かつどん', 'すし', 'らーめん', 'やきにく', 'おこのみやき', 'たこやき', 'そば', 'うどん', 'てんぷら', 'かれーらいす', 'ぱすた', 'ぴざ']
     }
 };
 
@@ -66,18 +68,22 @@ const coinAmount = document.getElementById('coinAmount');
 const xpBar = document.getElementById('xpBar');
 const xpText = document.getElementById('xpText');
 const playBtn = document.getElementById('playBtn');
+const homeScreen = document.getElementById('homeScreen');
 const difficultySelect = document.getElementById('difficultySelect');
 const typingGame = document.getElementById('typingGame');
 const resultScreen = document.getElementById('resultScreen');
+const playOfflineBtn = document.getElementById('playOfflineBtn');
+const playOnlineBtn = document.getElementById('playOnlineBtn');
+const backToHomeFromDifficulty = document.getElementById('backToHomeFromDifficulty');
+const backToHomeFromResult = document.getElementById('backToHomeFromResult');
 const difficultyBtns = document.querySelectorAll('.difficulty-btn');
 const wordDisplay = document.getElementById('wordDisplay');
-const typingInput = document.getElementById('typingInput');
+const typingStatus = document.getElementById('typingStatus');
 const timerSpan = document.getElementById('timer');
 const scoreSpan = document.getElementById('score');
 const comboSpan = document.getElementById('combo');
-const endGameBtn = document.getElementById('endGameBtn');
-const backToDifficultyBtn = document.getElementById('backToDifficultyBtn');
 const finalScore = document.getElementById('finalScore');
+const finalCombo = document.getElementById('finalCombo');
 const earnedXP = document.getElementById('earnedXP');
 const earnedCoins = document.getElementById('earnedCoins');
 const levelUpNotification = document.getElementById('levelUpNotification');
@@ -114,6 +120,15 @@ const weeklyScoreProgress = document.getElementById('weeklyScoreProgress');
 const weeklyComboProgress = document.getElementById('weeklyComboProgress');
 const weeklyScoreTarget = document.getElementById('weeklyScoreTarget');
 const weeklyComboTarget = document.getElementById('weeklyComboTarget');
+
+// プログレスバー要素
+const dailyPlayProgressBar = document.getElementById('dailyPlayProgressBar');
+const dailyScoreProgressBar = document.getElementById('dailyScoreProgressBar');
+const dailyComboProgressBar = document.getElementById('dailyComboProgressBar');
+const weeklyPlayProgressBar = document.getElementById('weeklyPlayProgressBar');
+const weeklyScoreProgressBar = document.getElementById('weeklyScoreProgressBar');
+const weeklyComboProgressBar = document.getElementById('weeklyComboProgressBar');
+
 const claimDailyPlay = document.getElementById('claimDailyPlay');
 const claimDailyScore = document.getElementById('claimDailyScore');
 const claimDailyCombo = document.getElementById('claimDailyCombo');
@@ -143,6 +158,12 @@ function initializeUser() {
             const newFriendCode = Math.floor(Math.random() * 100000000).toString().padStart(8, '0') + 
                                  Math.random().toString(36).substr(2, 3).toUpperCase();
             
+            // ランダムな目標値を設定
+            const dailyScoreTarget = Math.floor(Math.random() * (100000 - 5000 + 1) + 5000);
+            const dailyComboTarget = Math.floor(Math.random() * (150 - 50 + 1) + 50);
+            const weeklyScoreTarget = Math.floor(Math.random() * (100000 - 5000 + 1) + 5000);
+            const weeklyComboTarget = Math.floor(Math.random() * (150 - 50 + 1) + 50);
+            
             const userData = {
                 name: newName,
                 friendCode: newFriendCode,
@@ -154,9 +175,18 @@ function initializeUser() {
                 friends: {},
                 friendRequests: {},
                 online: true,
-                dailyTasks: dailyTasks,
-                weeklyTasks: weeklyTasks,
-                lastTaskReset: new Date().toISOString()
+                dailyTasks: {
+                    playCount: { current: 0, target: 5, completed: false, claimed: false },
+                    score: { current: 0, target: dailyScoreTarget, completed: false, claimed: false },
+                    combo: { current: 0, target: dailyComboTarget, completed: false, claimed: false }
+                },
+                weeklyTasks: {
+                    playCount: { current: 0, target: 150, completed: false, claimed: false },
+                    score: { current: 0, target: weeklyScoreTarget, completed: false, claimed: false },
+                    combo: { current: 0, target: weeklyComboTarget, completed: false, claimed: false }
+                },
+                lastTaskReset: new Date().toISOString(),
+                lastWeekReset: new Date().toISOString()
             };
             
             userRef.set(userData);
@@ -164,9 +194,30 @@ function initializeUser() {
         } else {
             currentUser = snapshot.val();
             // タスクデータがない場合の初期化
-            if (!currentUser.dailyTasks) currentUser.dailyTasks = dailyTasks;
-            if (!currentUser.weeklyTasks) currentUser.weeklyTasks = weeklyTasks;
+            if (!currentUser.dailyTasks) {
+                currentUser.dailyTasks = {
+                    playCount: { current: 0, target: 5, completed: false, claimed: false },
+                    score: { current: 0, target: 5000, completed: false, claimed: false },
+                    combo: { current: 0, target: 50, completed: false, claimed: false }
+                };
+            }
+            if (!currentUser.weeklyTasks) {
+                currentUser.weeklyTasks = {
+                    playCount: { current: 0, target: 150, completed: false, claimed: false },
+                    score: { current: 0, target: 5000, completed: false, claimed: false },
+                    combo: { current: 0, target: 50, completed: false, claimed: false }
+                };
+            }
         }
+        
+        dailyTasks = currentUser.dailyTasks;
+        weeklyTasks = currentUser.weeklyTasks;
+        
+        // 目標値表示を更新
+        if (dailyScoreTarget) dailyScoreTarget.textContent = dailyTasks.score.target;
+        if (dailyComboTarget) dailyComboTarget.textContent = dailyTasks.combo.target;
+        if (weeklyScoreTarget) weeklyScoreTarget.textContent = weeklyTasks.score.target;
+        if (weeklyComboTarget) weeklyComboTarget.textContent = weeklyTasks.combo.target;
         
         checkResets();
         updateAllUI();
@@ -207,8 +258,9 @@ function checkResets() {
     
     // ウィークリータスクリセット（月曜朝7時）
     const lastWeekReset = currentUser.lastWeekReset ? new Date(currentUser.lastWeekReset) : new Date(0);
-    if (now.getDay() === 1 && now.getHours() >= 7) { // 月曜日
-        if (now.getTime() - lastWeekReset.getTime() > 7 * 24 * 60 * 60 * 1000) {
+    if (now.getDay() === 1 && now.getHours() >= 7) {
+        const weekInMs = 7 * 24 * 60 * 60 * 1000;
+        if (now.getTime() - lastWeekReset.getTime() >= weekInMs) {
             resetWeeklyTasks();
         }
     }
@@ -216,10 +268,13 @@ function checkResets() {
 
 // デイリータスクリセット
 function resetDailyTasks() {
+    const dailyScoreTarget = Math.floor(Math.random() * (100000 - 5000 + 1) + 5000);
+    const dailyComboTarget = Math.floor(Math.random() * (150 - 50 + 1) + 50);
+    
     dailyTasks = {
         playCount: { current: 0, target: 5, completed: false, claimed: false },
-        score: { current: 0, target: Math.floor(Math.random() * (100000 - 5000 + 1) + 5000), completed: false, claimed: false },
-        combo: { current: 0, target: Math.floor(Math.random() * (150 - 50 + 1) + 50), completed: false, claimed: false }
+        score: { current: 0, target: dailyScoreTarget, completed: false, claimed: false },
+        combo: { current: 0, target: dailyComboTarget, completed: false, claimed: false }
     };
     
     database.ref('users/' + userId).update({
@@ -228,15 +283,22 @@ function resetDailyTasks() {
     });
     
     currentUser.dailyTasks = dailyTasks;
+    
+    if (dailyScoreTarget) dailyScoreTarget.textContent = dailyTasks.score.target;
+    if (dailyComboTarget) dailyComboTarget.textContent = dailyTasks.combo.target;
+    
     updateTasksUI();
 }
 
 // ウィークリータスクリセット
 function resetWeeklyTasks() {
+    const weeklyScoreTarget = Math.floor(Math.random() * (100000 - 5000 + 1) + 5000);
+    const weeklyComboTarget = Math.floor(Math.random() * (150 - 50 + 1) + 50);
+    
     weeklyTasks = {
         playCount: { current: 0, target: 150, completed: false, claimed: false },
-        score: { current: 0, target: Math.floor(Math.random() * (100000 - 5000 + 1) + 5000), completed: false, claimed: false },
-        combo: { current: 0, target: Math.floor(Math.random() * (150 - 50 + 1) + 50), completed: false, claimed: false }
+        score: { current: 0, target: weeklyScoreTarget, completed: false, claimed: false },
+        combo: { current: 0, target: weeklyComboTarget, completed: false, claimed: false }
     };
     
     database.ref('users/' + userId).update({
@@ -245,6 +307,10 @@ function resetWeeklyTasks() {
     });
     
     currentUser.weeklyTasks = weeklyTasks;
+    
+    if (weeklyScoreTarget) weeklyScoreTarget.textContent = weeklyTasks.score.target;
+    if (weeklyComboTarget) weeklyComboTarget.textContent = weeklyTasks.combo.target;
+    
     updateTasksUI();
 }
 
@@ -263,11 +329,9 @@ function updateAllUI() {
     updateLevelAndCoinUI();
     
     // タスク
-    if (currentUser.dailyTasks) {
-        dailyTasks = currentUser.dailyTasks;
-        weeklyTasks = currentUser.weeklyTasks;
-        updateTasksUI();
-    }
+    dailyTasks = currentUser.dailyTasks;
+    weeklyTasks = currentUser.weeklyTasks;
+    updateTasksUI();
 }
 
 function updateLevelAndCoinUI() {
@@ -288,12 +352,17 @@ function updateLevelAndCoinUI() {
 }
 
 function updateTasksUI() {
+    if (!dailyTasks || !weeklyTasks) return;
+    
     // デイリー
     dailyPlayProgress.textContent = `${dailyTasks.playCount.current}/${dailyTasks.playCount.target}`;
     dailyScoreProgress.textContent = `${dailyTasks.score.current}/1`;
     dailyComboProgress.textContent = `${dailyTasks.combo.current}/1`;
-    dailyScoreTarget.textContent = dailyTasks.score.target;
-    dailyComboTarget.textContent = dailyTasks.combo.target;
+    
+    // プログレスバー
+    dailyPlayProgressBar.style.width = `${(dailyTasks.playCount.current / dailyTasks.playCount.target) * 100}%`;
+    dailyScoreProgressBar.style.width = `${dailyTasks.score.current * 100}%`;
+    dailyComboProgressBar.style.width = `${dailyTasks.combo.current * 100}%`;
     
     claimDailyPlay.disabled = !dailyTasks.playCount.completed || dailyTasks.playCount.claimed;
     claimDailyScore.disabled = !dailyTasks.score.completed || dailyTasks.score.claimed;
@@ -311,8 +380,11 @@ function updateTasksUI() {
     weeklyPlayProgress.textContent = `${weeklyTasks.playCount.current}/${weeklyTasks.playCount.target}`;
     weeklyScoreProgress.textContent = `${weeklyTasks.score.current}/10`;
     weeklyComboProgress.textContent = `${weeklyTasks.combo.current}/10`;
-    weeklyScoreTarget.textContent = weeklyTasks.score.target;
-    weeklyComboTarget.textContent = weeklyTasks.combo.target;
+    
+    // プログレスバー
+    weeklyPlayProgressBar.style.width = `${(weeklyTasks.playCount.current / weeklyTasks.playCount.target) * 100}%`;
+    weeklyScoreProgressBar.style.width = `${(weeklyTasks.score.current / 10) * 100}%`;
+    weeklyComboProgressBar.style.width = `${(weeklyTasks.combo.current / 10) * 100}%`;
     
     claimWeeklyPlay.disabled = !weeklyTasks.playCount.completed || weeklyTasks.playCount.claimed;
     claimWeeklyScore.disabled = !weeklyTasks.score.completed || weeklyTasks.score.claimed;
@@ -372,8 +444,30 @@ function addCoins(amount) {
 
 // ==================== ゲーム機能 ====================
 playBtn.addEventListener('click', () => {
+    homeScreen.style.display = 'block';
+    difficultySelect.style.display = 'none';
+    typingGame.style.display = 'none';
+    resultScreen.style.display = 'none';
+});
+
+playOfflineBtn.addEventListener('click', () => {
+    homeScreen.style.display = 'none';
     difficultySelect.style.display = 'block';
     typingGame.style.display = 'none';
+    resultScreen.style.display = 'none';
+});
+
+playOnlineBtn.addEventListener('click', () => {
+    alert('オンラインプレイは現在開発中です');
+});
+
+backToHomeFromDifficulty.addEventListener('click', () => {
+    homeScreen.style.display = 'block';
+    difficultySelect.style.display = 'none';
+});
+
+backToHomeFromResult.addEventListener('click', () => {
+    homeScreen.style.display = 'block';
     resultScreen.style.display = 'none';
 });
 
@@ -390,6 +484,8 @@ function startGame(difficulty) {
     gameState.timeLeft = 60;
     gameState.score = 0;
     gameState.combo = 0;
+    gameState.maxCombo = 0;
+    gameState.currentIndex = 0;
     
     difficultySelect.style.display = 'none';
     typingGame.style.display = 'block';
@@ -399,8 +495,8 @@ function startGame(difficulty) {
     nextWord();
     startTimer();
     
-    typingInput.disabled = false;
-    typingInput.focus();
+    // キーボードイベントの設定
+    document.addEventListener('keydown', handleKeyDown);
 }
 
 function startTimer() {
@@ -417,8 +513,10 @@ function startTimer() {
 function nextWord() {
     const words = gameState.words[gameState.difficulty];
     gameState.currentWord = words[Math.floor(Math.random() * words.length)];
+    gameState.currentIndex = 0;
     wordDisplay.textContent = gameState.currentWord;
-    typingInput.value = '';
+    typingStatus.textContent = '';
+    typingStatus.className = 'typing-status';
 }
 
 function updateGameUI() {
@@ -427,40 +525,60 @@ function updateGameUI() {
     timerSpan.textContent = gameState.timeLeft;
 }
 
-typingInput.addEventListener('input', (e) => {
+function handleKeyDown(e) {
     if (!gameState.isPlaying) return;
     
-    const input = e.target.value;
-    const currentWord = gameState.currentWord;
+    // 入力されたキー
+    const key = e.key;
+    if (key.length > 1) return; // 特殊キーは無視
     
-    if (input === currentWord) {
+    const currentChar = gameState.currentWord[gameState.currentIndex];
+    
+    if (key === currentChar) {
         // 正解
-        gameState.score += 5 * (gameState.combo + 1);
-        gameState.combo++;
-        nextWord();
-        updateGameUI();
-    } else if (currentWord.startsWith(input)) {
-        // 部分一致（何もしない）
-        return;
+        gameState.currentIndex++;
+        
+        // 現在の文字をハイライト
+        const typedPart = gameState.currentWord.substring(0, gameState.currentIndex);
+        const remainingPart = gameState.currentWord.substring(gameState.currentIndex);
+        wordDisplay.innerHTML = `<span style="color: #27ae60">${typedPart}</span>${remainingPart}`;
+        
+        typingStatus.textContent = '✨ 正解！';
+        typingStatus.className = 'typing-status correct';
+        
+        // 単語完成
+        if (gameState.currentIndex === gameState.currentWord.length) {
+            // スコア加算
+            gameState.score += 5 * (gameState.combo + 1);
+            gameState.combo++;
+            gameState.maxCombo = Math.max(gameState.maxCombo, gameState.combo);
+            
+            updateGameUI();
+            nextWord();
+        }
     } else {
         // ミス
         gameState.combo = 0;
         updateGameUI();
+        
+        typingStatus.textContent = '❌ ミス！';
+        typingStatus.className = 'typing-status incorrect';
     }
-});
-
-endGameBtn.addEventListener('click', endGame);
+}
 
 function endGame() {
     clearInterval(gameState.timer);
     gameState.isPlaying = false;
+    
+    // キーボードイベントの解除
+    document.removeEventListener('keydown', handleKeyDown);
     
     // XPとコインの計算
     const xpEarned = Math.floor(gameState.score / 1000);
     const coinsEarned = Math.floor(gameState.score / 100);
     
     // タスク更新
-    updateTasksAfterGame(gameState.score, gameState.combo);
+    updateTasksAfterGame(gameState.score, gameState.maxCombo);
     
     // 報酬付与
     addXP(xpEarned);
@@ -468,6 +586,7 @@ function endGame() {
     
     // リザルト表示
     finalScore.textContent = gameState.score;
+    finalCombo.textContent = gameState.maxCombo;
     earnedXP.textContent = xpEarned;
     earnedCoins.textContent = coinsEarned;
     
@@ -516,11 +635,6 @@ function updateTasksAfterGame(score, maxCombo) {
     
     updateTasksUI();
 }
-
-backToDifficultyBtn.addEventListener('click', () => {
-    resultScreen.style.display = 'none';
-    difficultySelect.style.display = 'block';
-});
 
 // ==================== タスク報酬受取 ====================
 function claimTaskReward(taskType, taskName, coinReward, xpReward) {
