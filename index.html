@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typing Game</title>
+    <title>Ultimate Typing Game</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,20 +34,20 @@
         <div class="profile-section">
             <p>名前: <span id="user-display-name">読み込み中...</span></p>
             <input type="text" id="new-name-input" maxlength="20" placeholder="新しい名前を入力">
-            <button id="change-name-button">名前を変更する (残り<span id="name-change-left">3</span>回)</button>
-            <p class="small-text">※毎日朝7時にリセットされます</p>
-            <p>フレンドコード: <strong id="user-friend-code">読み込み中...</strong></p>
+            <button id="change-name-button">名前を変更 (残り<span id="name-change-left">3</span>回)</button>
+            <p class="small-text">※毎日朝7時にリセット</p>
+            <p>フレンドコード: <strong id="user-friend-code">---</strong></p>
         </div>
         <hr>
         <h2>フレンド</h2>
         <div class="tab-buttons">
-            <button class="tab-button active" data-target="friend-list-tab">フレンドリスト</button>
-            <button class="tab-button" data-target="friend-add-tab">フレンド追加</button>
-            <button class="tab-button" data-target="friend-request-tab">フレンド申請 <span id="request-badge">0</span></button>
+            <button class="tab-button active" data-target="friend-list-tab">リスト</button>
+            <button class="tab-button" data-target="friend-add-tab">追加</button>
+            <button class="tab-button" data-target="friend-request-tab">申請 <span id="request-badge">0</span></button>
         </div>
         <div id="friend-list-tab" class="tab-content active"><ul id="friend-list-container"></ul></div>
         <div id="friend-add-tab" class="tab-content hidden">
-            <input type="text" id="search-friend-code-input" placeholder="相手のフレンドコードを入力">
+            <input type="text" id="search-friend-code-input" placeholder="フレンドコードを入力">
             <button id="send-friend-request-button">申請を送る</button>
             <p id="friend-search-message"></p>
         </div>
@@ -58,8 +58,8 @@
         <button class="close-panel-button" id="close-task-button">✖ 閉じる</button>
         <h2>タスク</h2>
         <div class="tab-buttons">
-            <button class="task-tab-button active" data-target="daily-task-tab">毎日のタスク</button>
-            <button class="task-tab-button" data-target="weekly-task-tab">週のタスク</button>
+            <button class="task-tab-button active" data-target="daily-task-tab">毎日</button>
+            <button class="task-tab-button" data-target="weekly-task-tab">毎週</button>
         </div>
         <div id="daily-task-tab" class="task-tab-content active"><ul id="daily-tasks-container"></ul></div>
         <div id="weekly-task-tab" class="task-tab-content hidden"><ul id="weekly-tasks-container"></ul></div>
@@ -67,67 +67,33 @@
 
     <div id="inventory-panel" class="side-panel hidden">
         <button class="close-panel-button" id="close-inventory-button">✖ 閉じる</button>
-        <h2>アイテム（インベントリ）</h2>
+        <h2>アイテム</h2>
         <div class="inventory-section">
             <p>🧩 スキルのかけら: <strong id="skill-shard-count">0</strong> 個</p>
         </div>
     </div>
 
-    <div id="story-panel" class="side-panel hidden">
-        <button class="close-panel-button" id="close-story-button">✖ 閉じる</button>
-        <h2>ストーリーモード (Map)</h2>
-        <p>現在のステージ: <span id="current-story-stage-display">1</span></p>
-        <div id="story-map-container"></div>
-    </div>
-
-    <div id="ranking-panel" class="side-panel hidden">
-        <button class="close-panel-button" id="close-ranking-button">✖ 閉じる</button>
-        <h2>今日のランキング</h2>
-        <div class="tab-buttons">
-            <button class="ranking-tab-button active" data-target="normal-ranking-tab">ノーマルランキング</button>
-            <button class="ranking-tab-button" data-target="friend-ranking-tab">フレンドランキング</button>
-        </div>
-        <div id="normal-ranking-tab" class="ranking-tab-content active">
-            <ul id="normal-ranking-container"></ul>
-        </div>
-        <div id="friend-ranking-tab" class="ranking-tab-content hidden">
-            <ul id="friend-ranking-container"></ul>
-        </div>
-    </div>
-
     <div id="main-menu">
-        <h1>タイピングゲーム</h1>
+        <h1>TYPING ONLINE</h1>
         <div class="menu-buttons">
             <button id="offline-menu-button">一人でプレイ (オフライン)</button>
             <button id="ranking-menu-button">ランキングモード</button>
-            <button id="story-menu-button">ストーリーモード (Lv5〜)</button>
-            <button id="view-ranking-button">ランキングを見る</button>
+            <button id="story-menu-button" class="level-locked" data-min-level="5">ストーリー (Lv.5〜)</button>
         </div>
         
         <div id="difficulty-selection" class="hidden">
-            <h2>難易度を選択してください</h2>
-            <button class="difficulty-button" data-difficulty="easy">簡単 (3〜6文字)</button>
-            <button class="difficulty-button" data-difficulty="normal">中級 (5〜12文字)</button>
-            <button class="difficulty-button" data-difficulty="hard">難しい (10〜20文字)</button>
-            <button id="cancel-offline-button" style="margin-top: 20px; background-color: gray;">戻る</button>
-        </div>
-
-        <div id="ranking-mode-selection" class="hidden">
-            <h2>ランキングに参加</h2>
-            <button id="start-normal-ranking-button">ノーマルランキングを開始</button>
-            <button id="start-friend-ranking-button">フレンドランキングを開始 (フレンド2人以上)</button>
-            <p id="ranking-error-message" style="color: red; margin-top: 10px;"></p>
-            <button id="cancel-ranking-button" style="margin-top: 20px; background-color: gray;">戻る</button>
+            <h2>難易度を選択</h2>
+            <button class="difficulty-button" data-difficulty="easy">簡単 (EASY)</button>
+            <button class="difficulty-button level-locked" data-difficulty="normal" data-min-level="5">普通 (NORMAL) - Lv.5</button>
+            <button class="difficulty-button level-locked" data-difficulty="hard" data-min-level="10">難しい (HARD) - Lv.10</button>
+            <button id="cancel-offline-button" style="background-color: #666;">戻る</button>
         </div>
     </div>
 
     <div id="game-screen" class="hidden">
-        <div id="game-mode-display" style="font-size: 20px; color: #555; margin-bottom: 10px;">モード</div>
-        <div id="timer-display">残り時間: <span id="time-left">60</span>秒</div>
-        <div id="target-score-display" class="hidden">目標スコア: <span id="target-score">0</span></div>
-        <div id="score-display">スコア: <span id="current-score">0</span></div>
-        <div id="combo-display">コンボ: <span id="current-combo">0</span></div>
-        
+        <div id="timer-display">TIME: <span id="time-left">60</span>s</div>
+        <div id="score-display">SCORE: <span id="current-score">0</span></div>
+        <div id="combo-display">COMBO: <span id="current-combo">0</span></div>
         <div id="typing-area">
             <div id="japanese-word"></div>
             <div id="romaji-word"></div>
@@ -135,23 +101,15 @@
     </div>
 
     <div id="result-screen" class="hidden">
-        <h2 id="result-title">ゲーム終了！</h2>
-        <p>最終スコア: <span id="final-score">0</span></p>
-        <p id="result-coins-container">獲得コイン: <span id="earned-coins">0</span></p>
-        <p id="result-xp-container">獲得XP: <span id="earned-xp">0</span></p>
-        <p id="story-result-message" style="color: #d32f2f; font-weight: bold; margin-top: 10px;"></p>
+        <h2>RESULT</h2>
+        <p>SCORE: <span id="final-score">0</span></p>
+        <p>獲得コイン: <span id="earned-coins">0</span></p>
+        <p>獲得XP: <span id="earned-xp">0</span></p>
         <button id="return-to-menu-button">メニューに戻る</button>
     </div>
 
     <div id="notification-area"></div>
 
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="legacy-services.js"></script>
-    <script type="module" src="user-system.js"></script>
-    <script type="module" src="friend-system.js"></script>
-    <script type="module" src="task-system.js"></script>
-    <script type="module" src="ranking-system.js"></script>
-    <script type="module" src="story-system.js"></script>
-    <script type="module" src="game-logic.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
