@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Fixed Version</title>
+    <title>Ultimate Typing Game - Fixed & Ranking Version</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -27,7 +27,7 @@
         button:disabled { background: #bdc3c7; cursor: not-allowed; }
 
         /* --- メインメニュー --- */
-        #main-menu, #game-screen, #result-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
+        #main-menu, #game-screen, #result-screen, #ranking-menu, #ranking-view-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
         h1 { font-size: 48px; margin-bottom: 30px; color: #2c3e50; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
         .menu-buttons { display: flex; flex-direction: column; gap: 18px; align-items: center; }
         .menu-buttons button { width: 350px; font-size: 20px; padding: 18px; }
@@ -39,6 +39,7 @@
         .typed { color: #d1d1d1; }
         .untyped { color: #333; }
         .game-info { display: flex; justify-content: space-around; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        #ranking-stage-info { font-size: 20px; color: #e74c3c; font-weight: bold; margin-bottom: 10px; }
 
         /* --- サイドパネル (フレンド・タスク) --- */
         #dark-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; transition: 0.4s; pointer-events: none; }
@@ -59,6 +60,13 @@
         .task-item { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
         .task-progress-bg { background: #eee; height: 10px; border-radius: 5px; margin: 10px 0; }
         .task-progress-fill { background: #007BFF; height: 100%; border-radius: 5px; width: 0%; transition: 0.3s; }
+
+        /* --- ランキング表示用 --- */
+        .ranking-list { text-align: left; background: white; padding: 20px; border-radius: 15px; max-height: 400px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 18px; }
+        .ranking-item.top1 { font-weight: bold; color: #d4af37; background: #fff9e6; border-radius: 8px; border: none; }
+        .ranking-item.top2 { font-weight: bold; color: #c0c0c0; background: #f2f2f2; border-radius: 8px; border: none; }
+        .ranking-item.top3 { font-weight: bold; color: #cd7f32; background: #fdf5e6; border-radius: 8px; border: none; }
 
         #notification-area { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 400px; }
         .notification { background: #333; color: #fff; padding: 15px 25px; border-radius: 10px; margin-bottom: 10px; text-align: center; font-weight: bold; animation: slideDown 0.5s ease forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
@@ -89,18 +97,43 @@
         <h1>TYPING ONLINE</h1>
         <div class="menu-buttons">
             <button id="start-game-btn">一人でプレイ</button>
+            <button id="ranking-mode-btn" style="background:#8e44ad;">ランキングモード</button>
         </div>
+        
         <div id="difficulty-selection" class="hidden" style="margin-top:20px;">
             <h2>難易度を選択</h2>
             <button class="diff-btn" data-diff="easy">EASY</button>
             <button class="diff-btn" data-diff="normal">NORMAL</button>
             <button class="diff-btn" data-diff="hard">HARD</button>
             <br>
-            <button id="back-to-menu" style="background:#666; margin-top:10px;">戻る</button>
+            <button class="back-to-main-btn" style="background:#666; margin-top:10px;">戻る</button>
         </div>
     </div>
 
+    <div id="ranking-menu" class="hidden">
+        <h2>ランキングモード</h2>
+        <div class="menu-buttons" style="margin-top:20px;">
+            <button id="play-friend-ranking-btn">フレンドランキングに挑戦</button>
+            <button id="play-online-ranking-btn">オンラインランキングに挑戦</button>
+            <button id="view-ranking-btn" style="background:#27ae60;">ランキングを見る</button>
+            <button class="back-to-main-btn" style="background:#666;">戻る</button>
+        </div>
+    </div>
+
+    <div id="ranking-view-screen" class="hidden">
+        <h2>ランキング</h2>
+        <div class="tab-bar" style="margin-top:20px;">
+            <button id="tab-view-friend-ranking" class="active">フレンド</button>
+            <button id="tab-view-online-ranking">オンライン</button>
+        </div>
+        <div class="ranking-list" id="ranking-list-content">
+            読み込み中...
+        </div>
+        <button class="back-to-main-btn" style="background:#666;">戻る</button>
+    </div>
+
     <div id="game-screen" class="hidden">
+        <div id="ranking-stage-info" class="hidden">STAGE 1/15 (EASY)</div>
         <div class="game-info">
             <div>TIME: <span id="time-left">60</span></div>
             <div>SCORE: <span id="current-score">0</span></div>
@@ -115,6 +148,7 @@
     <div id="result-screen" class="hidden">
         <h2>リザルト</h2>
         <div style="font-size:32px; margin:20px 0;">SCORE: <span id="final-score">0</span></div>
+        <div id="ranking-result-info" style="font-size:20px; color:#e74c3c; margin-bottom:10px; font-weight:bold;"></div>
         <div id="reward-info" style="margin-bottom:20px; color:#4CAF50; font-weight:bold;"></div>
         <button id="return-home-btn">メニューへ戻る</button>
     </div>
@@ -138,7 +172,7 @@
             </div>
             <div class="info-card">
                 <p>あなたのフレンドコード:</p>
-                <div class="friend-code-display" id="my-friend-code">--------</div>
+                <div class="friend-code-display" id="my-friend-code">生成中...</div>
                 <p style="font-size:12px; color:#888; margin-top:5px;">このコードを友達に教えよう！</p>
             </div>
         </div>
@@ -177,7 +211,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, get, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        /* --- 設定 --- */
+        /* --- Firebase 設定 --- */
         const firebaseConfig = {
             apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
             authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -202,6 +236,7 @@
             friendCode: "",
             nameChanges: 3,
             lastReset: null,
+            lastRankingReward: null, // ランキング報酬受け取り日時記録
             friends: {},
             requests: {},
             tasks: {
@@ -210,6 +245,7 @@
             }
         };
 
+        let gameMode = "solo"; // "solo", "friendRanking", "onlineRanking"
         let gameActive = false;
         let score = 0;
         let combo = 0;
@@ -218,6 +254,9 @@
         let currentWord = null;
         let charIdx = 0;
         let activeDiff = "easy";
+        
+        // ランキング用変数
+        let rankingStageCount = 0; // 0~14 (合計15問: easy5, normal5, hard5)
 
         const WordDB = {
             easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}],
@@ -241,40 +280,58 @@
             setTimeout(() => div.remove(), 4000);
         }
 
-        /* --- データ同期 --- */
+        function getTodayResetTime() {
+            const now = new Date();
+            const reset = new Date(now);
+            reset.setHours(7, 0, 0, 0);
+            if (now.getHours() < 7) {
+                reset.setDate(reset.getDate() - 1);
+            }
+            return reset.getTime();
+        }
+
+        /* --- データ同期・復元処理 (バグ修正の要) --- */
         async function loadUserData(uid) {
             const snapshot = await get(ref(db, `users/${uid}`));
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                // 深いマージ（既存の進捗を壊さないように）
+                
+                // データを慎重にマージ (上書きによる消失を防ぐ)
                 user.uid = uid;
-                user.name = data.name || user.name;
-                user.coins = data.coins || 0;
-                user.level = data.level || 1;
-                user.xp = data.xp || 0;
+                user.name = data.name || "初心さん";
+                user.coins = typeof data.coins === 'number' ? data.coins : 0;
+                user.level = typeof data.level === 'number' ? data.level : 1;
+                user.xp = typeof data.xp === 'number' ? data.xp : 0;
                 user.friendCode = data.friendCode || generateFriendCode();
-                user.nameChanges = data.nameChanges ?? 3;
+                user.nameChanges = typeof data.nameChanges === 'number' ? data.nameChanges : 3;
                 user.lastReset = data.lastReset || null;
+                user.lastRankingReward = data.lastRankingReward || null;
+                
+                if (data.friends) user.friends = data.friends;
+                if (data.requests) user.requests = data.requests;
                 
                 if (data.tasks) {
                     if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
                     if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
                 }
                 
-                // もしデータにフレンドコードがなかったら保存し直す
+                // コードがなかった場合のみ保存
                 if (!data.friendCode) {
-                    await update(ref(db, `users/${uid}`), { friendCode: user.friendCode });
+                    await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
                 }
 
-                checkDailyReset();
+                await checkDailyReset();
+                await checkRankingReward(); // 朝7時のランキング報酬チェック
             } else {
+                // 完全新規ユーザー
                 user.uid = uid;
                 user.friendCode = generateFriendCode();
                 await set(ref(db, `users/${uid}`), user);
                 await set(ref(db, `friendCodes/${user.friendCode}`), uid);
             }
             
+            // UIを強制更新
             updateHUD();
             renderProfile();
             listenToRequests();
@@ -282,7 +339,18 @@
 
         async function saveUserData() {
             if (!user.uid) return;
-            await update(ref(db, `users/${user.uid}`), user);
+            // tasks 等ネストされたオブジェクトも安全に保存
+            await update(ref(db, `users/${user.uid}`), {
+                name: user.name,
+                coins: user.coins,
+                level: user.level,
+                xp: user.xp,
+                friendCode: user.friendCode,
+                nameChanges: user.nameChanges,
+                lastReset: user.lastReset,
+                lastRankingReward: user.lastRankingReward,
+                tasks: user.tasks
+            });
             updateHUD();
         }
 
@@ -293,16 +361,103 @@
             const progress = (user.xp / nextXP) * 100;
             document.getElementById("xp-bar-fill").style.width = `${Math.min(100, progress)}%`;
             document.getElementById("current-xp-text").innerText = `${Math.floor(user.xp)} / ${nextXP} XP`;
+            renderProfile(); // 名前変更時などのためにプロフも更新
+        }
+
+        /* --- 日次リセット処理 --- */
+        async function checkDailyReset() {
+            const currentReset = getTodayResetTime();
+            if (!user.lastReset || user.lastReset < currentReset) {
+                user.tasks.daily.play = 0;
+                user.tasks.daily.score = 0;
+                user.tasks.daily.combo = 0;
+                user.tasks.daily.completed = false;
+                user.nameChanges = 3;
+                user.lastReset = Date.now();
+                await saveUserData();
+            }
+        }
+
+        /* --- ランキング報酬配布処理 --- */
+        async function checkRankingReward() {
+            const currentReset = getTodayResetTime();
+            // すでに今日の報酬を受け取っていればスキップ
+            if (user.lastRankingReward && user.lastRankingReward > currentReset) return;
+
+            // オンラインランキング確認
+            const onlineSnap = await get(ref(db, 'rankings/online'));
+            let onlineRank = -1;
+            let onlineTotal = 0;
+            if (onlineSnap.exists()) {
+                const data = onlineSnap.val();
+                const sorted = Object.values(data).sort((a, b) => b.score - a.score);
+                onlineTotal = sorted.length;
+                onlineRank = sorted.findIndex(r => r.uid === user.uid) + 1;
+            }
+
+            // フレンドランキング確認
+            let friendRank = -1;
+            if (Object.keys(user.friends).length > 0) {
+                const friendScores = [];
+                // 自分
+                const myFriendSnap = await get(ref(db, `rankings/friend/${user.uid}`));
+                if (myFriendSnap.exists()) friendScores.push({uid: user.uid, score: myFriendSnap.val().score});
+                // フレンド
+                for (let fUid in user.friends) {
+                    const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
+                    if (fSnap.exists()) friendScores.push({uid: fUid, score: fSnap.val().score});
+                }
+                friendScores.sort((a,b)=>b.score - a.score);
+                friendRank = friendScores.findIndex(r => r.uid === user.uid) + 1;
+            }
+
+            let gotReward = false;
+            let totalXp = 0;
+            let totalCoins = 0;
+
+            // フレンド報酬
+            if (friendRank === 1) { totalXp += 100; totalCoins += 1500; gotReward = true; }
+            else if (friendRank === 2 || friendRank === 3) { totalXp += 50; totalCoins += 750; gotReward = true; }
+
+            // オンライン報酬
+            if (onlineRank > 0 && onlineRank <= 5 && onlineTotal > 0) {
+                if (onlineRank === 1) { totalXp += 50 * onlineTotal; totalCoins += 500 * onlineTotal; }
+                else if (onlineRank <= 3) { totalXp += 25 * onlineTotal; totalCoins += 250 * onlineTotal; }
+                else if (onlineRank <= 5) { totalXp += 15 * onlineTotal; totalCoins += 150 * onlineTotal; }
+                gotReward = true;
+            }
+
+            if (gotReward) {
+                user.xp += totalXp;
+                user.coins += totalCoins;
+                user.lastRankingReward = Date.now();
+                await saveUserData();
+                checkLevelUp();
+                showNotification(`昨日のランキング報酬を獲得！ ✨${totalXp}XP / 🪙${totalCoins}`, true);
+            }
         }
 
         /* --- タイピングロジック --- */
-        function startTyping(diff) {
+        function startGame(mode, diff = "easy") {
+            gameMode = mode;
             activeDiff = diff;
-            document.getElementById("main-menu").classList.add("hidden");
+            
+            // 画面切り替え
+            document.querySelectorAll("#main-menu, #ranking-menu, #difficulty-selection").forEach(el => el.classList.add("hidden"));
             document.getElementById("game-screen").classList.remove("hidden");
             
             score = 0; combo = 0; timeLeft = 60;
+            rankingStageCount = 0;
             gameActive = true;
+            
+            const stageInfo = document.getElementById("ranking-stage-info");
+            if (gameMode === "friendRanking" || gameMode === "onlineRanking") {
+                stageInfo.classList.remove("hidden");
+                updateRankingStageUI();
+            } else {
+                stageInfo.classList.add("hidden");
+            }
+
             updateGameUI();
             setNextWord();
 
@@ -313,9 +468,32 @@
             }, 1000);
         }
 
+        function updateRankingStageUI() {
+            let diffStr = "EASY";
+            if (rankingStageCount >= 5) diffStr = "NORMAL";
+            if (rankingStageCount >= 10) diffStr = "HARD";
+            document.getElementById("ranking-stage-info").innerText = `STAGE ${rankingStageCount + 1}/15 (${diffStr})`;
+        }
+
         function setNextWord() {
-            const list = WordDB[activeDiff];
-            currentWord = list[Math.floor(Math.random() * list.length)];
+            if (gameMode === "solo") {
+                // ソロモードは選択した難易度で固定
+                const list = WordDB[activeDiff];
+                currentWord = list[Math.floor(Math.random() * list.length)];
+            } else {
+                // ランキングモードは5回ごとに難易度上昇 (最大15問)
+                if (rankingStageCount >= 15) {
+                    endGame(); // 15問終わったら強制終了
+                    return;
+                }
+                
+                let diff = "easy";
+                if (rankingStageCount >= 5) diff = "normal";
+                if (rankingStageCount >= 10) diff = "hard";
+                
+                const list = WordDB[diff];
+                currentWord = list[Math.floor(Math.random() * list.length)];
+            }
             charIdx = 0;
             renderWord();
         }
@@ -335,7 +513,7 @@
             document.getElementById("current-combo").innerText = combo;
         }
 
-        function endGame() {
+        async function endGame() {
             gameActive = false;
             clearInterval(timer);
             document.getElementById("game-screen").classList.add("hidden");
@@ -352,16 +530,36 @@
             user.tasks.weekly.play++;
             if (score > user.tasks.daily.score) user.tasks.daily.score = score;
             if (combo > user.tasks.daily.combo) user.tasks.daily.combo = combo;
-            
-            // 週間のスコア達成回数（例: スコア2500以上でカウント）
             if (score >= 2500) user.tasks.weekly.scoreCount++;
             if (combo > user.tasks.weekly.combo) user.tasks.weekly.combo = combo;
 
             document.getElementById("final-score").innerText = score;
             document.getElementById("reward-info").innerText = `報酬: 🪙${Math.floor(earnedCoins)} / ✨${Math.floor(earnedXP)}XP`;
+            
+            const rankResultDiv = document.getElementById("ranking-result-info");
+            rankResultDiv.innerText = "";
+
+            // ランキングデータの保存
+            if (gameMode === "onlineRanking") {
+                await set(ref(db, `rankings/online/${user.uid}`), {
+                    uid: user.uid,
+                    name: user.name,
+                    score: score,
+                    timestamp: Date.now()
+                });
+                rankResultDiv.innerText = "オンラインランキングに記録されました！";
+            } else if (gameMode === "friendRanking") {
+                await set(ref(db, `rankings/friend/${user.uid}`), {
+                    uid: user.uid,
+                    name: user.name,
+                    score: score,
+                    timestamp: Date.now()
+                });
+                rankResultDiv.innerText = "フレンドランキングに記録されました！";
+            }
 
             checkLevelUp();
-            saveUserData();
+            await saveUserData();
         }
 
         function checkLevelUp() {
@@ -385,6 +583,10 @@
                 score += 5 * combo;
                 
                 if (charIdx >= currentWord.r.length) {
+                    if (gameMode !== "solo") {
+                        rankingStageCount++;
+                        updateRankingStageUI();
+                    }
                     setNextWord();
                 } else {
                     renderWord();
@@ -394,6 +596,113 @@
             }
             updateGameUI();
         });
+
+        /* --- UI画面切り替えイベント --- */
+        // メニュー周りの「戻る」ボタン群
+        document.querySelectorAll(".back-to-main-btn").forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll("#difficulty-selection, #ranking-menu, #ranking-view-screen").forEach(el => el.classList.add("hidden"));
+                document.getElementById("main-menu").classList.remove("hidden");
+                document.querySelector(".menu-buttons").classList.remove("hidden");
+            };
+        });
+
+        document.getElementById("start-game-btn").onclick = () => {
+            document.querySelector("#main-menu .menu-buttons").classList.add("hidden");
+            document.getElementById("difficulty-selection").classList.remove("hidden");
+        };
+
+        document.querySelectorAll(".diff-btn").forEach(btn => {
+            btn.onclick = () => startGame("solo", btn.dataset.diff);
+        });
+
+        // ランキングメニューを開く
+        document.getElementById("ranking-mode-btn").onclick = () => {
+            document.getElementById("main-menu").classList.add("hidden");
+            document.getElementById("ranking-menu").classList.remove("hidden");
+        };
+
+        document.getElementById("play-friend-ranking-btn").onclick = () => {
+            if (Object.keys(user.friends).length < 2) {
+                alert("フレンドランキングは最低2人以上のフレンドが必要です。");
+                return;
+            }
+            startGame("friendRanking");
+        };
+
+        document.getElementById("play-online-ranking-btn").onclick = () => {
+            startGame("onlineRanking");
+        };
+
+        document.getElementById("return-home-btn").onclick = () => {
+            document.getElementById("result-screen").classList.add("hidden");
+            document.getElementById("main-menu").classList.remove("hidden");
+            document.querySelector("#main-menu .menu-buttons").classList.remove("hidden");
+        };
+
+        /* --- ランキング閲覧機能 --- */
+        document.getElementById("view-ranking-btn").onclick = () => {
+            document.getElementById("ranking-menu").classList.add("hidden");
+            document.getElementById("ranking-view-screen").classList.remove("hidden");
+            loadRankingView("friend");
+        };
+
+        document.getElementById("tab-view-friend-ranking").onclick = () => {
+            document.getElementById("tab-view-friend-ranking").classList.add("active");
+            document.getElementById("tab-view-online-ranking").classList.remove("active");
+            loadRankingView("friend");
+        };
+        document.getElementById("tab-view-online-ranking").onclick = () => {
+            document.getElementById("tab-view-online-ranking").classList.add("active");
+            document.getElementById("tab-view-friend-ranking").classList.remove("active");
+            loadRankingView("online");
+        };
+
+        async function loadRankingView(type) {
+            const listContent = document.getElementById("ranking-list-content");
+            listContent.innerHTML = "読み込み中...";
+            
+            let scores = [];
+
+            if (type === "online") {
+                const snap = await get(ref(db, 'rankings/online'));
+                if (snap.exists()) {
+                    scores = Object.values(snap.val());
+                }
+            } else if (type === "friend") {
+                // 自分とフレンドのスコアを収集
+                const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
+                if (mySnap.exists()) scores.push(mySnap.val());
+                
+                for (let fUid in user.friends) {
+                    const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
+                    if (fSnap.exists()) scores.push(fSnap.val());
+                }
+            }
+
+            scores.sort((a, b) => b.score - a.score); // 降順
+
+            listContent.innerHTML = "";
+            if (scores.length === 0) {
+                listContent.innerHTML = "<p>まだ記録がありません。</p>";
+                return;
+            }
+
+            scores.forEach((s, index) => {
+                const rank = index + 1;
+                const div = document.createElement("div");
+                div.className = "ranking-item";
+                if (rank === 1) div.classList.add("top1");
+                else if (rank === 2) div.classList.add("top2");
+                else if (rank === 3) div.classList.add("top3");
+                
+                div.innerHTML = `
+                    <span>${rank}位. ${s.name} ${s.uid === user.uid ? "(あなた)" : ""}</span>
+                    <span>Score: ${s.score}</span>
+                `;
+                listContent.appendChild(div);
+            });
+        }
 
         /* --- サイドパネル操作 --- */
         function openPanel(id) {
@@ -428,7 +737,7 @@
             user.name = newName;
             user.nameChanges--;
             renderProfile();
-            saveUserData();
+            await saveUserData();
             showNotification("名前を変更しました！");
         };
 
@@ -498,6 +807,7 @@
             await update(ref(db, `users/${targetUid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
             await remove(ref(db, `users/${user.uid}/requests/${targetUid}`));
             showNotification(`${targetName}さんとフレンドになりました！`);
+            await loadUserData(user.uid); // フレンドリスト更新のため再読み込み
         };
 
         window.rejectFriend = async (targetUid) => {
@@ -507,19 +817,15 @@
         async function renderFriendList() {
             const listArea = document.getElementById("friend-list-area");
             listArea.innerHTML = "読み込み中...";
-            const snap = await get(ref(db, `users/${user.uid}/friends`));
-            const friends = snap.val();
-            listArea.innerHTML = "";
-            
-            if (!friends) {
+            if (Object.keys(user.friends).length === 0) {
                 listArea.innerHTML = "<p>フレンドがいません。</p>";
                 return;
             }
-
-            for (let fUid in friends) {
+            listArea.innerHTML = "";
+            for (let fUid in user.friends) {
                 const fDataSnap = await get(ref(db, `users/${fUid}`));
+                if (!fDataSnap.exists()) continue;
                 const fData = fDataSnap.val();
-                if (!fData) continue;
                 
                 const div = document.createElement("div");
                 div.className = "friend-item";
@@ -539,6 +845,7 @@
             if (!confirm("本当にフレンドを削除しますか？")) return;
             await remove(ref(db, `users/${user.uid}/friends/${fUid}`));
             await remove(ref(db, `users/${fUid}/friends/${user.uid}`));
+            delete user.friends[fUid];
             renderFriendList();
         };
 
@@ -569,7 +876,7 @@
                 { label: `コンボ ${targets.combo} 以上を目指せ`, cur: t.combo, goal: targets.combo }
             ] : [
                 { label: "100回プレイする", cur: t.play, goal: targets.play },
-                { label: `高スコア達成回数`, cur: t.scoreCount, goal: targets.scoreCount },
+                { label: `高スコア(2500)達成回数`, cur: t.scoreCount, goal: targets.scoreCount },
                 { label: `最大コンボ数 (${targets.combo})`, cur: t.combo, goal: targets.combo }
             ];
 
@@ -628,51 +935,6 @@
             checkLevelUp();
             updateHUD();
         }
-
-        function checkDailyReset() {
-            const now = new Date();
-            const last = user.lastReset ? new Date(user.lastReset) : null;
-            
-            const getResetTime = (date) => {
-                const d = new Date(date);
-                d.setHours(7, 0, 0, 0);
-                if (date.getHours() < 7) d.setDate(d.getDate() - 1);
-                return d.getTime();
-            };
-
-            const currentReset = getResetTime(now);
-            if (!last || last.getTime() < currentReset) {
-                user.tasks.daily.play = 0;
-                user.tasks.daily.score = 0;
-                user.tasks.daily.combo = 0;
-                user.tasks.daily.completed = false;
-                user.nameChanges = 3;
-                user.lastReset = now.getTime();
-                saveUserData();
-            }
-        }
-
-        /* --- UIイベント --- */
-        document.getElementById("start-game-btn").onclick = () => {
-            document.getElementById("difficulty-selection").classList.remove("hidden");
-            document.getElementById("start-game-btn").classList.add("hidden");
-        };
-
-        document.getElementById("back-to-menu").onclick = () => {
-            document.getElementById("difficulty-selection").classList.add("hidden");
-            document.getElementById("start-game-btn").classList.remove("hidden");
-        };
-
-        document.querySelectorAll(".diff-btn").forEach(btn => {
-            btn.onclick = () => startTyping(btn.dataset.diff);
-        });
-
-        document.getElementById("return-home-btn").onclick = () => {
-            document.getElementById("result-screen").classList.add("hidden");
-            document.getElementById("main-menu").classList.remove("hidden");
-            document.getElementById("start-game-btn").classList.remove("hidden");
-            document.getElementById("difficulty-selection").classList.add("hidden");
-        };
 
         /* --- 認証 --- */
         onAuthStateChanged(auth, async (u) => {
