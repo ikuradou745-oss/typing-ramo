@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Fixed & Full Ranking Version</title>
+    <title>Ultimate Typing Game - Perfect Full Version</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -173,7 +173,7 @@
             <div class="info-card">
                 <p>あなたのフレンドコード:</p>
                 <div class="friend-code-display" id="my-friend-code">生成中...</div>
-                <p style="font-size:12px; color:#888; margin-top:5px;">数字8桁＋英語3桁のコードです</p>
+                <p style="font-size:12px; color:#888; margin-top:5px;">数字8桁＋英語大文字3桁のコードです</p>
             </div>
         </div>
 
@@ -243,8 +243,8 @@
             friends: {},
             requests: {},
             tasks: {
-                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 10, score: 25000, combo: 100 } },
-                weekly: { play: 0, scoreCount: 0, combo: 0, completed: false, targets: { play: 100, scoreCount: 10, combo: 150 } }
+                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 10, score: 25000, combo: 100 } }, // スコア目標は間を取って25000, コンボ100
+                weekly: { play: 0, scoreCount: 0, combo: 0, completed: false, targets: { play: 100, scoreCount: 10, combo: 150, scoreThreshold: 25000 } }
             }
         };
 
@@ -259,10 +259,11 @@
         let activeDiff = "easy";
         let wordsTypedCount = 0; // タイムアタック用
 
+        // 「つ」のローマ字を「tu」に修正
         const WordDB = {
-            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}],
-            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}],
-            hard: [{t:"じんこうちのう",r:"jinkouchinou"},{t:"きゃべつたべたい",r:"kyabetsutabetai"},{t:"ていれいきょうぎ",r:"teireikyougi"}]
+            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}, {t:"つみき",r:"tumiki"}],
+            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}, {t:"つつみ",r:"tutumi"}],
+            hard: [{t:"じんこうちのう",r:"jinkouchinou"},{t:"きゃべつたべたい",r:"kyabetutabetai"},{t:"ていれいきょうぎ",r:"teireikyougi"}]
         };
 
         /* --- ユーティリティ --- */
@@ -294,13 +295,13 @@
             return reset.getTime();
         }
 
-        /* --- データ同期・復元処理 --- */
+        /* --- データ同期・復元処理 (バグ修正の要) --- */
         async function loadUserData(uid) {
             const snapshot = await get(ref(db, `users/${uid}`));
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 
-                // 既存データを保持しつつ、欠落しているフィールドを補完
+                // データを慎重にマージ
                 user.uid = uid;
                 user.name = data.name || "初心さん";
                 user.coins = Number.isFinite(data.coins) ? data.coins : 0;
@@ -313,12 +314,14 @@
                 
                 if (data.friends) user.friends = data.friends;
                 if (data.requests) user.requests = data.requests;
+                
+                // タスクデータの復元
                 if (data.tasks) {
                     if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
                     if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
                 }
                 
-                // フレンドコードの紐付け登録（存在しない場合のみ）
+                // フレンドコードがデータベースにない場合のみ登録
                 if (!data.friendCode) {
                     await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
@@ -327,21 +330,21 @@
                 await checkDailyReset();
                 await checkRankingReward();
             } else {
-                // 新規ユーザー初期化
+                // 新規ユーザー
                 user.uid = uid;
                 user.friendCode = generateFriendCode();
                 await set(ref(db, `users/${uid}`), user);
                 await set(ref(db, `friendCodes/${user.friendCode}`), uid);
             }
             
-            // UI更新
+            // 読み込み完了後、UIの更新処理を確実に呼び出す
             updateHUD();
+            renderProfile();
             listenToRequests();
         }
 
         async function saveUserData() {
             if (!user.uid) return;
-            // ネストされたオブジェクトも含めて更新
             await update(ref(db, `users/${user.uid}`), {
                 name: user.name,
                 coins: user.coins,
@@ -354,19 +357,25 @@
                 tasks: user.tasks
             });
             updateHUD();
+            renderProfile();
         }
 
+        // コイン、Lv、XPバーの値を更新
         function updateHUD() {
             document.getElementById("coin-value").innerText = Math.floor(user.coins);
             document.getElementById("current-level").innerText = user.level;
-            document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode;
-            document.getElementById("name-change-count").innerText = user.nameChanges;
             
             const nextXP = user.level * 100;
             const progress = (user.xp / nextXP) * 100;
             document.getElementById("xp-bar-fill").style.width = `${Math.min(100, progress)}%`;
             document.getElementById("current-xp-text").innerText = `${Math.floor(user.xp)} / ${nextXP} XP`;
+        }
+
+        // プロフィールの名前とコードを更新
+        function renderProfile() {
+            document.getElementById("display-name").innerText = user.name;
+            document.getElementById("my-friend-code").innerText = user.friendCode;
+            document.getElementById("name-change-count").innerText = user.nameChanges;
         }
 
         async function checkDailyReset() {
@@ -386,19 +395,33 @@
             const currentReset = getTodayResetTime();
             if (user.lastRankingReward && user.lastRankingReward > currentReset) return;
 
-            // 簡易的なオンライン報酬チェック（本来はバッチ処理等で行うのが望ましい）
             const onlineSnap = await get(ref(db, 'rankings/online'));
+            let onlineRank = -1;
+            let onlineTotal = 0;
             if (onlineSnap.exists()) {
                 const sorted = Object.values(onlineSnap.val()).sort((a, b) => b.score - a.score);
-                const rank = sorted.findIndex(r => r.uid === user.uid) + 1;
-                if (rank > 0 && rank <= 10) {
-                    const bonus = (11 - rank) * 1000;
-                    user.coins += bonus;
-                    user.xp += 100;
-                    user.lastRankingReward = Date.now();
-                    await saveUserData();
-                    showNotification(`ランキング報酬獲得！ ${rank}位特典: 🪙${bonus}`, true);
-                }
+                onlineTotal = sorted.length;
+                onlineRank = sorted.findIndex(r => r.uid === user.uid) + 1;
+            }
+
+            let gotReward = false;
+            let totalXp = 0;
+            let totalCoins = 0;
+
+            if (onlineRank > 0 && onlineRank <= 5 && onlineTotal > 0) {
+                if (onlineRank === 1) { totalXp += 50 * onlineTotal; totalCoins += 500 * onlineTotal; }
+                else if (onlineRank <= 3) { totalXp += 25 * onlineTotal; totalCoins += 250 * onlineTotal; }
+                else if (onlineRank <= 5) { totalXp += 15 * onlineTotal; totalCoins += 150 * onlineTotal; }
+                gotReward = true;
+            }
+
+            if (gotReward) {
+                user.xp += totalXp;
+                user.coins += totalCoins;
+                user.lastRankingReward = Date.now();
+                await saveUserData();
+                checkLevelUp();
+                showNotification(`昨日のランキング報酬獲得！ ✨${totalXp}XP / 🪙${totalCoins}`, true);
             }
         }
 
@@ -428,7 +451,7 @@
         function setNextWord() {
             let diff = activeDiff;
             if (gameMode !== "solo") {
-                // タイムアタック：5問ごとに難易度をループ (easy -> normal -> hard)
+                // タイムアタック：5問ごとに難易度をループ (初級 -> 中級 -> 上級)
                 const cycle = Math.floor(wordsTypedCount / 5) % 3;
                 diff = cycle === 0 ? "easy" : (cycle === 1 ? "normal" : "hard");
                 document.getElementById("ranking-stage-info").innerText = `TIME ATTACK (${diff.toUpperCase()})`;
@@ -466,12 +489,16 @@
             user.coins += earnedCoins;
             user.xp += earnedXP;
             
-            // タスク進捗
+            // タスク進捗 (要求に沿った3つずつ)
             user.tasks.daily.play++;
             user.tasks.weekly.play++;
             if (score > user.tasks.daily.score) user.tasks.daily.score = score;
             if (combo > user.tasks.daily.combo) user.tasks.daily.combo = combo;
-            if (score >= 2500) user.tasks.weekly.scoreCount++;
+            
+            if (score >= user.tasks.weekly.targets.scoreThreshold) {
+                user.tasks.weekly.scoreCount++; // 5000~50000の目標値（ここでは25000以上でカウント）
+            }
+            if (combo > user.tasks.weekly.combo) user.tasks.weekly.combo = combo;
 
             document.getElementById("final-score").innerText = score;
             document.getElementById("reward-info").innerText = `報酬: 🪙${Math.floor(earnedCoins)} / ✨${Math.floor(earnedXP)}XP`;
@@ -493,6 +520,8 @@
                 } else {
                     document.getElementById("ranking-result-info").innerText = `ベストスコア(${existingScore})に届きませんでした。`;
                 }
+            } else {
+                 document.getElementById("ranking-result-info").innerText = "";
             }
 
             checkLevelUp();
@@ -507,6 +536,7 @@
                 showNotification(`LEVEL UP! Lv.${user.level}`, true);
                 nextXP = user.level * 100;
             }
+            updateHUD();
         }
 
         /* --- キーボード入力 --- */
@@ -553,7 +583,7 @@
 
         document.getElementById("play-online-ranking-btn").onclick = () => startGame("onlineRanking");
         document.getElementById("play-friend-ranking-btn").onclick = () => {
-            if (Object.keys(user.friends).length < 1) return alert("フレンドがまだいません！");
+            if (Object.keys(user.friends).length < 2) return alert("フレンドランキングはフレンドが2人以上必要です！");
             startGame("friendRanking");
         };
 
@@ -570,20 +600,48 @@
             loadRankingView("online");
         };
 
+        document.getElementById("tab-view-online-ranking").onclick = () => {
+            document.getElementById("tab-view-online-ranking").classList.add("active");
+            document.getElementById("tab-view-friend-ranking").classList.remove("active");
+            loadRankingView("online");
+        }
+        
+        document.getElementById("tab-view-friend-ranking").onclick = () => {
+            document.getElementById("tab-view-friend-ranking").classList.add("active");
+            document.getElementById("tab-view-online-ranking").classList.remove("active");
+            loadRankingView("friend");
+        }
+
         async function loadRankingView(type) {
             const listContent = document.getElementById("ranking-list-content");
             listContent.innerHTML = "読み込み中...";
-            const snap = await get(ref(db, `rankings/${type}`));
-            if (!snap.exists()) {
+            
+            let scores = [];
+            
+            if (type === "online") {
+                const snap = await get(ref(db, `rankings/online`));
+                if (snap.exists()) scores = Object.values(snap.val());
+            } else {
+                // フレンドランキング
+                const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
+                if (mySnap.exists()) scores.push(mySnap.val());
+                for (let fUid in user.friends) {
+                    const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
+                    if (fSnap.exists()) scores.push(fSnap.val());
+                }
+            }
+
+            if (scores.length === 0) {
                 listContent.innerHTML = "記録がありません。";
                 return;
             }
-            const scores = Object.values(snap.val()).sort((a,b)=>b.score - a.score);
+            
+            scores.sort((a,b)=>b.score - a.score);
             listContent.innerHTML = "";
             scores.forEach((s, i) => {
                 const div = document.createElement("div");
                 div.className = `ranking-item top${i+1 > 3 ? '' : i+1}`;
-                div.innerHTML = `<span>${i+1}位. ${s.name}</span><span>${s.score} pts</span>`;
+                div.innerHTML = `<span>${i+1}位. ${s.name} ${s.uid === user.uid ? "(あなた)" : ""}</span><span>${s.score} pts</span>`;
                 listContent.appendChild(div);
             });
         }
@@ -598,7 +656,10 @@
             document.getElementById("dark-overlay").classList.remove("active");
         }
 
-        document.getElementById("profile-open-btn").onclick = () => openPanel("friend-panel");
+        document.getElementById("profile-open-btn").onclick = () => {
+            renderProfile(); // パネルを開く時に確実に描画
+            openPanel("friend-panel");
+        };
         document.getElementById("task-open-btn").onclick = () => {
             openPanel("task-panel");
             renderTasks();
@@ -615,6 +676,7 @@
             user.nameChanges--;
             await saveUserData();
             showNotification("名前を変更しました！");
+            document.getElementById("name-input").value = "";
         };
 
         document.getElementById("tab-profile-btn").onclick = () => switchTab("profile");
@@ -650,7 +712,7 @@
                     const req = data[uid];
                     const div = document.createElement("div");
                     div.className = "friend-item";
-                    div.innerHTML = `<div>${req.name}さん</div><button onclick="acceptFriend('${uid}','${req.name}','${req.code}')">許可</button>`;
+                    div.innerHTML = `<div>${req.name}さん</div><button onclick="acceptFriend('${uid}','${req.name}','${req.code}')" style="background:green;">許可</button>`;
                     area.appendChild(div);
                 });
             });
@@ -659,7 +721,7 @@
         window.acceptFriend = async (uid, name, code) => {
             await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
             await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
-            await remove(ref(db, `users/${user.uid}/requests/${uid}`));
+            await remove(ref(db, `users/${user.uid}/requests/${uid}`);
             showNotification(`${name}さんとフレンドになりました！`);
         };
 
@@ -675,42 +737,92 @@
             }
         }
 
-        /* --- タスク --- */
+        /* --- タスク (3つずつ完全実装) --- */
         let currentTaskTab = "daily";
-        document.getElementById("tab-daily-btn").onclick = () => { currentTaskTab = "daily"; renderTasks(); };
-        document.getElementById("tab-weekly-btn").onclick = () => { currentTaskTab = "weekly"; renderTasks(); };
+        document.getElementById("tab-daily-btn").onclick = () => { 
+            currentTaskTab = "daily"; 
+            document.getElementById("tab-daily-btn").classList.add("active");
+            document.getElementById("tab-weekly-btn").classList.remove("active");
+            renderTasks(); 
+        };
+        document.getElementById("tab-weekly-btn").onclick = () => { 
+            currentTaskTab = "weekly"; 
+            document.getElementById("tab-weekly-btn").classList.add("active");
+            document.getElementById("tab-daily-btn").classList.remove("active");
+            renderTasks(); 
+        };
 
         function renderTasks() {
             const container = document.getElementById("task-list-container");
             container.innerHTML = "";
             const t = user.tasks[currentTaskTab];
+            
+            // 毎日のタスク3つ、週間のタスク3つを定義
             const data = currentTaskTab === "daily" ? 
-                [{l:"10回プレイ", c:t.play, g:t.targets.play}, {l:`スコア${t.targets.score}`, c:t.score, g:t.targets.score}] :
-                [{l:"100回プレイ", c:t.play, g:t.targets.play}];
+                [
+                    {label: "10回タイピングをプレイ", current: t.play, goal: t.targets.play}, 
+                    {label: `スコア (${t.targets.score}以上) を叩き出す`, current: t.score, goal: t.targets.score},
+                    {label: `コンボ (${t.targets.combo}以上) を叩き出す`, current: t.combo, goal: t.targets.combo}
+                ] :
+                [
+                    {label: "100回タイピングをプレイ", current: t.play, goal: t.targets.play},
+                    {label: `スコア (25000以上) を ${t.targets.scoreCount}回叩き出す`, current: t.scoreCount, goal: t.targets.scoreCount},
+                    {label: `コンボ (${t.targets.combo}以上) を叩き出す`, current: t.combo, goal: t.targets.combo}
+                ];
 
             let allDone = true;
             data.forEach(task => {
-                const p = Math.min(100, (task.c/task.g)*100);
-                if(p < 100) allDone = false;
+                const percent = Math.min(100, (task.current / task.goal) * 100);
+                if (percent < 100) allDone = false;
+                
                 const div = document.createElement("div");
                 div.className = "task-item";
-                div.innerHTML = `<div>${task.l} (${task.c}/${task.g})</div><div class="task-progress-bg"><div class="task-progress-fill" style="width:${p}%"></div></div>`;
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>${task.label}</span>
+                        <span>${task.current} / ${task.goal}</span>
+                    </div>
+                    <div class="task-progress-bg">
+                        <div class="task-progress-fill" style="width:${percent}%"></div>
+                    </div>
+                `;
                 container.appendChild(div);
             });
 
             const btn = document.getElementById("claim-task-reward-btn");
             btn.disabled = !(allDone && !t.completed);
-            btn.innerText = t.completed ? "受取済み" : (allDone ? "報酬受取！" : "進行中...");
-            btn.onclick = () => claimReward(currentTaskTab);
+            
+            if (t.completed) {
+                btn.innerText = "報酬受取済み";
+                btn.style.background = "#bdc3c7";
+            } else if (allDone) {
+                btn.innerText = "タスククリア！報酬を受け取る";
+                btn.style.background = "#28a745";
+                btn.onclick = () => claimReward(currentTaskTab);
+            } else {
+                btn.innerText = "タスク進行中...";
+                btn.style.background = "#007BFF";
+            }
         }
 
         async function claimReward(type) {
-            user.xp += (type === "daily" ? 100 : 1000);
-            user.coins += (type === "daily" ? 500 : 5000);
+            if (user.tasks[type].completed) return;
+            
+            if (type === "daily") {
+                user.xp += 50;
+                user.coins += 1500;
+                showNotification("毎日タスククリア！ ✨50XP / 🪙1500ゲット！", true);
+            } else {
+                user.xp += 500;
+                user.coins += 15000;
+                showNotification("週間タスククリア！ ✨500XP / 🪙15000ゲット！", true);
+            }
+            
             user.tasks[type].completed = true;
             await saveUserData();
-            showNotification("報酬を獲得しました！", true);
             renderTasks();
+            updateHUD();
+            checkLevelUp();
         }
 
         /* --- 認証 --- */
