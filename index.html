@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Full Version</title>
+    <title>Ultimate Typing Game - Fixed Version</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -48,27 +48,22 @@
         .side-panel.open { transform: translateX(0); }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
-        /* タブバー */
         .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-bar button { flex: 1; background: #eee; color: #555; padding: 10px; }
         .tab-bar button.active { background: #007BFF; color: white; }
 
-        /* フレンド・プロフィール項目 */
         .info-card { background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #eee; }
         .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; }
-        .friend-code-display { font-family: monospace; background: #eee; padding: 5px 10px; border-radius: 4px; }
+        .friend-code-display { font-family: monospace; background: #eee; padding: 10px; border-radius: 8px; font-size: 20px; font-weight: bold; color: #333; margin: 10px 0; border: 1px dashed #007BFF; }
         
-        /* タスク項目 */
         .task-item { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
         .task-progress-bg { background: #eee; height: 10px; border-radius: 5px; margin: 10px 0; }
         .task-progress-fill { background: #007BFF; height: 100%; border-radius: 5px; width: 0%; transition: 0.3s; }
 
-        /* 通知エリア */
         #notification-area { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 400px; }
         .notification { background: #333; color: #fff; padding: 15px 25px; border-radius: 10px; margin-bottom: 10px; text-align: center; font-weight: bold; animation: slideDown 0.5s ease forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .notif-reward { color: #ffeb3b; }
-
     </style>
 </head>
 <body>
@@ -79,7 +74,7 @@
             <div id="level-display">
                 <div class="level-text">
                     <span>Lv. <span id="current-level">1</span></span>
-                    <span id="current-xp-text" style="font-size:12px; color:#666;">0/100 XP</span>
+                    <span id="current-xp-text" style="font-size:12px; color:#666;">0 / 100 XP</span>
                 </div>
                 <div class="xp-bar-container"><div id="xp-bar-fill"></div></div>
             </div>
@@ -154,11 +149,9 @@
                 <input type="text" id="friend-search-input" placeholder="コードを入力" style="padding:8px; width:70%;">
                 <button id="add-friend-btn">申請</button>
             </div>
-            <div id="friend-requests-area">
-                </div>
+            <div id="friend-requests-area"></div>
             <h4>フレンドリスト</h4>
-            <div id="friend-list-area" style="margin-top:10px;">
-                </div>
+            <div id="friend-list-area" style="margin-top:10px;"></div>
         </div>
     </div>
 
@@ -171,10 +164,9 @@
             <button id="tab-daily-btn" class="active">毎日</button>
             <button id="tab-weekly-btn">週間</button>
         </div>
-        <div id="task-list-container">
-            </div>
+        <div id="task-list-container"></div>
         <div id="task-reward-area" style="margin-top:20px;">
-            <button id="claim-task-reward-btn" disabled style="width:100%; padding:20px; font-size:18px;">全てのタスクを完了して報酬をゲット！</button>
+            <button id="claim-task-reward-btn" disabled style="width:100%; padding:20px; font-size:18px;">タスク進行中...</button>
         </div>
     </div>
 
@@ -228,9 +220,9 @@
         let activeDiff = "easy";
 
         const WordDB = {
-            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"}],
-            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"}],
-            hard: [{t:"じんこうちのう",r:"jinkouchinou"},{t:"きゃべつたべたい",r:"kyabetsutabetai"}]
+            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}],
+            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}],
+            hard: [{t:"じんこうちのう",r:"jinkouchinou"},{t:"きゃべつたべたい",r:"kyabetsutabetai"},{t:"ていれいきょうぎ",r:"teireikyougi"}]
         };
 
         /* --- ユーティリティ --- */
@@ -253,16 +245,36 @@
         async function loadUserData(uid) {
             const snapshot = await get(ref(db, `users/${uid}`));
             if (snapshot.exists()) {
-                user = { ...user, ...snapshot.val() };
-                // 毎日朝7時リセット確認
+                const data = snapshot.val();
+                // 深いマージ（既存の進捗を壊さないように）
+                user.uid = uid;
+                user.name = data.name || user.name;
+                user.coins = data.coins || 0;
+                user.level = data.level || 1;
+                user.xp = data.xp || 0;
+                user.friendCode = data.friendCode || generateFriendCode();
+                user.nameChanges = data.nameChanges ?? 3;
+                user.lastReset = data.lastReset || null;
+                
+                if (data.tasks) {
+                    if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
+                    if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
+                }
+                
+                // もしデータにフレンドコードがなかったら保存し直す
+                if (!data.friendCode) {
+                    await update(ref(db, `users/${uid}`), { friendCode: user.friendCode });
+                    await set(ref(db, `friendCodes/${user.friendCode}`), uid);
+                }
+
                 checkDailyReset();
             } else {
-                // 新規ユーザー
                 user.uid = uid;
                 user.friendCode = generateFriendCode();
                 await set(ref(db, `users/${uid}`), user);
                 await set(ref(db, `friendCodes/${user.friendCode}`), uid);
             }
+            
             updateHUD();
             renderProfile();
             listenToRequests();
@@ -279,7 +291,7 @@
             document.getElementById("current-level").innerText = user.level;
             const nextXP = user.level * 100;
             const progress = (user.xp / nextXP) * 100;
-            document.getElementById("xp-bar-fill").style.width = `${progress}%`;
+            document.getElementById("xp-bar-fill").style.width = `${Math.min(100, progress)}%`;
             document.getElementById("current-xp-text").innerText = `${Math.floor(user.xp)} / ${nextXP} XP`;
         }
 
@@ -341,7 +353,8 @@
             if (score > user.tasks.daily.score) user.tasks.daily.score = score;
             if (combo > user.tasks.daily.combo) user.tasks.daily.combo = combo;
             
-            if (score >= user.tasks.weekly.targets.scoreCount) user.tasks.weekly.scoreCount++; // 簡易的なカウント
+            // 週間のスコア達成回数（例: スコア2500以上でカウント）
+            if (score >= 2500) user.tasks.weekly.scoreCount++;
             if (combo > user.tasks.weekly.combo) user.tasks.weekly.combo = combo;
 
             document.getElementById("final-score").innerText = score;
@@ -352,12 +365,12 @@
         }
 
         function checkLevelUp() {
-            const nextXP = user.level * 100;
-            if (user.xp >= nextXP) {
+            let nextXP = user.level * 100;
+            while (user.xp >= nextXP) {
                 user.xp -= nextXP;
                 user.level++;
                 showNotification(`LEVEL UP! Lv.${user.level} になったよ！`, true);
-                checkLevelUp(); // 複数レベルアップ対応
+                nextXP = user.level * 100;
             }
         }
 
@@ -367,18 +380,16 @@
             
             const target = currentWord.r[charIdx];
             if (e.key === target) {
-                // 正解
                 charIdx++;
                 combo++;
-                score += 5 * combo; // スコア計算: 5 * コンボ数
+                score += 5 * combo;
                 
                 if (charIdx >= currentWord.r.length) {
                     setNextWord();
                 } else {
                     renderWord();
                 }
-            } else if (e.key.length === 1) {
-                // ミス (文字キーの場合のみ)
+            } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
                 combo = 0;
             }
             updateGameUI();
@@ -405,7 +416,7 @@
         /* --- プロフィール機能 --- */
         function renderProfile() {
             document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode;
+            document.getElementById("my-friend-code").innerText = user.friendCode || "生成中...";
             document.getElementById("name-change-count").innerText = user.nameChanges;
         }
 
@@ -442,9 +453,9 @@
             }
         }
 
-        // フレンド申請送信
         document.getElementById("add-friend-btn").onclick = async () => {
             const code = document.getElementById("friend-search-input").value.trim();
+            if (!code) return;
             if (code === user.friendCode) return alert("自分のコードです。");
             
             const targetUidSnap = await get(ref(db, `friendCodes/${code}`));
@@ -459,7 +470,6 @@
             document.getElementById("friend-search-input").value = "";
         };
 
-        // 申請受信リスナー
         function listenToRequests() {
             onValue(ref(db, `users/${user.uid}/requests`), (snapshot) => {
                 const reqArea = document.getElementById("friend-requests-area");
@@ -472,11 +482,9 @@
                     const div = document.createElement("div");
                     div.className = "friend-item";
                     div.innerHTML = `
+                        <div><b>${req.name}</b>さんから申請！</div>
                         <div>
-                            <b>${req.name}</b>さんから申請！
-                        </div>
-                        <div>
-                            <button onclick="acceptFriend('${fromUid}', '${req.name}', '${req.code}')" style="padding:5px 10px; background:green;">許可</button>
+                            <button onclick="acceptFriend('${fromUid}', '${req.name}', '${req.code}')" style="padding:5px 10px; background:green; margin-right:5px;">許可</button>
                             <button onclick="rejectFriend('${fromUid}')" style="padding:5px 10px; background:red;">拒否</button>
                         </div>
                     `;
@@ -486,10 +494,8 @@
         }
 
         window.acceptFriend = async (targetUid, targetName, targetCode) => {
-            // 互いのフレンドリストに追加
             await update(ref(db, `users/${user.uid}/friends/${targetUid}`), { name: targetName, code: targetCode });
             await update(ref(db, `users/${targetUid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
-            // 申請を削除
             await remove(ref(db, `users/${user.uid}/requests/${targetUid}`));
             showNotification(`${targetName}さんとフレンドになりました！`);
         };
@@ -501,7 +507,6 @@
         async function renderFriendList() {
             const listArea = document.getElementById("friend-list-area");
             listArea.innerHTML = "読み込み中...";
-            
             const snap = await get(ref(db, `users/${user.uid}/friends`));
             const friends = snap.val();
             listArea.innerHTML = "";
@@ -512,9 +517,9 @@
             }
 
             for (let fUid in friends) {
-                // フレンドの最新ステータスを取得
                 const fDataSnap = await get(ref(db, `users/${fUid}`));
                 const fData = fDataSnap.val();
+                if (!fData) continue;
                 
                 const div = document.createElement("div");
                 div.className = "friend-item";
@@ -560,11 +565,11 @@
 
             const taskData = currentTaskTab === "daily" ? [
                 { label: "10回プレイする", cur: t.play, goal: targets.play },
-                { label: `スコアを叩き出す (${targets.score})`, cur: t.score, goal: targets.score },
-                { label: `最大コンボ数 (${targets.combo})`, cur: t.combo, goal: targets.combo }
+                { label: `スコア ${targets.score} 以上を目指せ`, cur: t.score, goal: targets.score },
+                { label: `コンボ ${targets.combo} 以上を目指せ`, cur: t.combo, goal: targets.combo }
             ] : [
                 { label: "100回プレイする", cur: t.play, goal: targets.play },
-                { label: `目標スコア達成回数 (${targets.scoreCount}/10)`, cur: t.scoreCount, goal: targets.scoreCount },
+                { label: `高スコア達成回数`, cur: t.scoreCount, goal: targets.scoreCount },
                 { label: `最大コンボ数 (${targets.combo})`, cur: t.combo, goal: targets.combo }
             ];
 
@@ -591,13 +596,16 @@
             if (allDone && !t.completed) {
                 rewardBtn.disabled = false;
                 rewardBtn.innerText = "報酬を受け取る！";
+                rewardBtn.style.background = "#28a745";
                 rewardBtn.onclick = () => claimReward(currentTaskTab);
             } else if (t.completed) {
                 rewardBtn.disabled = true;
                 rewardBtn.innerText = "報酬受取済み";
+                rewardBtn.style.background = "#bdc3c7";
             } else {
                 rewardBtn.disabled = true;
                 rewardBtn.innerText = "タスク進行中...";
+                rewardBtn.style.background = "#007BFF";
             }
         }
 
@@ -615,16 +623,16 @@
             }
             
             user.tasks[type].completed = true;
-            saveUserData();
+            await saveUserData();
             renderTasks();
             checkLevelUp();
+            updateHUD();
         }
 
         function checkDailyReset() {
             const now = new Date();
             const last = user.lastReset ? new Date(user.lastReset) : null;
             
-            // 朝7時を基準にする
             const getResetTime = (date) => {
                 const d = new Date(date);
                 d.setHours(7, 0, 0, 0);
@@ -633,16 +641,13 @@
             };
 
             const currentReset = getResetTime(now);
-            if (!last || last < currentReset) {
-                // デイリーリセット
+            if (!last || last.getTime() < currentReset) {
                 user.tasks.daily.play = 0;
                 user.tasks.daily.score = 0;
                 user.tasks.daily.combo = 0;
                 user.tasks.daily.completed = false;
                 user.nameChanges = 3;
                 user.lastReset = now.getTime();
-                
-                // 週間リセット (月曜日の朝7時など、必要に応じて拡張可能)
                 saveUserData();
             }
         }
@@ -677,7 +682,6 @@
                 signInAnonymously(auth);
             }
         });
-
     </script>
 </body>
 </html>
