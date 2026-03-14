@@ -1,6 +1,5 @@
 // ============================================================
-//  Typekey — app.js
-//  Firebase Realtime DB + ゲームロジック全実装
+//  Typekey - タイプキー — app.js
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -8,7 +7,7 @@ import {
   getDatabase, ref, set, get, onValue, off, remove, serverTimestamp, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// ── Firebase ──
+// ── Firebase 初期化 ──────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
   authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -19,11 +18,38 @@ const firebaseConfig = {
   appId: "1:963797267101:web:0d5d700458fb1991021a74",
 };
 const fbApp = initializeApp(firebaseConfig);
-const db = getDatabase(fbApp);
+const db    = getDatabase(fbApp);
 
-// ============================================================
-//  ユーザーID（ブラウザ×ドメイン単位で固定）
-// ============================================================
+// ── ユーティリティ（最初に定義）────────────────────────────────
+function $(id) { return document.getElementById(id); }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ── ローカルストレージ ─────────────────────────────────────────
+const LS = {
+  get(k, d = null) {
+    try {
+      const v = localStorage.getItem("tk_" + k);
+      return v !== null ? JSON.parse(v) : d;
+    } catch { return d; }
+  },
+  set(k, v) { localStorage.setItem("tk_" + k, JSON.stringify(v)); },
+};
+
+// ── ユーザーID ─────────────────────────────────────────────────
 function getUID() {
   let id = localStorage.getItem("tk_uid");
   if (!id) {
@@ -34,19 +60,7 @@ function getUID() {
 }
 const MY_UID = getUID();
 
-// ============================================================
-//  LS ユーティリティ
-// ============================================================
-const LS = {
-  get(k, d = null) {
-    try { const v = localStorage.getItem("tk_" + k); return v !== null ? JSON.parse(v) : d; } catch { return d; }
-  },
-  set(k, v) { localStorage.setItem("tk_" + k, JSON.stringify(v)); },
-};
-
-// ============================================================
-//  時間ユーティリティ（朝7時区切り）
-// ============================================================
+// ── 時間ユーティリティ（朝7時区切り）──────────────────────────
 function todayKey() {
   const d = new Date();
   if (d.getHours() < 7) d.setDate(d.getDate() - 1);
@@ -61,9 +75,7 @@ function weekKey() {
   return `${mon.getFullYear()}-${mon.getMonth() + 1}-${mon.getDate()}`;
 }
 
-// ============================================================
-//  ローマ字変換テーブル（長い順優先）
-// ============================================================
+// ── ローマ字変換テーブル ──────────────────────────────────────
 const RTABLE = [
   ["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],
   ["しゃ","sha"],["しゅ","shu"],["しょ","sho"],
@@ -79,7 +91,6 @@ const RTABLE = [
   ["ふぁ","fa"], ["ふぃ","fi"], ["ふぇ","fe"], ["ふぉ","fo"],
   ["てぃ","ti"], ["でぃ","di"], ["でゅ","du"],
   ["つぁ","tsa"],["うぃ","wi"], ["うぇ","we"],
-  ["ヴぁ","va"], ["ヴぃ","vi"], ["ヴぇ","ve"], ["ヴぉ","vo"],
   ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
   ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
   ["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],
@@ -96,19 +107,16 @@ const RTABLE = [
   ["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"],
   ["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"],
   ["ぁ","xa"],["ぃ","xi"],["ぅ","xu"],["ぇ","xe"],["ぉ","xo"],
-  ["ゃ","xya"],["ゅ","xyu"],["ょ","xyo"],
-  ["っ","xtu"],
+  ["ゃ","xya"],["ゅ","xyu"],["ょ","xyo"],["っ","xtu"],
 ];
-// 長さ降順ソート
 RTABLE.sort((a, b) => b[0].length - a[0].length);
 
 function toRomaji(str) {
   let res = "", i = 0;
   while (i < str.length) {
-    // っ → 次の子音を2回
     if (str[i] === "っ" && i + 1 < str.length) {
-      const next = toRomaji(str[i + 1]);
-      if (next) { res += next[0]; i++; continue; }
+      const nxt = toRomaji(str[i + 1]);
+      if (nxt) { res += nxt[0]; i++; continue; }
     }
     let hit = false;
     for (const [k, r] of RTABLE) {
@@ -119,9 +127,7 @@ function toRomaji(str) {
   return res;
 }
 
-// ============================================================
-//  単語データ
-// ============================================================
+// ── 単語データ ────────────────────────────────────────────────
 const WORDS_RAW = {
   easy: [
     "猫","犬","空","海","山","花","木","水","火","風",
@@ -136,12 +142,12 @@ const WORDS_RAW = {
   ],
   hard: [
     "コンピュータプログラム","インターネット通信","スマートフォン操作",
-    "プログラミング言語","デジタルトランスフォーム","アドベンチャーゲーム",
-    "コミュニケーション","インフラストラクチャ","エンターテインメント",
-    "マルチプレイヤーゲーム","情報セキュリティシステム","人工知能技術",
-    "ビジュアルプログラミング","ネットワーク管理システム","コンテンツクリエイター",
-    "インタラクティブデザイン","スーパーコンピュータ","データベース管理",
-    "クラウドコンピューティング","モバイルアプリ開発",
+    "プログラミング言語","アドベンチャーゲーム","コミュニケーション",
+    "インフラストラクチャ","エンターテインメント","マルチプレイヤーゲーム",
+    "情報セキュリティシステム","人工知能技術","ビジュアルプログラミング",
+    "ネットワーク管理システム","コンテンツクリエイター","スーパーコンピュータ",
+    "データベース管理","クラウドコンピューティング","モバイルアプリ開発",
+    "デジタルトランスフォーメーション","インタラクティブデザイン",
   ],
 };
 
@@ -150,10 +156,11 @@ for (const [diff, list] of Object.entries(WORDS_RAW)) {
   WORDS[diff] = list.map(ja => ({ ja, romaji: toRomaji(ja).toLowerCase() }));
 }
 
-// ============================================================
-//  プレイヤーデータ
-// ============================================================
-let player = { name: "", coins: 0, level: 1, xp: 0, friendCode: "", nameChanges: { date: "", count: 0 } };
+// ── プレイヤーデータ ──────────────────────────────────────────
+let player = {
+  name: "", coins: 0, level: 1, xp: 0,
+  friendCode: "", nameChanges: { date: "", count: 0 }
+};
 
 function xpNeeded(lv) { return Math.floor(100 * Math.pow(2, lv - 1)); }
 
@@ -166,8 +173,9 @@ function genFriendCode() {
 
 function loadPlayer() {
   const saved = LS.get("player");
-  if (saved) { player = { ...player, ...saved }; }
-  else {
+  if (saved) {
+    player = { ...player, ...saved };
+  } else {
     player.name = "匿名" + String(Math.floor(Math.random() * 1e12)).padStart(12, "0");
     player.friendCode = genFriendCode();
     savePlayer();
@@ -176,7 +184,6 @@ function loadPlayer() {
 
 function savePlayer() {
   LS.set("player", player);
-  // Firebase同期
   set(ref(db, `users/${MY_UID}`), {
     name: player.name, friendCode: player.friendCode,
     level: player.level, xp: player.xp, coins: player.coins,
@@ -184,8 +191,8 @@ function savePlayer() {
   }).catch(() => {});
 }
 
-// ── コイン・XP ──
 function addCoins(n) { player.coins += n; savePlayer(); refreshHUD(); }
+
 function addXP(n) {
   player.xp += n;
   let leveled = false;
@@ -195,87 +202,80 @@ function addXP(n) {
     leveled = true;
   }
   savePlayer(); refreshHUD();
-  if (leveled) showToast("toast-lv", () => { $("toast-lv-n").textContent = player.level; });
+  if (leveled) {
+    $("toast-lv-n").textContent = player.level;
+    showToast("toast-lv");
+  }
 }
 
 function refreshHUD() {
   $("coin-val").textContent = player.coins.toLocaleString();
-  $("lv-num").textContent = player.level;
+  $("lv-num").textContent   = player.level;
   const need = xpNeeded(player.level);
   $("xp-cur").textContent = player.xp;
   $("xp-max").textContent = need;
   $("xp-fill").style.width = (player.xp / need * 100) + "%";
 }
 
-// ============================================================
-//  トースト
-// ============================================================
-function showToast(id, setup, ms = 2600) {
+// ── トースト ──────────────────────────────────────────────────
+function showToast(id, ms = 2600) {
   const el = $(id);
-  if (setup) setup();
   el.classList.add("show");
   setTimeout(() => el.classList.remove("show"), ms);
 }
 
-// ============================================================
-//  スクリーン切り替え
-// ============================================================
+// ── スクリーン切り替え ────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  $(id)?.classList.add("active");
+  const el = $(id);
+  if (el) el.classList.add("active");
 }
 
-// ============================================================
-//  パネル開閉
-// ============================================================
+// ── パネル開閉 ────────────────────────────────────────────────
 let openPanelId = null;
 
 function openPanel(id) {
-  if (openPanelId) { closePanel(openPanelId, false); }
+  if (openPanelId && openPanelId !== id) closePanel(openPanelId, false);
   const el = $(id);
+  if (!el) return;
   el.classList.remove("hidden");
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
   $("dim").classList.remove("hidden");
   openPanelId = id;
 }
-function closePanel(id, reset = true) {
-  $(id).classList.remove("open");
+
+function closePanel(id, resetFlag = true) {
+  const el = $(id);
+  if (!el) return;
+  el.classList.remove("open");
   $("dim").classList.add("hidden");
-  setTimeout(() => $(id).classList.add("hidden"), 300);
-  if (reset) openPanelId = null;
+  setTimeout(() => el.classList.add("hidden"), 310);
+  if (resetFlag) openPanelId = null;
 }
 
-// ============================================================
-//  プロフィール描画
-// ============================================================
+// ── プロフィール ──────────────────────────────────────────────
+function fmtCode(fc) {
+  return fc ? `${fc.slice(0,3)}-${fc.slice(3,6)}-${fc.slice(6)}` : "------";
+}
+
 function renderProfile() {
   $("p-name").textContent = player.name;
-  $("my-fc").textContent = fmtCode(player.friendCode);
+  $("my-fc").textContent  = fmtCode(player.friendCode);
   const tk = todayKey();
   if (player.nameChanges.date !== tk) player.nameChanges = { date: tk, count: 0 };
   $("name-change-left").textContent = `本日あと ${Math.max(0, 3 - player.nameChanges.count)} 回変更できます`;
 }
 
-function fmtCode(fc) { return fc ? `${fc.slice(0,3)}-${fc.slice(3,6)}-${fc.slice(6)}` : "------"; }
-
-// ── 名前変更 ──
-$("btn-edit-name").addEventListener("click", () => {
+function saveName() {
+  const v = $("name-input").value.trim();
+  if (!v) return;
+  if (v.length > 20) { $("name-change-left").textContent = "20文字以内で入力してください"; return; }
   const tk = todayKey();
   if (player.nameChanges.date !== tk) player.nameChanges = { date: tk, count: 0 };
   if (player.nameChanges.count >= 3) {
     $("name-change-left").textContent = "本日の変更回数を使い切りました";
     return;
   }
-  $("name-edit-area").classList.remove("hidden");
-  $("name-input").value = player.name;
-  $("name-input").focus();
-});
-$("btn-save-name").addEventListener("click", saveName);
-$("name-input").addEventListener("keydown", e => { if (e.key === "Enter") saveName(); });
-
-function saveName() {
-  const v = $("name-input").value.trim();
-  if (!v || v.length > 20) return;
   player.nameChanges.count++;
   player.name = v;
   savePlayer();
@@ -283,51 +283,55 @@ function saveName() {
   renderProfile();
 }
 
-// ============================================================
-//  フレンドシステム
-// ============================================================
-async function findByCode(fc) {
-  const raw = fc.replace(/-/g, "").toUpperCase();
+// ── フレンドシステム ──────────────────────────────────────────
+async function findByCode(rawCode) {
+  const fc = rawCode.replace(/-/g, "").toUpperCase();
   const snap = await get(ref(db, "users"));
   if (!snap.exists()) return null;
   let found = null;
-  snap.forEach(c => {
-    const d = c.val();
-    if ((d.friendCode || "").replace(/-/g, "") === raw) found = { uid: c.key, ...d };
+  snap.forEach(child => {
+    const d = child.val();
+    if ((d.friendCode || "").replace(/-/g, "") === fc) {
+      found = { uid: child.key, ...d };
+    }
   });
   return found;
 }
 
-$("btn-add-friend").addEventListener("click", async () => {
+async function sendFriendRequest() {
   const raw = $("fc-input").value.replace(/-/g, "").toUpperCase().trim();
-  const msg = $("add-msg");
-  if (!raw) { setMsg(msg, "コードを入力してください", "err"); return; }
-  if (raw === player.friendCode) { setMsg(msg, "自分のコードは追加できません", "err"); return; }
+  const msgEl = $("add-msg");
+
+  if (!raw) { setMsg(msgEl, "コードを入力してください", "err"); return; }
+  if (raw === player.friendCode) { setMsg(msgEl, "自分のコードは追加できません", "err"); return; }
 
   const myFriends = LS.get("f_" + MY_UID, {});
-  if (Object.values(myFriends).some(f => (f.friendCode || "").replace(/-/g, "") === raw)) {
-    setMsg(msg, "すでにフレンドです", "err"); return;
-  }
+  const alreadyFriend = Object.values(myFriends).some(
+    f => (f.friendCode || "").replace(/-/g, "") === raw
+  );
+  if (alreadyFriend) { setMsg(msgEl, "すでにフレンドです", "err"); return; }
 
-  setMsg(msg, "検索中…", "");
+  setMsg(msgEl, "検索中…", "");
   const target = await findByCode(raw);
-  if (!target) { setMsg(msg, "ユーザーが見つかりません", "err"); return; }
+  if (!target) { setMsg(msgEl, "ユーザーが見つかりません", "err"); return; }
 
   await set(ref(db, `friend_requests/${target.uid}/${MY_UID}`), {
     fromUid: MY_UID, fromName: player.name, fromCode: player.friendCode, ts: Date.now(),
   });
-  setMsg(msg, `${esc(target.name)} さんに申請しました`, "ok");
+  setMsg(msgEl, `${esc(target.name)} さんに申請しました`, "ok");
   $("fc-input").value = "";
-});
+}
 
-function setMsg(el, txt, cls) { el.textContent = txt; el.className = "msg " + cls; }
+function setMsg(el, txt, cls) {
+  el.textContent = txt;
+  el.className = "msg" + (cls ? " " + cls : "");
+}
 
-// ── 申請リスト監視 ──
-let reqRef = null;
+let reqListenerRef = null;
 function listenRequests() {
-  if (reqRef) { off(reqRef); }
-  reqRef = ref(db, `friend_requests/${MY_UID}`);
-  onValue(reqRef, snap => {
+  if (reqListenerRef) { off(reqListenerRef); reqListenerRef = null; }
+  reqListenerRef = ref(db, `friend_requests/${MY_UID}`);
+  onValue(reqListenerRef, snap => {
     const data = snap.exists() ? snap.val() : {};
     renderRequests(data);
     const cnt = Object.keys(data).length;
@@ -344,23 +348,21 @@ function renderRequests(data) {
   if (!keys.length) { el.innerHTML = `<div class="empty-note">申請はありません</div>`; return; }
   keys.forEach(uid => {
     const r = data[uid];
-    const d = document.createElement("div");
-    d.className = "r-card";
-    d.innerHTML = `
+    const div = document.createElement("div");
+    div.className = "r-card";
+    div.innerHTML = `
       <div class="f-info">
         <div class="f-name">${esc(r.fromName)}</div>
         <div class="f-code">${fmtCode(r.fromCode)}</div>
       </div>
       <div class="r-btns">
-        <button class="r-btn r-accept" data-uid="${uid}" data-name="${esc(r.fromName)}" data-code="${r.fromCode}">許可</button>
-        <button class="r-btn r-deny" data-uid="${uid}">拒否</button>
+        <button class="r-btn r-accept">許可</button>
+        <button class="r-btn r-deny">拒否</button>
       </div>`;
-    el.appendChild(d);
+    div.querySelector(".r-accept").addEventListener("click", () => acceptFriend(uid, r.fromName, r.fromCode));
+    div.querySelector(".r-deny").addEventListener("click", () => remove(ref(db, `friend_requests/${MY_UID}/${uid}`)));
+    el.appendChild(div);
   });
-  el.querySelectorAll(".r-accept").forEach(b => b.addEventListener("click", () =>
-    acceptFriend(b.dataset.uid, b.dataset.name, b.dataset.code)));
-  el.querySelectorAll(".r-deny").forEach(b => b.addEventListener("click", () =>
-    remove(ref(db, `friend_requests/${MY_UID}/${b.dataset.uid}`))));
 }
 
 async function acceptFriend(uid, name, code) {
@@ -370,14 +372,12 @@ async function acceptFriend(uid, name, code) {
   await remove(ref(db, `friend_requests/${MY_UID}/${uid}`));
 }
 
-// ── フレンドリスト監視 ──
-let flistRef = null;
-const onlineListeners = {};
-
+const onlineSubs = {};
+let fListRef = null;
 function listenFriends() {
-  if (flistRef) { off(flistRef); }
-  flistRef = ref(db, `friends/${MY_UID}`);
-  onValue(flistRef, snap => {
+  if (fListRef) { off(fListRef); fListRef = null; }
+  fListRef = ref(db, `friends/${MY_UID}`);
+  onValue(fListRef, snap => {
     const data = snap.exists() ? snap.val() : {};
     LS.set("f_" + MY_UID, data);
     renderFriends(data);
@@ -385,79 +385,79 @@ function listenFriends() {
 }
 
 function renderFriends(data) {
+  // 既存のリスナーを全解除
+  Object.keys(onlineSubs).forEach(uid => { off(onlineSubs[uid]); delete onlineSubs[uid]; });
+
   const el = $("friend-list");
-  // 既存のオンラインリスナーを解除
-  Object.keys(onlineListeners).forEach(uid => { off(onlineListeners[uid]); delete onlineListeners[uid]; });
   el.innerHTML = "";
   const uids = Object.keys(data);
   if (!uids.length) { el.innerHTML = `<div class="empty-note">フレンドはいません</div>`; return; }
+
   uids.forEach(uid => {
     const f = data[uid];
-    const d = document.createElement("div");
-    d.className = "f-card";
-    d.innerHTML = `
+    const div = document.createElement("div");
+    div.className = "f-card";
+    div.innerHTML = `
       <div class="online-dot off" id="dot_${uid}"></div>
       <div class="f-info">
         <div class="f-name" id="fn_${uid}">${esc(f.name || "不明")}</div>
         <div class="f-code">${fmtCode(f.friendCode)}</div>
       </div>
-      <button class="del-btn" data-uid="${uid}">削除</button>`;
-    el.appendChild(d);
+      <button class="del-btn" title="削除">✕</button>`;
+
+    div.querySelector(".del-btn").addEventListener("click", async () => {
+      if (!confirm("フレンドを削除しますか？")) return;
+      await remove(ref(db, `friends/${MY_UID}/${uid}`));
+      await remove(ref(db, `friends/${uid}/${MY_UID}`));
+    });
+
+    el.appendChild(div);
 
     // オンライン監視
     const lsRef = ref(db, `users/${uid}/lastSeen`);
-    onlineListeners[uid] = lsRef;
+    onlineSubs[uid] = lsRef;
     onValue(lsRef, s => {
       const dot = $(`dot_${uid}`);
       if (!dot) return;
       const ts = s.exists() ? s.val() : 0;
-      const online = typeof ts === "number" && ts > 0 && Date.now() - ts < 30000;
-      dot.className = "online-dot " + (online ? "on" : "off");
+      dot.className = "online-dot " + (typeof ts === "number" && ts > 0 && Date.now() - ts < 30000 ? "on" : "off");
     });
+
     // 名前リアルタイム
     onValue(ref(db, `users/${uid}/name`), s => {
       const ne = $(`fn_${uid}`);
       if (ne && s.exists()) ne.textContent = s.val();
     });
   });
-
-  el.querySelectorAll(".del-btn").forEach(b => b.addEventListener("click", async () => {
-    const uid = b.dataset.uid;
-    if (!confirm("フレンドを削除しますか？")) return;
-    await remove(ref(db, `friends/${MY_UID}/${uid}`));
-    await remove(ref(db, `friends/${uid}/${MY_UID}`));
-  }));
 }
 
-// ── ハートビート ──
+// ── ハートビート ──────────────────────────────────────────────
 function startHeartbeat() {
   const r = ref(db, `users/${MY_UID}/lastSeen`);
-  const beat = () => set(r, serverTimestamp());
+  const beat = () => set(r, serverTimestamp()).catch(() => {});
   beat();
   setInterval(beat, 14000);
   onDisconnect(r).set(0);
 }
 
-// ============================================================
-//  タスク
-// ============================================================
+// ── タスク ────────────────────────────────────────────────────
 const DAILY_DEF = [
-  { id:"d1", label:"10回プレイする",              type:"play",  goal:10 },
-  { id:"d2", label:"スコア 5,000〜50,000 を出す", type:"score_range", min:5000,  max:50000, goal:1 },
-  { id:"d3", label:"コンボ 50〜150 を出す",        type:"combo_range", min:50,    max:150,   goal:1 },
+  { id: "d1", label: "10回プレイする",              type: "play",        goal: 10 },
+  { id: "d2", label: "スコア 5,000〜50,000 を出す", type: "score_range", min: 5000,  max: 50000, goal: 1 },
+  { id: "d3", label: "コンボ 50〜150 を出す",        type: "combo_range", min: 50,    max: 150,   goal: 1 },
 ];
 const WEEKLY_DEF = [
-  { id:"w1", label:"100回プレイする",                        type:"play",  goal:100 },
-  { id:"w2", label:"スコア 500〜50,000 を10回出す",           type:"score_range", min:500,   max:50000, goal:10 },
-  { id:"w3", label:"コンボ 50〜150 を10回出す",               type:"combo_range", min:50,    max:150,   goal:10 },
+  { id: "w1", label: "100回プレイする",                    type: "play",        goal: 100 },
+  { id: "w2", label: "スコア 500〜50,000 を10回出す",       type: "score_range", min: 500,   max: 50000, goal: 10 },
+  { id: "w3", label: "コンボ 50〜150 を10回出す",           type: "combo_range", min: 50,    max: 150,   goal: 10 },
 ];
 
 function loadTasks() {
   const tk = todayKey(), wk = weekKey();
   let dt = LS.get("dt");
   let wt = LS.get("wt");
-  if (!dt || dt.key !== tk)  { dt = { key: tk,  prog: {}, cleared: false }; LS.set("dt", dt); }
-  if (!wt || wt.key !== wk)  { wt = { key: wk,  prog: {}, cleared: false }; LS.set("wt", wt); }
+  if (!dt || dt.key !== tk) { dt = { key: tk, prog: {}, cleared: false }; LS.set("dt", dt); }
+  if (!wt || wt.key !== wk) { wt = { key: wk, prog: {}, cleared: false }; LS.set("wt", wt); }
   return { dt, wt };
 }
 
@@ -469,11 +469,12 @@ function renderTasks() {
 
 function buildTaskUI(containerId, defs, prog) {
   const el = $(containerId);
+  if (!el) return;
   el.innerHTML = "";
   defs.forEach(def => {
-    const cur = Math.min(prog[def.id] || 0, def.goal);
+    const cur  = Math.min(prog[def.id] || 0, def.goal);
     const done = cur >= def.goal;
-    const pct = (cur / def.goal) * 100;
+    const pct  = (cur / def.goal) * 100;
     const d = document.createElement("div");
     d.className = "task-item" + (done ? " done" : "");
     d.innerHTML = `
@@ -487,7 +488,6 @@ function buildTaskUI(containerId, defs, prog) {
 function updateTasksAfterGame(score, maxCombo) {
   const { dt, wt } = loadTasks();
 
-  // 毎日
   if (!dt.cleared) {
     dt.prog.d1 = (dt.prog.d1 || 0) + 1;
     if (score >= 5000 && score <= 50000) dt.prog.d2 = Math.min((dt.prog.d2 || 0) + 1, 1);
@@ -495,12 +495,14 @@ function updateTasksAfterGame(score, maxCombo) {
     if (DAILY_DEF.every(d => (dt.prog[d.id] || 0) >= d.goal)) {
       dt.cleared = true;
       addCoins(1500); addXP(50);
-      setTimeout(() => showToast("toast-task", () => { $("toast-task-body").textContent = "+50 XP · +1,500 ¤"; }), 400);
+      setTimeout(() => {
+        $("toast-task-body").textContent = "+50 XP · +1,500 ¤";
+        showToast("toast-task");
+      }, 400);
     }
     LS.set("dt", dt);
   }
 
-  // 週間
   if (!wt.cleared) {
     wt.prog.w1 = (wt.prog.w1 || 0) + 1;
     if (score >= 500 && score <= 50000) wt.prog.w2 = Math.min((wt.prog.w2 || 0) + 1, 10);
@@ -508,7 +510,10 @@ function updateTasksAfterGame(score, maxCombo) {
     if (WEEKLY_DEF.every(d => (wt.prog[d.id] || 0) >= d.goal)) {
       wt.cleared = true;
       addCoins(15000); addXP(500);
-      setTimeout(() => showToast("toast-task", () => { $("toast-task-body").textContent = "+500 XP · +15,000 ¤"; }), 1600);
+      setTimeout(() => {
+        $("toast-task-body").textContent = "+500 XP · +15,000 ¤";
+        showToast("toast-task");
+      }, 1600);
     }
     LS.set("wt", wt);
   }
@@ -516,9 +521,7 @@ function updateTasksAfterGame(score, maxCombo) {
   renderTasks();
 }
 
-// ============================================================
-//  ゲームエンジン
-// ============================================================
+// ── ゲームエンジン ────────────────────────────────────────────
 const G = {
   active: false, diff: "easy",
   pool: [], idx: 0, word: null, romaji: "", pos: 0,
@@ -526,18 +529,27 @@ const G = {
 };
 
 function startGame(diff) {
-  G.active = true; G.diff = diff;
-  G.pool = shuffle([...WORDS[diff], ...WORDS[diff]]); // ループ用に2倍
-  G.idx = 0; G.score = 0; G.combo = 0; G.maxCombo = 0; G.timeLeft = 60;
+  G.active   = true;
+  G.diff     = diff;
+  G.pool     = shuffle([...WORDS[diff], ...WORDS[diff]]);
+  G.idx      = 0;
+  G.score    = 0;
+  G.combo    = 0;
+  G.maxCombo = 0;
+  G.timeLeft = 60;
 
   $("g-score").textContent = "0";
   $("g-combo").textContent = "0";
-  $("g-time").textContent = "60";
+  $("g-time").textContent  = "60";
   $("g-time").classList.remove("danger");
 
   showScreen("screen-game");
   nextWord();
+
+  clearInterval(G.timer);
   G.timer = setInterval(tick, 1000);
+
+  document.removeEventListener("keydown", onKey);
   document.addEventListener("keydown", onKey);
 }
 
@@ -545,15 +557,15 @@ function tick() {
   G.timeLeft--;
   $("g-time").textContent = G.timeLeft;
   if (G.timeLeft <= 10) $("g-time").classList.add("danger");
-  if (G.timeLeft <= 0) endGame();
+  if (G.timeLeft <= 0)  endGame();
 }
 
 function nextWord() {
   if (G.idx >= G.pool.length) G.pool.push(...shuffle([...WORDS[G.diff]]));
-  G.word = G.pool[G.idx++];
+  G.word   = G.pool[G.idx++];
   G.romaji = G.word.romaji.toLowerCase();
-  G.pos = 0;
-  $("g-ja").textContent = G.word.ja;
+  G.pos    = 0;
+  $("g-ja").textContent   = G.word.ja;
   $("g-hint").textContent = G.romaji;
   updateInput();
 }
@@ -564,8 +576,11 @@ function updateInput() {
 }
 
 function onKey(e) {
-  if (!G.active || e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1) return;
+  if (!G.active) return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.key.length !== 1) return;
   e.preventDefault();
+
   if (e.key === G.romaji[G.pos]) {
     G.pos++;
     G.combo++;
@@ -574,7 +589,7 @@ function onKey(e) {
     $("g-score").textContent = G.score.toLocaleString();
     $("g-combo").textContent = G.combo;
     if (G.pos >= G.romaji.length) { nextWord(); }
-    else updateInput();
+    else { updateInput(); }
   } else {
     G.combo = 0;
     $("g-combo").textContent = "0";
@@ -597,103 +612,125 @@ function endGame() {
 
   const coins = Math.floor(G.score / 10);
   const xp    = Math.floor(G.score / 100);
-  addCoins(coins); addXP(xp);
+  addCoins(coins);
+  addXP(xp);
   updateTasksAfterGame(G.score, G.maxCombo);
 
-  $("r-score").textContent  = G.score.toLocaleString();
-  $("r-combo").textContent  = G.maxCombo;
-  $("r-coins").textContent  = coins.toLocaleString() + " ¤";
-  $("r-xp").textContent     = xp + " XP";
+  $("r-score").textContent = G.score.toLocaleString();
+  $("r-combo").textContent = G.maxCombo;
+  $("r-coins").textContent = coins.toLocaleString() + " ¤";
+  $("r-xp").textContent    = xp + " XP";
   showScreen("screen-result");
 }
 
-// ============================================================
-//  ユーティリティ
-// ============================================================
-function $(id) { return document.getElementById(id); }
-function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+// ── タブ切り替えヘルパー ──────────────────────────────────────
+function setupTabs(selector, attrName, panePrefix, paneSelector) {
+  document.querySelectorAll(selector).forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset[attrName];
+      if (!target) return;
+      // 同じパネル内のタブだけ切り替える
+      const head = tab.closest(".panel-head, .subtabs");
+      if (head) head.querySelectorAll(selector).forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(paneSelector).forEach(p => p.classList.remove("active"));
+      const pane = $(panePrefix + target);
+      if (pane) pane.classList.add("active");
+    });
+  });
 }
-function esc(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
 
 // ============================================================
-//  UIイベント設定
+//  DOMContentLoaded — 全イベント登録
 // ============================================================
-// ── ナビゲーション ──
-$("btn-play").addEventListener("click", () => showScreen("screen-diff"));
-$("diff-back").addEventListener("click", () => showScreen("screen-main"));
-$("btn-retry").addEventListener("click", () => showScreen("screen-diff"));
-$("btn-end").addEventListener("click",   () => showScreen("screen-main"));
+document.addEventListener("DOMContentLoaded", () => {
 
-// ── 難易度選択 ──
-document.querySelectorAll(".diff-row").forEach(btn => {
-  btn.addEventListener("click", () => {
-    startGame(btn.dataset.diff);
+  // 起動処理
+  loadPlayer();
+  refreshHUD();
+  startHeartbeat();
+  showScreen("screen-main");
+
+  // ナビゲーション
+  $("btn-play").addEventListener("click",  () => showScreen("screen-diff"));
+  $("diff-back").addEventListener("click", () => showScreen("screen-main"));
+  $("btn-retry").addEventListener("click", () => showScreen("screen-diff"));
+  $("btn-end").addEventListener("click",   () => showScreen("screen-main"));
+
+  // 難易度選択
+  document.querySelectorAll(".diff-row").forEach(btn => {
+    btn.addEventListener("click", () => startGame(btn.dataset.diff));
   });
-});
 
-// ── フレンドパネル ──
-$("friend-btn").addEventListener("click", () => {
-  renderProfile();
-  openPanel("panel-friend");
-  listenRequests();
-  listenFriends();
-});
-$("friend-close").addEventListener("click", () => closePanel("panel-friend"));
-
-// ── タスクパネル ──
-$("task-btn").addEventListener("click", () => {
-  renderTasks();
-  openPanel("panel-task");
-});
-$("task-close").addEventListener("click", () => closePanel("panel-task"));
-
-// ── 暗転クリックで閉じる ──
-$("dim").addEventListener("click", () => { if (openPanelId) closePanel(openPanelId); });
-
-// ── パネルタブ切り替え（フレンド） ──
-document.querySelectorAll(".ptab[data-ptab]").forEach(tab => {
-  tab.addEventListener("click", () => {
-    const t = tab.dataset.ptab;
-    tab.closest(".panel-head").querySelectorAll(".ptab").forEach(x => x.classList.remove("active"));
-    tab.classList.add("active");
-    document.querySelectorAll(".pane").forEach(x => x.classList.remove("active"));
-    $("pane-" + t)?.classList.add("active");
+  // フレンドパネル開閉
+  $("friend-btn").addEventListener("click", () => {
+    renderProfile();
+    openPanel("panel-friend");
+    listenRequests();
+    listenFriends();
   });
-});
+  $("friend-close").addEventListener("click", () => closePanel("panel-friend"));
 
-// ── パネルタブ切り替え（タスク） ──
-document.querySelectorAll(".ptab[data-ttab]").forEach(tab => {
-  tab.addEventListener("click", () => {
-    const t = tab.dataset.ttab;
-    tab.closest(".panel-head").querySelectorAll(".ptab").forEach(x => x.classList.remove("active"));
-    tab.classList.add("active");
-    document.querySelectorAll(".tpane").forEach(x => x.classList.remove("active"));
-    $("tp-" + t)?.classList.add("active");
+  // タスクパネル開閉
+  $("task-btn").addEventListener("click", () => {
+    renderTasks();
+    openPanel("panel-task");
   });
-});
+  $("task-close").addEventListener("click", () => closePanel("panel-task"));
 
-// ── サブタブ切り替え ──
-document.querySelectorAll(".stab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    const t = tab.dataset.stab;
-    tab.closest(".subtabs").querySelectorAll(".stab").forEach(x => x.classList.remove("active"));
-    tab.classList.add("active");
-    document.querySelectorAll(".sp").forEach(x => x.classList.remove("active"));
-    $("sp-" + t)?.classList.add("active");
+  // 暗転クリックで閉じる
+  $("dim").addEventListener("click", () => { if (openPanelId) closePanel(openPanelId); });
+
+  // プロフィール編集
+  $("btn-edit-name").addEventListener("click", () => {
+    const tk = todayKey();
+    if (player.nameChanges.date !== tk) player.nameChanges = { date: tk, count: 0 };
+    if (player.nameChanges.count >= 3) {
+      $("name-change-left").textContent = "本日の変更回数を使い切りました";
+      return;
+    }
+    $("name-edit-area").classList.remove("hidden");
+    $("name-input").value = player.name;
+    $("name-input").focus();
   });
-});
+  $("btn-save-name").addEventListener("click", saveName);
+  $("name-input").addEventListener("keydown", e => { if (e.key === "Enter") saveName(); });
 
-// ============================================================
-//  起動
-// ============================================================
-loadPlayer();
-refreshHUD();
-startHeartbeat();
-showScreen("screen-main");
+  // フレンド追加
+  $("btn-add-friend").addEventListener("click", sendFriendRequest);
+  $("fc-input").addEventListener("keydown", e => { if (e.key === "Enter") sendFriendRequest(); });
+
+  // タブ切り替え（フレンドパネル：プロフィール/フレンド）
+  document.querySelectorAll(".ptab[data-ptab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+      tab.closest(".panel-head").querySelectorAll(".ptab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".pane").forEach(p => p.classList.remove("active"));
+      const pane = $("pane-" + tab.dataset.ptab);
+      if (pane) pane.classList.add("active");
+    });
+  });
+
+  // タブ切り替え（タスクパネル：毎日/週間）
+  document.querySelectorAll(".ptab[data-ttab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+      tab.closest(".panel-head").querySelectorAll(".ptab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".tpane").forEach(p => p.classList.remove("active"));
+      const pane = $("tp-" + tab.dataset.ttab);
+      if (pane) pane.classList.add("active");
+    });
+  });
+
+  // サブタブ切り替え（追加/申請/リスト）
+  document.querySelectorAll(".stab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      tab.closest(".subtabs").querySelectorAll(".stab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".sp").forEach(p => p.classList.remove("active"));
+      const pane = $("sp-" + tab.dataset.stab);
+      if (pane) pane.classList.add("active");
+    });
+  });
+
+});
