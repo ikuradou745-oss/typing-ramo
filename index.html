@@ -287,12 +287,12 @@
         function getTodayResetTime() {
             const now = new Date();
             const reset = new Date(now);
-            reset.setHours(7, 0, 0, 0); // 朝7時リセット
+            reset.setHours(7, 0, 0, 0); 
             if (now.getHours() < 7) reset.setDate(reset.getDate() - 1);
             return reset.getTime();
         }
 
-        /* --- データ同期・復元処理 (堅牢化) --- */
+        /* --- データ同期・復元処理 --- */
         async function loadUserData(uid) {
             try {
                 const snapshot = await get(ref(db, `users/${uid}`));
@@ -307,6 +307,7 @@
                     user.nameChanges = Number.isFinite(data.nameChanges) ? data.nameChanges : 3;
                     user.lastReset = data.lastReset || null;
                     user.lastRankingReward = data.lastRankingReward || null;
+                    user.friendCode = data.friendCode || ""; // 初期化
                     
                     if (data.friends) user.friends = data.friends;
                     if (data.requests) user.requests = data.requests;
@@ -316,43 +317,42 @@
                         if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
                     }
 
-                    // フレンドコードのチェックと生成
-                    if (!data.friendCode) {
+                    // フレンドコードがデータに存在しない場合のみ生成して保存
+                    if (!user.friendCode) {
                         user.friendCode = generateFriendCode();
-                        await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
+                        await update(ref(db, `users/${uid}`), { friendCode: user.friendCode });
                         await set(ref(db, `friendCodes/${user.friendCode}`), uid);
-                    } else {
-                        user.friendCode = data.friendCode;
                     }
 
                     await checkDailyReset();
                     await checkRankingReward();
                 } else {
-                    // 新規ユーザー
+                    // 完全な新規ユーザーの場合
                     user.uid = uid;
                     user.friendCode = generateFriendCode();
                     
-                    // 初期データをFirebaseへ保存
-                    await set(ref(db, `users/${uid}`), {
+                    const initialData = {
                         name: user.name,
                         coins: user.coins,
                         level: user.level,
                         xp: user.xp,
                         friendCode: user.friendCode,
                         nameChanges: user.nameChanges,
-                        lastReset: Date.now(), // 初回アクセス時刻を記録
-                        lastRankingReward: user.lastRankingReward,
+                        lastReset: Date.now(),
+                        lastRankingReward: null,
                         tasks: user.tasks,
                         friends: {},
                         requests: {}
-                    });
+                    };
+                    
+                    await set(ref(db, `users/${uid}`), initialData);
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
                 }
             } catch (e) {
                 console.error("データ読み込みエラー:", e);
                 showNotification("データの読み込みに失敗しました。");
             } finally {
-                // エラーが起きても必ずUIを更新して「生成中...」から書き換える
+                // 読み込み完了後、UIを確実に更新
                 updateHUD();
                 renderProfile();
                 listenToRequests();
@@ -362,12 +362,13 @@
         async function saveUserData() {
             if (!user.uid) return;
             try {
+                // オブジェクトの欠落を防ぐため、最新の user 変数から保存
                 await update(ref(db, `users/${user.uid}`), {
                     name: user.name,
                     coins: user.coins,
                     level: user.level,
                     xp: user.xp,
-                    friendCode: user.friendCode, // undefinedが入らないようにする
+                    friendCode: user.friendCode,
                     nameChanges: user.nameChanges,
                     lastReset: user.lastReset,
                     lastRankingReward: user.lastRankingReward,
@@ -377,7 +378,7 @@
                 console.error("データ保存エラー:", e);
                 showNotification("データの保存に失敗しました。");
             } finally {
-                // 保存試行後は必ず画面に最新の変数を反映させる
+                // 保存試行後は必ずUIをリフレッシュ
                 updateHUD();
                 renderProfile();
             }
@@ -394,21 +395,20 @@
         }
 
         function renderProfile() {
+            // HTML上の要素を直接書き換える
             document.getElementById("display-name").innerText = user.name;
-            // user.friendCodeが空なら代替テキストを入れる（通常はあり得ない）
-            document.getElementById("my-friend-code").innerText = user.friendCode || "生成エラー";
+            document.getElementById("my-friend-code").innerText = user.friendCode || "生成中...";
             document.getElementById("name-change-count").innerText = user.nameChanges;
         }
 
         async function checkDailyReset() {
             const currentReset = getTodayResetTime();
-            // 前回リセットが記録されていない、または今日の朝7時より前だった場合のみリセット
             if (!user.lastReset || user.lastReset < currentReset) {
                 user.tasks.daily.play = 0;
                 user.tasks.daily.score = 0;
                 user.tasks.daily.combo = 0;
                 user.tasks.daily.completed = false;
-                user.nameChanges = 3; // 1日3回に戻す
+                user.nameChanges = 3;
                 user.lastReset = Date.now();
                 await saveUserData();
             }
@@ -554,7 +554,7 @@
             }
 
             checkLevelUp();
-            await saveUserData(); // UI更新もこの中で行われる
+            await saveUserData();
         }
 
         function checkLevelUp() {
@@ -689,7 +689,7 @@
         }
 
         document.getElementById("profile-open-btn").onclick = () => {
-            renderProfile(); // パネルを開く時に確実に最新の状態にする
+            renderProfile(); 
             openPanel("friend-panel");
         };
         document.getElementById("task-open-btn").onclick = () => {
@@ -704,9 +704,13 @@
             if (user.nameChanges <= 0) return alert("本日の変更回数上限です。");
             if (!newName || newName.length > 20) return alert("名前は20文字以内で入力してください。");
             
+            // 内部データを更新
             user.name = newName;
             user.nameChanges--;
-            await saveUserData(); // この中でrenderProfile()が呼ばれて画面が書き換わる
+            
+            // Firebase保存と同時にUI更新
+            await saveUserData();
+            
             showNotification("名前を変更しました！");
             document.getElementById("name-input").value = "";
         };
@@ -862,7 +866,7 @@
             }
             
             user.tasks[type].completed = true;
-            await saveUserData(); // UI更新と保存を同時に実行
+            await saveUserData();
             renderTasks();
             checkLevelUp();
         }
