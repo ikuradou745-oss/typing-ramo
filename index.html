@@ -287,7 +287,7 @@
         function getTodayResetTime() {
             const now = new Date();
             const reset = new Date(now);
-            reset.setHours(7, 0, 0, 0);
+            reset.setHours(7, 0, 0, 0); // 朝7時リセット
             if (now.getHours() < 7) reset.setDate(reset.getDate() - 1);
             return reset.getTime();
         }
@@ -303,7 +303,7 @@
                 user.coins = Number.isFinite(data.coins) ? data.coins : 0;
                 user.level = Number.isFinite(data.level) ? data.level : 1;
                 user.xp = Number.isFinite(data.xp) ? data.xp : 0;
-                user.friendCode = data.friendCode || generateFriendCode();
+                user.friendCode = data.friendCode || ""; // 一旦空にする
                 user.nameChanges = Number.isFinite(data.nameChanges) ? data.nameChanges : 3;
                 user.lastReset = data.lastReset || null;
                 user.lastRankingReward = data.lastRankingReward || null;
@@ -316,7 +316,9 @@
                     if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
                 }
                 
-                if (!data.friendCode) {
+                // フレンドコードが存在しない場合は新規作成して保存
+                if (!user.friendCode) {
+                    user.friendCode = generateFriendCode();
                     await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
                 }
@@ -330,6 +332,7 @@
                 await set(ref(db, `friendCodes/${user.friendCode}`), uid);
             }
             
+            // UIを確実に更新
             updateHUD();
             renderProfile();
             listenToRequests();
@@ -348,6 +351,7 @@
                 lastRankingReward: user.lastRankingReward,
                 tasks: user.tasks
             });
+            // 保存後もUIを更新
             updateHUD();
             renderProfile();
         }
@@ -364,18 +368,19 @@
 
         function renderProfile() {
             document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode;
+            document.getElementById("my-friend-code").innerText = user.friendCode || "生成中...";
             document.getElementById("name-change-count").innerText = user.nameChanges;
         }
 
         async function checkDailyReset() {
             const currentReset = getTodayResetTime();
+            // 前回リセットが記録されていない、または今日の朝7時より前だった場合のみリセット
             if (!user.lastReset || user.lastReset < currentReset) {
                 user.tasks.daily.play = 0;
                 user.tasks.daily.score = 0;
                 user.tasks.daily.combo = 0;
                 user.tasks.daily.completed = false;
-                user.nameChanges = 3;
+                user.nameChanges = 3; // 1日3回に戻す
                 user.lastReset = Date.now();
                 await saveUserData();
             }
@@ -686,6 +691,7 @@
             const targetUid = targetUidSnap.val();
             await set(ref(db, `users/${targetUid}/requests/${user.uid}`), { name: user.name, code: user.friendCode });
             alert("申請を送りました！");
+            document.getElementById("friend-search-input").value = "";
         };
 
         function listenToRequests() {
@@ -705,11 +711,11 @@
         }
 
         window.acceptFriend = async (uid, name, code) => {
-            // ここでシンタックスエラーを修正
             await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
             await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
             await remove(ref(db, `users/${user.uid}/requests/${uid}`)); 
             showNotification(`${name}さんとフレンドになりました！`);
+            renderFriendList();
         };
 
         async function renderFriendList() {
