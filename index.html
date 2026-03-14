@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Final Fixed & Full Version</title>
+    <title>Ultimate Typing Game - Persistence & UI Fixed</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -20,6 +20,10 @@
         .xp-bar-container { width: 100%; height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; }
         #xp-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #4CAF50, #8BC34A); transition: 0.5s ease-out; }
 
+        /* セーブボタンのスタイル */
+        #manual-save-btn { background: #27ae60; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #manual-save-btn:hover { background: #2ecc71; }
+
         /* --- ボタン共通 --- */
         button { padding: 12px 24px; border: none; border-radius: 8px; background: #007BFF; color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         button:hover:not(:disabled) { background: #0056b3; transform: translateY(-2px); }
@@ -28,9 +32,9 @@
 
         /* --- 各画面 --- */
         #main-menu, #game-screen, #result-screen, #ranking-menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
-        h1 { font-size: 48px; margin-bottom: 30px; color: #2c3e50; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-        .menu-buttons { display: flex; flex-direction: column; gap: 18px; align-items: center; }
-        .menu-buttons button { width: 350px; font-size: 20px; padding: 18px; }
+        h1 { font-size: 58px; margin-bottom: 30px; color: #2c3e50; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .menu-buttons-container { display: flex; flex-direction: column; gap: 18px; align-items: center; }
+        .menu-buttons-container button { width: 350px; font-size: 20px; padding: 18px; }
 
         /* --- タイピングエリア --- */
         #typing-area { margin-top: 30px; background: white; padding: 50px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
@@ -69,6 +73,7 @@
     <div id="hud-container">
         <div id="coin-display">🪙 <span id="coin-value">0</span></div>
         <div id="top-right-controls">
+            <button id="manual-save-btn">💾 データを保存</button>
             <div id="level-display">
                 <div class="level-text">
                     <span>Lv. <span id="current-level">1</span></span>
@@ -85,17 +90,19 @@
 
     <div id="main-menu">
         <h1>TYPING ONLINE</h1>
-        <div class="menu-buttons">
+        <div id="main-menu-actions" class="menu-buttons-container">
             <button id="start-game-btn">一人でプレイ</button>
             <button id="ranking-mode-btn" style="background:#8e44ad;">ランキングモード</button>
         </div>
+
         <div id="difficulty-selection" class="hidden" style="margin-top:20px;">
             <h2>難易度を選択</h2>
-            <button class="diff-btn" data-diff="easy">EASY</button>
-            <button class="diff-btn" data-diff="normal">NORMAL</button>
-            <button class="diff-btn" data-diff="hard">HARD</button>
-            <br>
-            <button id="back-to-menu-btn" style="background:#666; margin-top:10px;">戻る</button>
+            <div class="menu-buttons-container" style="margin-top:20px;">
+                <button class="diff-btn" data-diff="easy">EASY</button>
+                <button class="diff-btn" data-diff="normal" style="background:#f39c12;">NORMAL</button>
+                <button class="diff-btn" data-diff="hard" style="background:#e74c3c;">HARD</button>
+                <button id="back-to-menu-btn" style="background:#666; margin-top:10px;">戻る</button>
+            </div>
         </div>
     </div>
 
@@ -131,7 +138,7 @@
         </div>
         <div class="info-card">
             <p>あなたのフレンドコード:</p>
-            <div class="friend-code-display" id="my-friend-code">生成中...</div>
+            <div class="friend-code-display" id="my-friend-code">読み込み中...</div>
         </div>
     </div>
 
@@ -225,39 +232,62 @@
         }
 
         /* --- データ管理 --- */
-        async function saveUserData() {
+        // 手動保存用関数
+        async function saveUserDataManual() {
+            if (!user.uid) {
+                showNotification("ログインしていません");
+                return;
+            }
+            try {
+                await set(ref(db, `users/${user.uid}`), user);
+                showNotification("サーバーにデータを保存しました！ 💾");
+            } catch (e) {
+                console.error("Save Error:", e);
+                showNotification("保存に失敗しました。");
+            }
+        }
+
+        // 自動保存用（内部処理用）
+        async function saveUserDataInternal() {
             if (!user.uid) return;
             try {
                 await set(ref(db, `users/${user.uid}`), user);
-            } catch (e) {
-                console.error("Save Error:", e);
-            }
+            } catch (e) { console.error("Internal Save Error:", e); }
         }
 
         async function loadUserData(uid) {
-            const snapshot = await get(ref(db, `users/${uid}`));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                user = { ...user, ...data, uid: uid };
-                // 既存ユーザーにフレンドコードがない場合の補完
-                if (!user.friendCode) {
+            try {
+                const snapshot = await get(ref(db, `users/${uid}`));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    // サーバーのデータで上書き（構造が変わっている場合に備えてマージ）
+                    user = { ...user, ...data, uid: uid };
+                    
+                    // フレンドコードが未生成なら生成して即保存
+                    if (!user.friendCode) {
+                        user.friendCode = generateFriendCode();
+                        await saveUserDataInternal();
+                    }
+                    console.log("Data loaded for user:", uid);
+                } else {
+                    // 新規ユーザー
+                    user.uid = uid;
                     user.friendCode = generateFriendCode();
-                    await saveUserData();
+                    await saveUserDataInternal();
+                    console.log("New user created:", uid);
                 }
-            } else {
-                // 新規ユーザー初期化
-                user.uid = uid;
-                user.friendCode = generateFriendCode();
-                await saveUserData();
+                updateHUD();
+            } catch (e) {
+                console.error("Load Error:", e);
+                showNotification("データの読み込みに失敗しました。");
             }
-            updateHUD();
         }
 
         function updateHUD() {
-            // コインの反映
+            // コイン
             document.getElementById("coin-value").innerText = (user.coins || 0).toLocaleString();
             
-            // レベル・XPの反映
+            // レベル・XP
             const lvl = user.level || 1;
             const xp = user.xp || 0;
             const nextXP = lvl * 100;
@@ -266,9 +296,9 @@
             const percent = Math.min(100, (xp / nextXP) * 100);
             document.getElementById("xp-bar-fill").style.width = percent + "%";
             
-            // プロフィールの反映 (名前バグ修正)
+            // プロフィールパネル
             document.getElementById("display-name").innerText = user.name || "初心さん";
-            document.getElementById("my-friend-code").innerText = user.friendCode || "生成エラー";
+            document.getElementById("my-friend-code").innerText = user.friendCode || "----";
             document.getElementById("name-change-count").innerText = user.nameChanges ?? 3;
             
             renderTasks();
@@ -345,7 +375,7 @@
 
             showNotification(`報酬獲得！ ✨${rewardXP}XP 🪙${rewardCoins}`, true);
             checkLevelUp();
-            await saveUserData();
+            await saveUserDataInternal();
             updateHUD();
         }
 
@@ -392,7 +422,6 @@
             if (key === currentWord.r[charIdx]) {
                 charIdx++;
                 combo++;
-                // コンボ数更新バグ修正
                 if(combo > maxComboThisGame) maxComboThisGame = combo;
                 score += 10 + Math.floor(combo / 5);
                 if (charIdx >= currentWord.r.length) {
@@ -411,7 +440,7 @@
             gameActive = false;
             clearInterval(timer);
             
-            // タスク更新 (コンボ数判定バグ修正)
+            // タスク更新
             user.tasks.daily.play++;
             user.tasks.daily.score += score;
             user.tasks.daily.combo = Math.max(user.tasks.daily.combo, maxComboThisGame);
@@ -420,7 +449,6 @@
             user.tasks.weekly.score += score;
             user.tasks.weekly.combo = Math.max(user.tasks.weekly.combo, maxComboThisGame);
 
-            // 経験値とコインの付与
             const earnedXP = Math.floor(score / 5);
             const earnedCoins = Math.floor(score / 2);
             user.xp += earnedXP;
@@ -432,19 +460,29 @@
             document.getElementById("reward-info").innerText = `報酬: ✨${earnedXP}XP / 🪙${earnedCoins}コイン獲得！`;
 
             checkLevelUp();
-            await saveUserData(); // 即座に保存
-            updateHUD(); // UI更新
+            await saveUserDataInternal(); 
+            updateHUD();
         }
 
         /* --- UIイベント --- */
+        // セーブボタン
+        document.getElementById("manual-save-btn").onclick = () => saveUserDataManual();
+
+        // 一人でプレイボタン
         document.getElementById("start-game-btn").onclick = () => {
-            document.getElementById("difficulty-selection").classList.remove("hidden");
-            document.getElementById("start-game-btn").classList.add("hidden");
+            document.getElementById("main-menu-actions").classList.add("hidden"); // メインボタン群を隠す
+            document.getElementById("difficulty-selection").classList.remove("hidden"); // 難易度を出す
         };
 
+        // ランキングボタンの反応
+        document.getElementById("ranking-mode-btn").onclick = () => {
+            showNotification("ランキングモードは現在メンテナンス中です 🏆");
+        };
+
+        // 戻るボタン
         document.getElementById("back-to-menu-btn").onclick = () => {
             document.getElementById("difficulty-selection").classList.add("hidden");
-            document.getElementById("start-game-btn").classList.remove("hidden");
+            document.getElementById("main-menu-actions").classList.remove("hidden");
         };
 
         document.querySelectorAll(".diff-btn").forEach(btn => {
@@ -454,7 +492,7 @@
         document.getElementById("return-home-btn").onclick = () => {
             document.getElementById("result-screen").classList.add("hidden");
             document.getElementById("main-menu").classList.remove("hidden");
-            document.getElementById("start-game-btn").classList.remove("hidden");
+            document.getElementById("main-menu-actions").classList.remove("hidden");
             document.getElementById("difficulty-selection").classList.add("hidden");
         };
 
@@ -476,7 +514,6 @@
             };
         });
 
-        // 名前変更処理 (表示バグ完全修正)
         document.getElementById("change-name-btn").onclick = async () => {
             const input = document.getElementById("name-input");
             const newName = input.value.trim();
@@ -486,8 +523,8 @@
             user.name = newName;
             user.nameChanges--;
             
-            await saveUserData(); // 保存
-            updateHUD(); // HTML反映
+            await saveUserDataInternal();
+            updateHUD();
             showNotification("名前を変更しました！");
             input.value = "";
         };
@@ -508,8 +545,10 @@
         /* --- 認証と初期化 --- */
         onAuthStateChanged(auth, async (u) => {
             if (u) {
+                console.log("Authenticated:", u.uid);
                 await loadUserData(u.uid);
             } else {
+                console.log("No user, signing in...");
                 signInAnonymously(auth);
             }
         });
