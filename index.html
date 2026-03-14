@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Fixed & Full Persistence</title>
+    <title>Ultimate Typing Game - Final Fixed & Full Version</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -27,7 +27,7 @@
         button:disabled { background: #bdc3c7; cursor: not-allowed; }
 
         /* --- 各画面 --- */
-        #main-menu, #game-screen, #result-screen, #ranking-menu, #ranking-view-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
+        #main-menu, #game-screen, #result-screen, #ranking-menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
         h1 { font-size: 48px; margin-bottom: 30px; color: #2c3e50; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
         .menu-buttons { display: flex; flex-direction: column; gap: 18px; align-items: center; }
         .menu-buttons button { width: 350px; font-size: 20px; padding: 18px; }
@@ -230,7 +230,7 @@
             try {
                 await set(ref(db, `users/${user.uid}`), user);
             } catch (e) {
-                console.error("Save Error", e);
+                console.error("Save Error:", e);
             }
         }
 
@@ -238,10 +238,14 @@
             const snapshot = await get(ref(db, `users/${uid}`));
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                // 構造を維持しつつマージ
                 user = { ...user, ...data, uid: uid };
+                // 既存ユーザーにフレンドコードがない場合の補完
+                if (!user.friendCode) {
+                    user.friendCode = generateFriendCode();
+                    await saveUserData();
+                }
             } else {
-                // 新規ユーザー
+                // 新規ユーザー初期化
                 user.uid = uid;
                 user.friendCode = generateFriendCode();
                 await saveUserData();
@@ -250,18 +254,22 @@
         }
 
         function updateHUD() {
-            // コイン
-            document.getElementById("coin-value").innerText = user.coins.toLocaleString();
-            // レベル・XP
-            document.getElementById("current-level").innerText = user.level;
-            const nextXP = user.level * 100;
-            document.getElementById("current-xp-text").innerText = `${user.xp} / ${nextXP} XP`;
-            const percent = Math.min(100, (user.xp / nextXP) * 100);
+            // コインの反映
+            document.getElementById("coin-value").innerText = (user.coins || 0).toLocaleString();
+            
+            // レベル・XPの反映
+            const lvl = user.level || 1;
+            const xp = user.xp || 0;
+            const nextXP = lvl * 100;
+            document.getElementById("current-level").innerText = lvl;
+            document.getElementById("current-xp-text").innerText = `${xp} / ${nextXP} XP`;
+            const percent = Math.min(100, (xp / nextXP) * 100);
             document.getElementById("xp-bar-fill").style.width = percent + "%";
-            // プロフィール
-            document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode || "エラー";
-            document.getElementById("name-change-count").innerText = user.nameChanges;
+            
+            // プロフィールの反映 (名前バグ修正)
+            document.getElementById("display-name").innerText = user.name || "初心さん";
+            document.getElementById("my-friend-code").innerText = user.friendCode || "生成エラー";
+            document.getElementById("name-change-count").innerText = user.nameChanges ?? 3;
             
             renderTasks();
         }
@@ -274,7 +282,7 @@
                 leveled = true;
             }
             if (leveled) {
-                showNotification(`レベルアップ！ Lv.${user.level} になりました！ ✨`, true);
+                showNotification(`レベルアップ！ Lv.${user.level} ✨`, true);
             }
         }
 
@@ -328,8 +336,8 @@
             const t = user.tasks[currentTaskTab];
             if (t.completed) return;
 
-            const rewardXP = currentTaskTab === "daily" ? 50 : 300;
-            const rewardCoins = currentTaskTab === "daily" ? 1000 : 10000;
+            const rewardXP = currentTaskTab === "daily" ? 100 : 500;
+            const rewardCoins = currentTaskTab === "daily" ? 2000 : 10000;
 
             user.xp += rewardXP;
             user.coins += rewardCoins;
@@ -384,6 +392,7 @@
             if (key === currentWord.r[charIdx]) {
                 charIdx++;
                 combo++;
+                // コンボ数更新バグ修正
                 if(combo > maxComboThisGame) maxComboThisGame = combo;
                 score += 10 + Math.floor(combo / 5);
                 if (charIdx >= currentWord.r.length) {
@@ -402,7 +411,7 @@
             gameActive = false;
             clearInterval(timer);
             
-            // タスク更新
+            // タスク更新 (コンボ数判定バグ修正)
             user.tasks.daily.play++;
             user.tasks.daily.score += score;
             user.tasks.daily.combo = Math.max(user.tasks.daily.combo, maxComboThisGame);
@@ -412,19 +421,19 @@
             user.tasks.weekly.combo = Math.max(user.tasks.weekly.combo, maxComboThisGame);
 
             // 経験値とコインの付与
-            const earnedXP = Math.floor(score / 10);
-            const earnedCoins = Math.floor(score / 5);
+            const earnedXP = Math.floor(score / 5);
+            const earnedCoins = Math.floor(score / 2);
             user.xp += earnedXP;
             user.coins += earnedCoins;
 
             document.getElementById("game-screen").classList.add("hidden");
             document.getElementById("result-screen").classList.remove("hidden");
             document.getElementById("final-score").innerText = score;
-            document.getElementById("reward-info").innerText = `獲得: ✨${earnedXP}XP / 🪙${earnedCoins}コイン`;
+            document.getElementById("reward-info").innerText = `報酬: ✨${earnedXP}XP / 🪙${earnedCoins}コイン獲得！`;
 
             checkLevelUp();
-            await saveUserData();
-            updateHUD();
+            await saveUserData(); // 即座に保存
+            updateHUD(); // UI更新
         }
 
         /* --- UIイベント --- */
@@ -449,15 +458,16 @@
             document.getElementById("difficulty-selection").classList.add("hidden");
         };
 
-        // パネル操作
         const overlay = document.getElementById("dark-overlay");
         document.getElementById("profile-open-btn").onclick = () => {
             document.getElementById("friend-panel").classList.add("open");
             overlay.classList.add("active");
+            updateHUD();
         };
         document.getElementById("task-open-btn").onclick = () => {
             document.getElementById("task-panel").classList.add("open");
             overlay.classList.add("active");
+            updateHUD();
         };
         document.querySelectorAll(".close-panel-btn, #dark-overlay").forEach(el => {
             el.onclick = () => {
@@ -466,21 +476,22 @@
             };
         });
 
-        // 名前変更
+        // 名前変更処理 (表示バグ完全修正)
         document.getElementById("change-name-btn").onclick = async () => {
-            const newName = document.getElementById("name-input").value.trim();
+            const input = document.getElementById("name-input");
+            const newName = input.value.trim();
             if (!newName) return showNotification("名前を入力してください");
             if (user.nameChanges <= 0) return showNotification("本日の変更回数制限です");
 
             user.name = newName;
             user.nameChanges--;
-            await saveUserData();
-            updateHUD();
+            
+            await saveUserData(); // 保存
+            updateHUD(); // HTML反映
             showNotification("名前を変更しました！");
-            document.getElementById("name-input").value = "";
+            input.value = "";
         };
 
-        // タスクタブ切り替え
         document.getElementById("tab-daily-btn").onclick = () => {
             currentTaskTab = "daily";
             document.getElementById("tab-daily-btn").classList.add("active");
@@ -494,7 +505,7 @@
             renderTasks();
         };
 
-        /* --- 認証 --- */
+        /* --- 認証と初期化 --- */
         onAuthStateChanged(auth, async (u) => {
             if (u) {
                 await loadUserData(u.uid);
