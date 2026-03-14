@@ -35,11 +35,11 @@
   </header>
 
   <!-- トースト -->
-  <div id="toast-lv" class="toast" aria-live="polite">
+  <div id="toast-lv" class="toast">
     <span class="t-icon">↑</span>
     <div><div class="t-title">Level up</div><div class="t-body">Lv.<span id="toast-lv-n"></span> になりました</div></div>
   </div>
-  <div id="toast-task" class="toast" style="top:68px" aria-live="polite">
+  <div id="toast-task" class="toast" style="top:68px">
     <span class="t-icon">✓</span>
     <div><div class="t-title">タスク達成</div><div class="t-body" id="toast-task-body"></div></div>
   </div>
@@ -182,6 +182,11 @@
     </div>
   </aside>
 
-  <script type="module" src="app.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- ゲーム本体（通常scriptタグ、モジュール不使用） -->
+  <script src="app.js"></script>
 </body>
 </html>
