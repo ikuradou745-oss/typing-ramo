@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Typekey</title>
+  <title>Typekey - タイプキー</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <!-- ========== 常時HUD ========== -->
+  <!-- HUD -->
   <header id="hud">
     <div id="hud-left">
       <div id="coin-display">
@@ -34,7 +34,7 @@
     </div>
   </header>
 
-  <!-- ========== トースト ========== -->
+  <!-- トースト -->
   <div id="toast-lv" class="toast" aria-live="polite">
     <span class="t-icon">↑</span>
     <div><div class="t-title">Level up</div><div class="t-body">Lv.<span id="toast-lv-n"></span> になりました</div></div>
@@ -44,17 +44,17 @@
     <div><div class="t-title">タスク達成</div><div class="t-body" id="toast-task-body"></div></div>
   </div>
 
-  <!-- ========== メイン ========== -->
+  <!-- メイン -->
   <main id="screen-main" class="screen active">
     <h1 id="site-title">typekey</h1>
-    <p id="site-sub">日本語タイピングゲーム</p>
+    <p id="site-sub">タイプキー — 日本語タイピングゲーム</p>
     <button class="cta-btn" id="btn-play">
       プレイする
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </main>
 
-  <!-- ========== 難易度 ========== -->
+  <!-- 難易度 -->
   <main id="screen-diff" class="screen">
     <h2 class="pg-title">難易度を選択</h2>
     <div class="diff-list">
@@ -77,23 +77,13 @@
     <button class="link-btn" id="diff-back">← 戻る</button>
   </main>
 
-  <!-- ========== ゲーム ========== -->
+  <!-- ゲーム -->
   <main id="screen-game" class="screen">
     <div id="game-stats">
-      <div class="gstat">
-        <div class="gstat-label">TIME</div>
-        <div class="gstat-val" id="g-time">60</div>
-      </div>
-      <div class="gstat">
-        <div class="gstat-label">SCORE</div>
-        <div class="gstat-val" id="g-score">0</div>
-      </div>
-      <div class="gstat">
-        <div class="gstat-label">COMBO</div>
-        <div class="gstat-val" id="g-combo">0</div>
-      </div>
+      <div class="gstat"><div class="gstat-label">TIME</div><div class="gstat-val" id="g-time">60</div></div>
+      <div class="gstat"><div class="gstat-label">SCORE</div><div class="gstat-val" id="g-score">0</div></div>
+      <div class="gstat"><div class="gstat-label">COMBO</div><div class="gstat-val" id="g-combo">0</div></div>
     </div>
-
     <div id="word-area">
       <div id="g-ja"></div>
       <div id="g-hint"></div>
@@ -101,11 +91,10 @@
         <span id="g-ok"></span><span id="g-cur">|</span><span id="g-rest"></span>
       </div>
     </div>
-
     <div id="miss-flash"></div>
   </main>
 
-  <!-- ========== 結果 ========== -->
+  <!-- 結果 -->
   <main id="screen-result" class="screen">
     <h2 class="pg-title">結果</h2>
     <div class="res-grid">
@@ -120,10 +109,10 @@
     </div>
   </main>
 
-  <!-- ========== 暗転オーバーレイ ========== -->
+  <!-- 暗転 -->
   <div id="dim" class="hidden"></div>
 
-  <!-- ========== フレンドパネル ========== -->
+  <!-- フレンドパネル -->
   <aside id="panel-friend" class="panel hidden">
     <div class="panel-head">
       <div class="panel-tabs">
@@ -134,8 +123,6 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
-
-    <!-- プロフィール -->
     <div class="pane active" id="pane-profile">
       <div class="avatar-row">
         <div class="avatar">
@@ -156,8 +143,6 @@
       <div class="section-title">フレンドコード</div>
       <div id="my-fc" class="fc-val"></div>
     </div>
-
-    <!-- フレンド -->
     <div class="pane" id="pane-friends">
       <div class="subtabs">
         <button class="stab active" data-stab="add">追加</button>
@@ -176,7 +161,7 @@
     </div>
   </aside>
 
-  <!-- ========== タスクパネル ========== -->
+  <!-- タスクパネル -->
   <aside id="panel-task" class="panel hidden">
     <div class="panel-head">
       <div class="panel-tabs">
