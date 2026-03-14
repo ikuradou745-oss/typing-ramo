@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Final Fix</title>
+    <title>Ultimate Typing Game - Fixed & Full Persistence</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -26,22 +26,21 @@
         button:active { transform: translateY(0); }
         button:disabled { background: #bdc3c7; cursor: not-allowed; }
 
-        /* --- メインメニュー --- */
+        /* --- 各画面 --- */
         #main-menu, #game-screen, #result-screen, #ranking-menu, #ranking-view-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 90%; max-width: 800px; }
         h1 { font-size: 48px; margin-bottom: 30px; color: #2c3e50; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
         .menu-buttons { display: flex; flex-direction: column; gap: 18px; align-items: center; }
         .menu-buttons button { width: 350px; font-size: 20px; padding: 18px; }
 
-        /* --- タイピング画面 --- */
+        /* --- タイピングエリア --- */
         #typing-area { margin-top: 30px; background: white; padding: 50px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
         #japanese-word { font-size: 56px; margin-bottom: 15px; font-weight: bold; }
         #romaji-word { font-size: 40px; letter-spacing: 4px; font-family: 'Courier New', monospace; color: #999; }
         .typed { color: #d1d1d1; }
         .untyped { color: #333; }
         .game-info { display: flex; justify-content: space-around; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-        #ranking-stage-info { font-size: 20px; color: #e74c3c; font-weight: bold; margin-bottom: 10px; }
 
-        /* --- サイドパネル (フレンド・タスク) --- */
+        /* --- サイドパネル --- */
         #dark-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; transition: 0.4s; pointer-events: none; }
         #dark-overlay.active { opacity: 1; pointer-events: auto; }
         
@@ -54,24 +53,15 @@
         .tab-bar button.active { background: #007BFF; color: white; }
 
         .info-card { background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #eee; }
-        .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; }
-        .friend-code-display { font-family: monospace; background: #eee; padding: 10px; border-radius: 8px; font-size: 20px; font-weight: bold; color: #333; margin: 10px 0; border: 1px dashed #007BFF; }
+        .friend-code-display { font-family: monospace; background: #eee; padding: 10px; border-radius: 8px; font-size: 20px; font-weight: bold; color: #333; margin: 10px 0; border: 1px dashed #007BFF; text-align: center; }
         
         .task-item { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
         .task-progress-bg { background: #eee; height: 10px; border-radius: 5px; margin: 10px 0; }
         .task-progress-fill { background: #007BFF; height: 100%; border-radius: 5px; width: 0%; transition: 0.3s; }
 
-        /* --- ランキング表示用 --- */
-        .ranking-list { text-align: left; background: white; padding: 20px; border-radius: 15px; max-height: 400px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 18px; }
-        .ranking-item.top1 { font-weight: bold; color: #d4af37; background: #fff9e6; border-radius: 8px; border: none; }
-        .ranking-item.top2 { font-weight: bold; color: #c0c0c0; background: #f2f2f2; border-radius: 8px; border: none; }
-        .ranking-item.top3 { font-weight: bold; color: #cd7f32; background: #fdf5e6; border-radius: 8px; border: none; }
-
         #notification-area { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 400px; }
         .notification { background: #333; color: #fff; padding: 15px 25px; border-radius: 10px; margin-bottom: 10px; text-align: center; font-weight: bold; animation: slideDown 0.5s ease forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .notif-reward { color: #ffeb3b; }
     </style>
 </head>
 <body>
@@ -99,41 +89,17 @@
             <button id="start-game-btn">一人でプレイ</button>
             <button id="ranking-mode-btn" style="background:#8e44ad;">ランキングモード</button>
         </div>
-        
         <div id="difficulty-selection" class="hidden" style="margin-top:20px;">
             <h2>難易度を選択</h2>
             <button class="diff-btn" data-diff="easy">EASY</button>
             <button class="diff-btn" data-diff="normal">NORMAL</button>
             <button class="diff-btn" data-diff="hard">HARD</button>
             <br>
-            <button class="back-to-main-btn" style="background:#666; margin-top:10px;">戻る</button>
+            <button id="back-to-menu-btn" style="background:#666; margin-top:10px;">戻る</button>
         </div>
-    </div>
-
-    <div id="ranking-menu" class="hidden">
-        <h2>ランキングモード</h2>
-        <div class="menu-buttons" style="margin-top:20px;">
-            <button id="play-friend-ranking-btn">フレンドランキングに挑戦</button>
-            <button id="play-online-ranking-btn">オンラインランキングに挑戦</button>
-            <button id="view-ranking-btn" style="background:#27ae60;">ランキングを見る</button>
-            <button class="back-to-main-btn" style="background:#666;">戻る</button>
-        </div>
-    </div>
-
-    <div id="ranking-view-screen" class="hidden">
-        <h2>ランキング</h2>
-        <div class="tab-bar" style="margin-top:20px;">
-            <button id="tab-view-friend-ranking" class="active">フレンド</button>
-            <button id="tab-view-online-ranking">オンライン</button>
-        </div>
-        <div class="ranking-list" id="ranking-list-content">
-            読み込み中...
-        </div>
-        <button class="back-to-main-btn" style="background:#666;">戻る</button>
     </div>
 
     <div id="game-screen" class="hidden">
-        <div id="ranking-stage-info" class="hidden">TIME ATTACK (EASY)</div>
         <div class="game-info">
             <div>TIME: <span id="time-left">60</span></div>
             <div>SCORE: <span id="current-score">0</span></div>
@@ -148,44 +114,24 @@
     <div id="result-screen" class="hidden">
         <h2>リザルト</h2>
         <div style="font-size:32px; margin:20px 0;">SCORE: <span id="final-score">0</span></div>
-        <div id="ranking-result-info" style="font-size:20px; color:#e74c3c; margin-bottom:10px; font-weight:bold;"></div>
         <div id="reward-info" style="margin-bottom:20px; color:#4CAF50; font-weight:bold;"></div>
         <button id="return-home-btn">メニューへ戻る</button>
     </div>
 
     <div id="friend-panel" class="side-panel">
         <div class="panel-header">
-            <h3>プロフィール / フレンド</h3>
+            <h3>プロフィール</h3>
             <button class="close-panel-btn">✕</button>
         </div>
-        <div class="tab-bar">
-            <button id="tab-profile-btn" class="active">プロフィール</button>
-            <button id="tab-friend-btn">フレンド</button>
+        <div class="info-card">
+            <p>現在の名前:</p>
+            <h2 id="display-name">初心さん</h2>
+            <input type="text" id="name-input" maxlength="20" style="padding:10px; width:100%; margin-top:10px; border-radius:5px; border:1px solid #ccc;" placeholder="新しい名前を入力">
+            <button id="change-name-btn" style="width:100%; margin-top:10px;">名前を変更 (残り<span id="name-change-count">3</span>回)</button>
         </div>
-
-        <div id="tab-profile-content">
-            <div class="info-card">
-                <p>現在の名前:</p>
-                <h2 id="display-name">初心さん</h2>
-                <input type="text" id="name-input" maxlength="20" style="padding:8px; width:100%; margin-top:10px;" placeholder="新しい名前を入力">
-                <button id="change-name-btn" style="width:100%; margin-top:10px;">名前を変更 (本日残り<span id="name-change-count">3</span>回)</button>
-            </div>
-            <div class="info-card">
-                <p>あなたのフレンドコード:</p>
-                <div class="friend-code-display" id="my-friend-code">生成中...</div>
-                <p style="font-size:12px; color:#888; margin-top:5px;">数字8桁＋英語大文字3桁のコードです</p>
-            </div>
-        </div>
-
-        <div id="tab-friend-content" class="hidden">
-            <div class="info-card">
-                <h4>フレンド追加</h4>
-                <input type="text" id="friend-search-input" placeholder="コードを入力" style="padding:8px; width:70%;">
-                <button id="add-friend-btn">申請</button>
-            </div>
-            <div id="friend-requests-area"></div>
-            <h4>フレンドリスト</h4>
-            <div id="friend-list-area" style="margin-top:10px;"></div>
+        <div class="info-card">
+            <p>あなたのフレンドコード:</p>
+            <div class="friend-code-display" id="my-friend-code">生成中...</div>
         </div>
     </div>
 
@@ -200,7 +146,7 @@
         </div>
         <div id="task-list-container"></div>
         <div id="task-reward-area" style="margin-top:20px;">
-            <button id="claim-task-reward-btn" disabled style="width:100%; padding:20px; font-size:18px;">タスク進行中...</button>
+            <button id="claim-task-reward-btn" disabled style="width:100%; padding:20px; font-size:18px;">進行中...</button>
         </div>
     </div>
 
@@ -208,9 +154,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         /* --- Firebase 設定 --- */
         const firebaseConfig = {
@@ -220,12 +165,10 @@
             projectId: "typing-game-28ed0",
             storageBucket: "typing-game-28ed0.firebasestorage.app",
             messagingSenderId: "963797267101",
-            appId: "1:963797267101:web:0d5d700458fb1991021a74",
-            measurementId: "G-CL4B6ZK0SC"
+            appId: "1:963797267101:web:0d5d700458fb1991021a74"
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
@@ -238,599 +181,129 @@
             xp: 0,
             friendCode: "",
             nameChanges: 3,
-            lastReset: null,
-            lastRankingReward: null,
-            friends: {},
-            requests: {},
+            lastReset: Date.now(),
             tasks: {
-                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 10, score: 25000, combo: 100 } },
-                weekly: { play: 0, scoreCount: 0, combo: 0, completed: false, targets: { play: 100, scoreCount: 10, combo: 150, scoreThreshold: 25000 } }
+                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 5, score: 10000, combo: 100 } },
+                weekly: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 30, score: 100000, combo: 150 } }
             }
         };
 
-        let gameMode = "solo";
+        let currentTaskTab = "daily";
         let gameActive = false;
         let score = 0;
         let combo = 0;
+        let maxComboThisGame = 0;
         let timeLeft = 60;
         let timer = null;
         let currentWord = null;
         let charIdx = 0;
         let activeDiff = "easy";
-        let wordsTypedCount = 0;
 
         const WordDB = {
-            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}, {t:"つみき",r:"tumiki"}],
-            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}, {t:"つつみ",r:"tutumi"}],
+            easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"さくら",r:"sakura"},{t:"つき",r:"tuki"}],
+            normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}],
             hard: [{t:"じんこうちのう",r:"jinkouchinou"},{t:"きゃべつたべたい",r:"kyabetutabetai"},{t:"ていれいきょうぎ",r:"teireikyougi"}]
         };
 
         /* --- ユーティリティ --- */
         function generateFriendCode() {
-            let nums = "";
-            for(let i=0; i<8; i++) nums += Math.floor(Math.random()*10).toString();
-            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            let eng = "";
-            for(let i=0; i<3; i++) eng += letters.charAt(Math.floor(Math.random() * letters.length));
-            return `${nums}${eng}`;
+            let code = "";
+            for(let i=0; i<8; i++) code += Math.floor(Math.random()*10);
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for(let i=0; i<3; i++) code += chars.charAt(Math.floor(Math.random()*chars.length));
+            return code;
         }
 
         function showNotification(msg, isReward = false) {
-            const container = document.getElementById("notification-area");
+            const area = document.getElementById("notification-area");
             const div = document.createElement("div");
-            div.className = "notification" + (isReward ? " notif-reward" : "");
+            div.className = "notification";
+            if(isReward) div.style.borderLeft = "5px solid #ffeb3b";
             div.innerText = msg;
-            container.appendChild(div);
-            setTimeout(() => div.remove(), 4000);
+            area.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
         }
 
-        function getTodayResetTime() {
-            const now = new Date();
-            const reset = new Date(now);
-            reset.setHours(7, 0, 0, 0); 
-            if (now.getHours() < 7) reset.setDate(reset.getDate() - 1);
-            return reset.getTime();
-        }
-
-        /* --- データ同期・復元処理 --- */
-        async function loadUserData(uid) {
-            try {
-                const snapshot = await get(ref(db, `users/${uid}`));
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    
-                    user.uid = uid;
-                    user.name = data.name || "初心さん";
-                    user.coins = Number.isFinite(data.coins) ? data.coins : 0;
-                    user.level = Number.isFinite(data.level) ? data.level : 1;
-                    user.xp = Number.isFinite(data.xp) ? data.xp : 0;
-                    user.nameChanges = Number.isFinite(data.nameChanges) ? data.nameChanges : 3;
-                    user.lastReset = data.lastReset || null;
-                    user.lastRankingReward = data.lastRankingReward || null;
-                    user.friendCode = data.friendCode || ""; // 初期化
-                    
-                    if (data.friends) user.friends = data.friends;
-                    if (data.requests) user.requests = data.requests;
-                    
-                    if (data.tasks) {
-                        if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
-                        if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
-                    }
-
-                    // フレンドコードがデータに存在しない場合のみ生成して保存
-                    if (!user.friendCode) {
-                        user.friendCode = generateFriendCode();
-                        await update(ref(db, `users/${uid}`), { friendCode: user.friendCode });
-                        await set(ref(db, `friendCodes/${user.friendCode}`), uid);
-                    }
-
-                    await checkDailyReset();
-                    await checkRankingReward();
-                } else {
-                    // 完全な新規ユーザーの場合
-                    user.uid = uid;
-                    user.friendCode = generateFriendCode();
-                    
-                    const initialData = {
-                        name: user.name,
-                        coins: user.coins,
-                        level: user.level,
-                        xp: user.xp,
-                        friendCode: user.friendCode,
-                        nameChanges: user.nameChanges,
-                        lastReset: Date.now(),
-                        lastRankingReward: null,
-                        tasks: user.tasks,
-                        friends: {},
-                        requests: {}
-                    };
-                    
-                    await set(ref(db, `users/${uid}`), initialData);
-                    await set(ref(db, `friendCodes/${user.friendCode}`), uid);
-                }
-            } catch (e) {
-                console.error("データ読み込みエラー:", e);
-                showNotification("データの読み込みに失敗しました。");
-            } finally {
-                // 読み込み完了後、UIを確実に更新
-                updateHUD();
-                renderProfile();
-                listenToRequests();
-            }
-        }
-
+        /* --- データ管理 --- */
         async function saveUserData() {
             if (!user.uid) return;
             try {
-                // オブジェクトの欠落を防ぐため、最新の user 変数から保存
-                await update(ref(db, `users/${user.uid}`), {
-                    name: user.name,
-                    coins: user.coins,
-                    level: user.level,
-                    xp: user.xp,
-                    friendCode: user.friendCode,
-                    nameChanges: user.nameChanges,
-                    lastReset: user.lastReset,
-                    lastRankingReward: user.lastRankingReward,
-                    tasks: user.tasks
-                });
+                await set(ref(db, `users/${user.uid}`), user);
             } catch (e) {
-                console.error("データ保存エラー:", e);
-                showNotification("データの保存に失敗しました。");
-            } finally {
-                // 保存試行後は必ずUIをリフレッシュ
-                updateHUD();
-                renderProfile();
+                console.error("Save Error", e);
             }
+        }
+
+        async function loadUserData(uid) {
+            const snapshot = await get(ref(db, `users/${uid}`));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                // 構造を維持しつつマージ
+                user = { ...user, ...data, uid: uid };
+            } else {
+                // 新規ユーザー
+                user.uid = uid;
+                user.friendCode = generateFriendCode();
+                await saveUserData();
+            }
+            updateHUD();
         }
 
         function updateHUD() {
-            document.getElementById("coin-value").innerText = Math.floor(user.coins);
+            // コイン
+            document.getElementById("coin-value").innerText = user.coins.toLocaleString();
+            // レベル・XP
             document.getElementById("current-level").innerText = user.level;
-            
             const nextXP = user.level * 100;
-            const progress = (user.xp / nextXP) * 100;
-            document.getElementById("xp-bar-fill").style.width = `${Math.min(100, progress)}%`;
-            document.getElementById("current-xp-text").innerText = `${Math.floor(user.xp)} / ${nextXP} XP`;
-        }
-
-        function renderProfile() {
-            // HTML上の要素を直接書き換える
+            document.getElementById("current-xp-text").innerText = `${user.xp} / ${nextXP} XP`;
+            const percent = Math.min(100, (user.xp / nextXP) * 100);
+            document.getElementById("xp-bar-fill").style.width = percent + "%";
+            // プロフィール
             document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode || "生成中...";
+            document.getElementById("my-friend-code").innerText = user.friendCode || "エラー";
             document.getElementById("name-change-count").innerText = user.nameChanges;
-        }
-
-        async function checkDailyReset() {
-            const currentReset = getTodayResetTime();
-            if (!user.lastReset || user.lastReset < currentReset) {
-                user.tasks.daily.play = 0;
-                user.tasks.daily.score = 0;
-                user.tasks.daily.combo = 0;
-                user.tasks.daily.completed = false;
-                user.nameChanges = 3;
-                user.lastReset = Date.now();
-                await saveUserData();
-            }
-        }
-
-        async function checkRankingReward() {
-            const currentReset = getTodayResetTime();
-            if (user.lastRankingReward && user.lastRankingReward > currentReset) return;
-
-            try {
-                const onlineSnap = await get(ref(db, 'rankings/online'));
-                let onlineRank = -1;
-                let onlineTotal = 0;
-                if (onlineSnap.exists()) {
-                    const sorted = Object.values(onlineSnap.val()).sort((a, b) => b.score - a.score);
-                    onlineTotal = sorted.length;
-                    onlineRank = sorted.findIndex(r => r.uid === user.uid) + 1;
-                }
-
-                let gotReward = false;
-                let totalXp = 0;
-                let totalCoins = 0;
-
-                if (onlineRank > 0 && onlineRank <= 5 && onlineTotal > 0) {
-                    if (onlineRank === 1) { totalXp += 50 * onlineTotal; totalCoins += 500 * onlineTotal; }
-                    else if (onlineRank <= 3) { totalXp += 25 * onlineTotal; totalCoins += 250 * onlineTotal; }
-                    else if (onlineRank <= 5) { totalXp += 15 * onlineTotal; totalCoins += 150 * onlineTotal; }
-                    gotReward = true;
-                }
-
-                if (gotReward) {
-                    user.xp += totalXp;
-                    user.coins += totalCoins;
-                    user.lastRankingReward = Date.now();
-                    await saveUserData();
-                    checkLevelUp();
-                    showNotification(`昨日のランキング報酬獲得！ ✨${totalXp}XP / 🪙${totalCoins}`, true);
-                }
-            } catch(e) {
-                console.error("報酬チェックエラー:", e);
-            }
-        }
-
-        /* --- タイピングロジック --- */
-        function startGame(mode, diff = "easy") {
-            gameMode = mode;
-            activeDiff = diff;
-            score = 0; combo = 0; timeLeft = 60; wordsTypedCount = 0;
-            gameActive = true;
-
-            document.querySelectorAll("#main-menu, #ranking-menu, #difficulty-selection").forEach(el => el.classList.add("hidden"));
-            document.getElementById("game-screen").classList.remove("hidden");
             
-            const stageInfo = document.getElementById("ranking-stage-info");
-            stageInfo.classList.toggle("hidden", gameMode === "solo");
-
-            updateGameUI();
-            setNextWord();
-
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById("time-left").innerText = timeLeft;
-                if (timeLeft <= 0) endGame();
-            }, 1000);
-        }
-
-        function setNextWord() {
-            let diff = activeDiff;
-            if (gameMode !== "solo") {
-                const cycle = Math.floor(wordsTypedCount / 5) % 3;
-                diff = cycle === 0 ? "easy" : (cycle === 1 ? "normal" : "hard");
-                document.getElementById("ranking-stage-info").innerText = `TIME ATTACK (${diff.toUpperCase()})`;
-            }
-            
-            const list = WordDB[diff];
-            currentWord = list[Math.floor(Math.random() * list.length)];
-            charIdx = 0;
-            renderWord();
-        }
-
-        function renderWord() {
-            document.getElementById("japanese-word").innerText = currentWord.t;
-            const romaji = currentWord.r;
-            let html = "";
-            for (let i = 0; i < romaji.length; i++) {
-                html += `<span class="${i < charIdx ? 'typed' : 'untyped'}">${romaji[i]}</span>`;
-            }
-            document.getElementById("romaji-word").innerHTML = html;
-        }
-
-        function updateGameUI() {
-            document.getElementById("current-score").innerText = score;
-            document.getElementById("current-combo").innerText = combo;
-        }
-
-        async function endGame() {
-            gameActive = false;
-            clearInterval(timer);
-            document.getElementById("game-screen").classList.add("hidden");
-            document.getElementById("result-screen").classList.remove("hidden");
-            
-            const earnedCoins = score / 10;
-            const earnedXP = score / 100;
-            user.coins += earnedCoins;
-            user.xp += earnedXP;
-            
-            user.tasks.daily.play++;
-            user.tasks.weekly.play++;
-            if (score > user.tasks.daily.score) user.tasks.daily.score = score;
-            if (combo > user.tasks.daily.combo) user.tasks.daily.combo = combo;
-            
-            if (score >= user.tasks.weekly.targets.scoreThreshold) {
-                user.tasks.weekly.scoreCount++;
-            }
-            if (combo > user.tasks.weekly.combo) user.tasks.weekly.combo = combo;
-
-            document.getElementById("final-score").innerText = score;
-            document.getElementById("reward-info").innerText = `報酬: 🪙${Math.floor(earnedCoins)} / ✨${Math.floor(earnedXP)}XP`;
-            
-            if (gameMode !== "solo") {
-                try {
-                    const path = gameMode === "onlineRanking" ? "rankings/online" : `rankings/friend/${user.uid}`;
-                    const snap = await get(ref(db, `${path}/${user.uid}`));
-                    const existingScore = snap.exists() ? snap.val().score : 0;
-
-                    if (score > existingScore) {
-                        await update(ref(db, `${path}/${user.uid}`), {
-                            uid: user.uid,
-                            name: user.name,
-                            score: score,
-                            timestamp: Date.now()
-                        });
-                        document.getElementById("ranking-result-info").innerText = "自己ベスト更新！ランキングを塗り替えました！";
-                    } else {
-                        document.getElementById("ranking-result-info").innerText = `ベストスコア(${existingScore})に届きませんでした。`;
-                    }
-                } catch(e) {
-                    console.error("ランキング保存エラー:", e);
-                    document.getElementById("ranking-result-info").innerText = "ランキングへの保存に失敗しました。";
-                }
-            } else {
-                 document.getElementById("ranking-result-info").innerText = "";
-            }
-
-            checkLevelUp();
-            await saveUserData();
+            renderTasks();
         }
 
         function checkLevelUp() {
-            let nextXP = user.level * 100;
-            while (user.xp >= nextXP) {
-                user.xp -= nextXP;
+            let leveled = false;
+            while (user.xp >= user.level * 100) {
+                user.xp -= user.level * 100;
                 user.level++;
-                showNotification(`LEVEL UP! Lv.${user.level}`, true);
-                nextXP = user.level * 100;
+                leveled = true;
+            }
+            if (leveled) {
+                showNotification(`レベルアップ！ Lv.${user.level} になりました！ ✨`, true);
             }
         }
 
-        /* --- キーボード入力 --- */
-        window.addEventListener("keydown", (e) => {
-            if (!gameActive || e.repeat) return;
-            if (e.key === currentWord.r[charIdx]) {
-                charIdx++;
-                combo++;
-                score += (10 * combo);
-                if (charIdx >= currentWord.r.length) {
-                    wordsTypedCount++;
-                    setNextWord();
-                } else {
-                    renderWord();
-                }
-            } else if (e.key.length === 1 && !e.ctrlKey) {
-                combo = 0;
-            }
-            updateGameUI();
-        });
-
-        /* --- UI画面遷移 --- */
-        document.querySelectorAll(".back-to-main-btn").forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll("#difficulty-selection, #ranking-menu, #ranking-view-screen").forEach(el => el.classList.add("hidden"));
-                document.getElementById("main-menu").classList.remove("hidden");
-                document.querySelector(".menu-buttons").classList.remove("hidden");
-            };
-        });
-
-        document.getElementById("start-game-btn").onclick = () => {
-            document.querySelector("#main-menu .menu-buttons").classList.add("hidden");
-            document.getElementById("difficulty-selection").classList.remove("hidden");
-        };
-
-        document.querySelectorAll(".diff-btn").forEach(btn => {
-            btn.onclick = () => startGame("solo", btn.dataset.diff);
-        });
-
-        document.getElementById("ranking-mode-btn").onclick = () => {
-            document.getElementById("main-menu").classList.add("hidden");
-            document.getElementById("ranking-menu").classList.remove("hidden");
-        };
-
-        document.getElementById("play-online-ranking-btn").onclick = () => startGame("onlineRanking");
-        document.getElementById("play-friend-ranking-btn").onclick = () => {
-            if (Object.keys(user.friends).length < 2) return alert("フレンドランキングはフレンドが2人以上必要です！");
-            startGame("friendRanking");
-        };
-
-        document.getElementById("return-home-btn").onclick = () => {
-            document.getElementById("result-screen").classList.add("hidden");
-            document.getElementById("main-menu").classList.remove("hidden");
-            document.querySelector("#main-menu .menu-buttons").classList.remove("hidden");
-        };
-
-        /* --- ランキング表示 --- */
-        document.getElementById("view-ranking-btn").onclick = () => {
-            document.getElementById("ranking-menu").classList.add("hidden");
-            document.getElementById("ranking-view-screen").classList.remove("hidden");
-            loadRankingView("online");
-        };
-
-        document.getElementById("tab-view-online-ranking").onclick = () => {
-            document.getElementById("tab-view-online-ranking").classList.add("active");
-            document.getElementById("tab-view-friend-ranking").classList.remove("active");
-            loadRankingView("online");
-        }
-        
-        document.getElementById("tab-view-friend-ranking").onclick = () => {
-            document.getElementById("tab-view-friend-ranking").classList.add("active");
-            document.getElementById("tab-view-online-ranking").classList.remove("active");
-            loadRankingView("friend");
-        }
-
-        async function loadRankingView(type) {
-            const listContent = document.getElementById("ranking-list-content");
-            listContent.innerHTML = "読み込み中...";
-            
-            let scores = [];
-            
-            try {
-                if (type === "online") {
-                    const snap = await get(ref(db, `rankings/online`));
-                    if (snap.exists()) scores = Object.values(snap.val());
-                } else {
-                    const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
-                    if (mySnap.exists()) scores.push(mySnap.val());
-                    for (let fUid in user.friends) {
-                        const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
-                        if (fSnap.exists()) scores.push(fSnap.val());
-                    }
-                }
-
-                if (scores.length === 0) {
-                    listContent.innerHTML = "記録がありません。";
-                    return;
-                }
-                
-                scores.sort((a,b)=>b.score - a.score);
-                listContent.innerHTML = "";
-                scores.forEach((s, i) => {
-                    const div = document.createElement("div");
-                    div.className = `ranking-item top${i+1 > 3 ? '' : i+1}`;
-                    div.innerHTML = `<span>${i+1}位. ${s.name} ${s.uid === user.uid ? "(あなた)" : ""}</span><span>${s.score} pts</span>`;
-                    listContent.appendChild(div);
-                });
-            } catch (e) {
-                console.error("ランキング読み込みエラー:", e);
-                listContent.innerHTML = "ランキングの取得に失敗しました。";
-            }
-        }
-
-        /* --- プロフィール・フレンド機能 --- */
-        function openPanel(id) {
-            document.getElementById(id).classList.add("open");
-            document.getElementById("dark-overlay").classList.add("active");
-        }
-        function closeAllPanels() {
-            document.querySelectorAll(".side-panel").forEach(p => p.classList.remove("open"));
-            document.getElementById("dark-overlay").classList.remove("active");
-        }
-
-        document.getElementById("profile-open-btn").onclick = () => {
-            renderProfile(); 
-            openPanel("friend-panel");
-        };
-        document.getElementById("task-open-btn").onclick = () => {
-            openPanel("task-panel");
-            renderTasks();
-        };
-        document.getElementById("dark-overlay").onclick = closeAllPanels;
-        document.querySelectorAll(".close-panel-btn").forEach(b => b.onclick = closeAllPanels);
-
-        document.getElementById("change-name-btn").onclick = async () => {
-            const newName = document.getElementById("name-input").value.trim();
-            if (user.nameChanges <= 0) return alert("本日の変更回数上限です。");
-            if (!newName || newName.length > 20) return alert("名前は20文字以内で入力してください。");
-            
-            // 内部データを更新
-            user.name = newName;
-            user.nameChanges--;
-            
-            // Firebase保存と同時にUI更新
-            await saveUserData();
-            
-            showNotification("名前を変更しました！");
-            document.getElementById("name-input").value = "";
-        };
-
-        document.getElementById("tab-profile-btn").onclick = () => switchTab("profile");
-        document.getElementById("tab-friend-btn").onclick = () => {
-            switchTab("friend");
-            renderFriendList();
-        };
-
-        function switchTab(type) {
-            document.getElementById("tab-profile-content").classList.toggle("hidden", type !== "profile");
-            document.getElementById("tab-friend-content").classList.toggle("hidden", type !== "friend");
-            document.getElementById("tab-profile-btn").classList.toggle("active", type === "profile");
-            document.getElementById("tab-friend-btn").classList.toggle("active", type === "friend");
-        }
-
-        document.getElementById("add-friend-btn").onclick = async () => {
-            const code = document.getElementById("friend-search-input").value.trim();
-            if (code === user.friendCode) return alert("自分のコードです。");
-            
-            try {
-                const targetUidSnap = await get(ref(db, `friendCodes/${code}`));
-                if (!targetUidSnap.exists()) return alert("見つかりません。");
-                const targetUid = targetUidSnap.val();
-                await set(ref(db, `users/${targetUid}/requests/${user.uid}`), { name: user.name, code: user.friendCode });
-                alert("申請を送りました！");
-                document.getElementById("friend-search-input").value = "";
-            } catch (e) {
-                console.error("フレンド申請エラー:", e);
-                alert("エラーが発生しました。");
-            }
-        };
-
-        function listenToRequests() {
-            onValue(ref(db, `users/${user.uid}/requests`), (snap) => {
-                const area = document.getElementById("friend-requests-area");
-                area.innerHTML = "";
-                const data = snap.val();
-                if (!data) return;
-                Object.keys(data).forEach(uid => {
-                    const req = data[uid];
-                    const div = document.createElement("div");
-                    div.className = "friend-item";
-                    div.innerHTML = `<div>${req.name}さん</div><button onclick="acceptFriend('${uid}','${req.name}','${req.code}')" style="background:green;">許可</button>`;
-                    area.appendChild(div);
-                });
-            });
-        }
-
-        window.acceptFriend = async (uid, name, code) => {
-            try {
-                await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
-                await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
-                await remove(ref(db, `users/${user.uid}/requests/${uid}`)); 
-                showNotification(`${name}さんとフレンドになりました！`);
-                renderFriendList();
-            } catch (e) {
-                console.error("フレンド許可エラー:", e);
-            }
-        };
-
-        async function renderFriendList() {
-            const area = document.getElementById("friend-list-area");
-            area.innerHTML = "";
-            const friends = user.friends;
-            for (let fUid in friends) {
-                const div = document.createElement("div");
-                div.className = "friend-item";
-                div.innerHTML = `<div><b>${friends[fUid].name}</b><br><small>#${friends[fUid].code}</small></div>`;
-                area.appendChild(div);
-            }
-        }
-
-        /* --- タスク --- */
-        let currentTaskTab = "daily";
-        document.getElementById("tab-daily-btn").onclick = () => { 
-            currentTaskTab = "daily"; 
-            document.getElementById("tab-daily-btn").classList.add("active");
-            document.getElementById("tab-weekly-btn").classList.remove("active");
-            renderTasks(); 
-        };
-        document.getElementById("tab-weekly-btn").onclick = () => { 
-            currentTaskTab = "weekly"; 
-            document.getElementById("tab-weekly-btn").classList.add("active");
-            document.getElementById("tab-daily-btn").classList.remove("active");
-            renderTasks(); 
-        };
-
+        /* --- タスク管理 --- */
         function renderTasks() {
             const container = document.getElementById("task-list-container");
             container.innerHTML = "";
             const t = user.tasks[currentTaskTab];
             
-            const data = currentTaskTab === "daily" ? 
-                [
-                    {label: "10回タイピングをプレイ", current: t.play, goal: t.targets.play}, 
-                    {label: `スコア (${t.targets.score}以上) を叩き出す`, current: t.score, goal: t.targets.score},
-                    {label: `コンボ (${t.targets.combo}以上) を叩き出す`, current: t.combo, goal: t.targets.combo}
-                ] :
-                [
-                    {label: "100回タイピングをプレイ", current: t.play, goal: t.targets.play},
-                    {label: `スコア (25000以上) を ${t.targets.scoreCount}回叩き出す`, current: t.scoreCount, goal: t.targets.scoreCount},
-                    {label: `コンボ (${t.targets.combo}以上) を叩き出す`, current: t.combo, goal: t.targets.combo}
-                ];
+            const taskData = [
+                { label: "プレイ回数", cur: t.play, goal: t.targets.play },
+                { label: "合計スコア", cur: t.score, goal: t.targets.score },
+                { label: "最高コンボ", cur: t.combo, goal: t.targets.combo }
+            ];
 
             let allDone = true;
-            data.forEach(task => {
-                const percent = Math.min(100, (task.current / task.goal) * 100);
-                if (percent < 100) allDone = false;
+            taskData.forEach(task => {
+                const p = Math.min(100, (task.cur / task.goal) * 100);
+                if (p < 100) allDone = false;
                 
                 const div = document.createElement("div");
                 div.className = "task-item";
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                    <div style="display:flex; justify-content:space-between;">
                         <span>${task.label}</span>
-                        <span>${task.current} / ${task.goal}</span>
+                        <span>${task.cur} / ${task.goal}</span>
                     </div>
                     <div class="task-progress-bg">
-                        <div class="task-progress-fill" style="width:${percent}%"></div>
+                        <div class="task-progress-fill" style="width:${p}%"></div>
                     </div>
                 `;
                 container.appendChild(div);
@@ -838,38 +311,188 @@
 
             const btn = document.getElementById("claim-task-reward-btn");
             btn.disabled = !(allDone && !t.completed);
-            
             if (t.completed) {
                 btn.innerText = "報酬受取済み";
                 btn.style.background = "#bdc3c7";
             } else if (allDone) {
-                btn.innerText = "タスククリア！報酬を受け取る";
+                btn.innerText = "報酬を受け取る！";
                 btn.style.background = "#28a745";
-                btn.onclick = () => claimReward(currentTaskTab);
+                btn.onclick = () => claimTaskReward();
             } else {
-                btn.innerText = "タスク進行中...";
+                btn.innerText = "進行中...";
                 btn.style.background = "#007BFF";
             }
         }
 
-        async function claimReward(type) {
-            if (user.tasks[type].completed) return;
-            
-            if (type === "daily") {
-                user.xp += 50;
-                user.coins += 1500;
-                showNotification("毎日タスククリア！ ✨50XP / 🪙1500ゲット！", true);
-            } else {
-                user.xp += 500;
-                user.coins += 15000;
-                showNotification("週間タスククリア！ ✨500XP / 🪙15000ゲット！", true);
-            }
-            
-            user.tasks[type].completed = true;
-            await saveUserData();
-            renderTasks();
+        async function claimTaskReward() {
+            const t = user.tasks[currentTaskTab];
+            if (t.completed) return;
+
+            const rewardXP = currentTaskTab === "daily" ? 50 : 300;
+            const rewardCoins = currentTaskTab === "daily" ? 1000 : 10000;
+
+            user.xp += rewardXP;
+            user.coins += rewardCoins;
+            t.completed = true;
+
+            showNotification(`報酬獲得！ ✨${rewardXP}XP 🪙${rewardCoins}`, true);
             checkLevelUp();
+            await saveUserData();
+            updateHUD();
         }
+
+        /* --- ゲームロジック --- */
+        function startTyping(diff) {
+            activeDiff = diff;
+            score = 0;
+            combo = 0;
+            maxComboThisGame = 0;
+            timeLeft = 60;
+            gameActive = true;
+            
+            document.getElementById("main-menu").classList.add("hidden");
+            document.getElementById("game-screen").classList.remove("hidden");
+            
+            nextWord();
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("time-left").innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function nextWord() {
+            const list = WordDB[activeDiff];
+            currentWord = list[Math.floor(Math.random() * list.length)];
+            charIdx = 0;
+            renderWord();
+        }
+
+        function renderWord() {
+            const jap = document.getElementById("japanese-word");
+            const rom = document.getElementById("romaji-word");
+            jap.innerText = currentWord.t;
+            
+            const typed = currentWord.r.substring(0, charIdx);
+            const untyped = currentWord.r.substring(charIdx);
+            rom.innerHTML = `<span class="typed">${typed}</span><span class="untyped">${untyped}</span>`;
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (!gameActive) return;
+            const key = e.key.toLowerCase();
+            if (key === currentWord.r[charIdx]) {
+                charIdx++;
+                combo++;
+                if(combo > maxComboThisGame) maxComboThisGame = combo;
+                score += 10 + Math.floor(combo / 5);
+                if (charIdx >= currentWord.r.length) {
+                    score += 50;
+                    nextWord();
+                }
+            } else {
+                if (e.key.length === 1) combo = 0;
+            }
+            document.getElementById("current-score").innerText = score;
+            document.getElementById("current-combo").innerText = combo;
+            renderWord();
+        });
+
+        async function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            
+            // タスク更新
+            user.tasks.daily.play++;
+            user.tasks.daily.score += score;
+            user.tasks.daily.combo = Math.max(user.tasks.daily.combo, maxComboThisGame);
+            
+            user.tasks.weekly.play++;
+            user.tasks.weekly.score += score;
+            user.tasks.weekly.combo = Math.max(user.tasks.weekly.combo, maxComboThisGame);
+
+            // 経験値とコインの付与
+            const earnedXP = Math.floor(score / 10);
+            const earnedCoins = Math.floor(score / 5);
+            user.xp += earnedXP;
+            user.coins += earnedCoins;
+
+            document.getElementById("game-screen").classList.add("hidden");
+            document.getElementById("result-screen").classList.remove("hidden");
+            document.getElementById("final-score").innerText = score;
+            document.getElementById("reward-info").innerText = `獲得: ✨${earnedXP}XP / 🪙${earnedCoins}コイン`;
+
+            checkLevelUp();
+            await saveUserData();
+            updateHUD();
+        }
+
+        /* --- UIイベント --- */
+        document.getElementById("start-game-btn").onclick = () => {
+            document.getElementById("difficulty-selection").classList.remove("hidden");
+            document.getElementById("start-game-btn").classList.add("hidden");
+        };
+
+        document.getElementById("back-to-menu-btn").onclick = () => {
+            document.getElementById("difficulty-selection").classList.add("hidden");
+            document.getElementById("start-game-btn").classList.remove("hidden");
+        };
+
+        document.querySelectorAll(".diff-btn").forEach(btn => {
+            btn.onclick = () => startTyping(btn.dataset.diff);
+        });
+
+        document.getElementById("return-home-btn").onclick = () => {
+            document.getElementById("result-screen").classList.add("hidden");
+            document.getElementById("main-menu").classList.remove("hidden");
+            document.getElementById("start-game-btn").classList.remove("hidden");
+            document.getElementById("difficulty-selection").classList.add("hidden");
+        };
+
+        // パネル操作
+        const overlay = document.getElementById("dark-overlay");
+        document.getElementById("profile-open-btn").onclick = () => {
+            document.getElementById("friend-panel").classList.add("open");
+            overlay.classList.add("active");
+        };
+        document.getElementById("task-open-btn").onclick = () => {
+            document.getElementById("task-panel").classList.add("open");
+            overlay.classList.add("active");
+        };
+        document.querySelectorAll(".close-panel-btn, #dark-overlay").forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll(".side-panel").forEach(p => p.classList.remove("open"));
+                overlay.classList.remove("active");
+            };
+        });
+
+        // 名前変更
+        document.getElementById("change-name-btn").onclick = async () => {
+            const newName = document.getElementById("name-input").value.trim();
+            if (!newName) return showNotification("名前を入力してください");
+            if (user.nameChanges <= 0) return showNotification("本日の変更回数制限です");
+
+            user.name = newName;
+            user.nameChanges--;
+            await saveUserData();
+            updateHUD();
+            showNotification("名前を変更しました！");
+            document.getElementById("name-input").value = "";
+        };
+
+        // タスクタブ切り替え
+        document.getElementById("tab-daily-btn").onclick = () => {
+            currentTaskTab = "daily";
+            document.getElementById("tab-daily-btn").classList.add("active");
+            document.getElementById("tab-weekly-btn").classList.remove("active");
+            renderTasks();
+        };
+        document.getElementById("tab-weekly-btn").onclick = () => {
+            currentTaskTab = "weekly";
+            document.getElementById("tab-weekly-btn").classList.add("active");
+            document.getElementById("tab-daily-btn").classList.remove("active");
+            renderTasks();
+        };
 
         /* --- 認証 --- */
         onAuthStateChanged(auth, async (u) => {
