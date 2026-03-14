@@ -243,7 +243,7 @@
             friends: {},
             requests: {},
             tasks: {
-                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 10, score: 25000, combo: 100 } }, // スコア目標は間を取って25000, コンボ100
+                daily: { play: 0, score: 0, combo: 0, completed: false, targets: { play: 10, score: 25000, combo: 100 } },
                 weekly: { play: 0, scoreCount: 0, combo: 0, completed: false, targets: { play: 100, scoreCount: 10, combo: 150, scoreThreshold: 25000 } }
             }
         };
@@ -257,9 +257,8 @@
         let currentWord = null;
         let charIdx = 0;
         let activeDiff = "easy";
-        let wordsTypedCount = 0; // タイムアタック用
+        let wordsTypedCount = 0;
 
-        // 「つ」のローマ字を「tu」に修正
         const WordDB = {
             easy: [{t:"ねこ",r:"neko"},{t:"いぬ",r:"inu"},{t:"とり",r:"tori"},{t:"うし",r:"ushi"},{t:"さら",r:"sara"}, {t:"つみき",r:"tumiki"}],
             normal: [{t:"にほんご",r:"nihongo"},{t:"らいおん",r:"raion"},{t:"ぱそこん",r:"pasokon"},{t:"あおぞら",r:"aozora"}, {t:"つつみ",r:"tutumi"}],
@@ -268,10 +267,8 @@
 
         /* --- ユーティリティ --- */
         function generateFriendCode() {
-            // 数字8桁
             let nums = "";
             for(let i=0; i<8; i++) nums += Math.floor(Math.random()*10).toString();
-            // 英語大文字3桁
             const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             let eng = "";
             for(let i=0; i<3; i++) eng += letters.charAt(Math.floor(Math.random() * letters.length));
@@ -290,18 +287,17 @@
         function getTodayResetTime() {
             const now = new Date();
             const reset = new Date(now);
-            reset.setHours(7, 0, 0, 0); // 朝7時リセット
+            reset.setHours(7, 0, 0, 0);
             if (now.getHours() < 7) reset.setDate(reset.getDate() - 1);
             return reset.getTime();
         }
 
-        /* --- データ同期・復元処理 (バグ修正の要) --- */
+        /* --- データ同期・復元処理 --- */
         async function loadUserData(uid) {
             const snapshot = await get(ref(db, `users/${uid}`));
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 
-                // データを慎重にマージ
                 user.uid = uid;
                 user.name = data.name || "初心さん";
                 user.coins = Number.isFinite(data.coins) ? data.coins : 0;
@@ -315,13 +311,11 @@
                 if (data.friends) user.friends = data.friends;
                 if (data.requests) user.requests = data.requests;
                 
-                // タスクデータの復元
                 if (data.tasks) {
                     if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
                     if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
                 }
                 
-                // フレンドコードがデータベースにない場合のみ登録
                 if (!data.friendCode) {
                     await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
@@ -330,14 +324,12 @@
                 await checkDailyReset();
                 await checkRankingReward();
             } else {
-                // 新規ユーザー
                 user.uid = uid;
                 user.friendCode = generateFriendCode();
                 await set(ref(db, `users/${uid}`), user);
                 await set(ref(db, `friendCodes/${user.friendCode}`), uid);
             }
             
-            // 読み込み完了後、UIの更新処理を確実に呼び出す
             updateHUD();
             renderProfile();
             listenToRequests();
@@ -360,7 +352,6 @@
             renderProfile();
         }
 
-        // コイン、Lv、XPバーの値を更新
         function updateHUD() {
             document.getElementById("coin-value").innerText = Math.floor(user.coins);
             document.getElementById("current-level").innerText = user.level;
@@ -371,7 +362,6 @@
             document.getElementById("current-xp-text").innerText = `${Math.floor(user.xp)} / ${nextXP} XP`;
         }
 
-        // プロフィールの名前とコードを更新
         function renderProfile() {
             document.getElementById("display-name").innerText = user.name;
             document.getElementById("my-friend-code").innerText = user.friendCode;
@@ -385,7 +375,7 @@
                 user.tasks.daily.score = 0;
                 user.tasks.daily.combo = 0;
                 user.tasks.daily.completed = false;
-                user.nameChanges = 3; // 1日3回に戻す
+                user.nameChanges = 3;
                 user.lastReset = Date.now();
                 await saveUserData();
             }
@@ -451,7 +441,6 @@
         function setNextWord() {
             let diff = activeDiff;
             if (gameMode !== "solo") {
-                // タイムアタック：5問ごとに難易度をループ (初級 -> 中級 -> 上級)
                 const cycle = Math.floor(wordsTypedCount / 5) % 3;
                 diff = cycle === 0 ? "easy" : (cycle === 1 ? "normal" : "hard");
                 document.getElementById("ranking-stage-info").innerText = `TIME ATTACK (${diff.toUpperCase()})`;
@@ -489,21 +478,19 @@
             user.coins += earnedCoins;
             user.xp += earnedXP;
             
-            // タスク進捗 (要求に沿った3つずつ)
             user.tasks.daily.play++;
             user.tasks.weekly.play++;
             if (score > user.tasks.daily.score) user.tasks.daily.score = score;
             if (combo > user.tasks.daily.combo) user.tasks.daily.combo = combo;
             
             if (score >= user.tasks.weekly.targets.scoreThreshold) {
-                user.tasks.weekly.scoreCount++; // 5000~50000の目標値（ここでは25000以上でカウント）
+                user.tasks.weekly.scoreCount++;
             }
             if (combo > user.tasks.weekly.combo) user.tasks.weekly.combo = combo;
 
             document.getElementById("final-score").innerText = score;
             document.getElementById("reward-info").innerText = `報酬: 🪙${Math.floor(earnedCoins)} / ✨${Math.floor(earnedXP)}XP`;
             
-            // ランキング保存ロジック（ハイスコアのみ上書き）
             if (gameMode !== "solo") {
                 const path = gameMode === "onlineRanking" ? "rankings/online" : `rankings/friend/${user.uid}`;
                 const snap = await get(ref(db, `${path}/${user.uid}`));
@@ -622,7 +609,6 @@
                 const snap = await get(ref(db, `rankings/online`));
                 if (snap.exists()) scores = Object.values(snap.val());
             } else {
-                // フレンドランキング
                 const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
                 if (mySnap.exists()) scores.push(mySnap.val());
                 for (let fUid in user.friends) {
@@ -657,7 +643,7 @@
         }
 
         document.getElementById("profile-open-btn").onclick = () => {
-            renderProfile(); // パネルを開く時に確実に描画
+            renderProfile();
             openPanel("friend-panel");
         };
         document.getElementById("task-open-btn").onclick = () => {
@@ -719,9 +705,10 @@
         }
 
         window.acceptFriend = async (uid, name, code) => {
+            // ここでシンタックスエラーを修正
             await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
             await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
-            await remove(ref(db, `users/${user.uid}/requests/${uid}`);
+            await remove(ref(db, `users/${user.uid}/requests/${uid}`)); 
             showNotification(`${name}さんとフレンドになりました！`);
         };
 
@@ -737,7 +724,7 @@
             }
         }
 
-        /* --- タスク (3つずつ完全実装) --- */
+        /* --- タスク --- */
         let currentTaskTab = "daily";
         document.getElementById("tab-daily-btn").onclick = () => { 
             currentTaskTab = "daily"; 
@@ -757,7 +744,6 @@
             container.innerHTML = "";
             const t = user.tasks[currentTaskTab];
             
-            // 毎日のタスク3つ、週間のタスク3つを定義
             const data = currentTaskTab === "daily" ? 
                 [
                     {label: "10回タイピングをプレイ", current: t.play, goal: t.targets.play}, 
