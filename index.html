@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Typing Game - Perfect Full Version</title>
+    <title>Ultimate Typing Game - Final Fix</title>
     <style>
         /* --- 基本デザイン設定 --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', 'Meiryo', sans-serif; }
@@ -292,68 +292,95 @@
             return reset.getTime();
         }
 
-        /* --- データ同期・復元処理 --- */
+        /* --- データ同期・復元処理 (堅牢化) --- */
         async function loadUserData(uid) {
-            const snapshot = await get(ref(db, `users/${uid}`));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                
-                user.uid = uid;
-                user.name = data.name || "初心さん";
-                user.coins = Number.isFinite(data.coins) ? data.coins : 0;
-                user.level = Number.isFinite(data.level) ? data.level : 1;
-                user.xp = Number.isFinite(data.xp) ? data.xp : 0;
-                user.friendCode = data.friendCode || ""; // 一旦空にする
-                user.nameChanges = Number.isFinite(data.nameChanges) ? data.nameChanges : 3;
-                user.lastReset = data.lastReset || null;
-                user.lastRankingReward = data.lastRankingReward || null;
-                
-                if (data.friends) user.friends = data.friends;
-                if (data.requests) user.requests = data.requests;
-                
-                if (data.tasks) {
-                    if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
-                    if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
-                }
-                
-                // フレンドコードが存在しない場合は新規作成して保存
-                if (!user.friendCode) {
+            try {
+                const snapshot = await get(ref(db, `users/${uid}`));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    
+                    user.uid = uid;
+                    user.name = data.name || "初心さん";
+                    user.coins = Number.isFinite(data.coins) ? data.coins : 0;
+                    user.level = Number.isFinite(data.level) ? data.level : 1;
+                    user.xp = Number.isFinite(data.xp) ? data.xp : 0;
+                    user.nameChanges = Number.isFinite(data.nameChanges) ? data.nameChanges : 3;
+                    user.lastReset = data.lastReset || null;
+                    user.lastRankingReward = data.lastRankingReward || null;
+                    
+                    if (data.friends) user.friends = data.friends;
+                    if (data.requests) user.requests = data.requests;
+                    
+                    if (data.tasks) {
+                        if (data.tasks.daily) Object.assign(user.tasks.daily, data.tasks.daily);
+                        if (data.tasks.weekly) Object.assign(user.tasks.weekly, data.tasks.weekly);
+                    }
+
+                    // フレンドコードのチェックと生成
+                    if (!data.friendCode) {
+                        user.friendCode = generateFriendCode();
+                        await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
+                        await set(ref(db, `friendCodes/${user.friendCode}`), uid);
+                    } else {
+                        user.friendCode = data.friendCode;
+                    }
+
+                    await checkDailyReset();
+                    await checkRankingReward();
+                } else {
+                    // 新規ユーザー
+                    user.uid = uid;
                     user.friendCode = generateFriendCode();
-                    await set(ref(db, `users/${uid}/friendCode`), user.friendCode);
+                    
+                    // 初期データをFirebaseへ保存
+                    await set(ref(db, `users/${uid}`), {
+                        name: user.name,
+                        coins: user.coins,
+                        level: user.level,
+                        xp: user.xp,
+                        friendCode: user.friendCode,
+                        nameChanges: user.nameChanges,
+                        lastReset: Date.now(), // 初回アクセス時刻を記録
+                        lastRankingReward: user.lastRankingReward,
+                        tasks: user.tasks,
+                        friends: {},
+                        requests: {}
+                    });
                     await set(ref(db, `friendCodes/${user.friendCode}`), uid);
                 }
-
-                await checkDailyReset();
-                await checkRankingReward();
-            } else {
-                user.uid = uid;
-                user.friendCode = generateFriendCode();
-                await set(ref(db, `users/${uid}`), user);
-                await set(ref(db, `friendCodes/${user.friendCode}`), uid);
+            } catch (e) {
+                console.error("データ読み込みエラー:", e);
+                showNotification("データの読み込みに失敗しました。");
+            } finally {
+                // エラーが起きても必ずUIを更新して「生成中...」から書き換える
+                updateHUD();
+                renderProfile();
+                listenToRequests();
             }
-            
-            // UIを確実に更新
-            updateHUD();
-            renderProfile();
-            listenToRequests();
         }
 
         async function saveUserData() {
             if (!user.uid) return;
-            await update(ref(db, `users/${user.uid}`), {
-                name: user.name,
-                coins: user.coins,
-                level: user.level,
-                xp: user.xp,
-                friendCode: user.friendCode,
-                nameChanges: user.nameChanges,
-                lastReset: user.lastReset,
-                lastRankingReward: user.lastRankingReward,
-                tasks: user.tasks
-            });
-            // 保存後もUIを更新
-            updateHUD();
-            renderProfile();
+            try {
+                await update(ref(db, `users/${user.uid}`), {
+                    name: user.name,
+                    coins: user.coins,
+                    level: user.level,
+                    xp: user.xp,
+                    friendCode: user.friendCode, // undefinedが入らないようにする
+                    nameChanges: user.nameChanges,
+                    lastReset: user.lastReset,
+                    lastRankingReward: user.lastRankingReward,
+                    tasks: user.tasks
+                });
+            } catch (e) {
+                console.error("データ保存エラー:", e);
+                showNotification("データの保存に失敗しました。");
+            } finally {
+                // 保存試行後は必ず画面に最新の変数を反映させる
+                updateHUD();
+                renderProfile();
+            }
         }
 
         function updateHUD() {
@@ -368,7 +395,8 @@
 
         function renderProfile() {
             document.getElementById("display-name").innerText = user.name;
-            document.getElementById("my-friend-code").innerText = user.friendCode || "生成中...";
+            // user.friendCodeが空なら代替テキストを入れる（通常はあり得ない）
+            document.getElementById("my-friend-code").innerText = user.friendCode || "生成エラー";
             document.getElementById("name-change-count").innerText = user.nameChanges;
         }
 
@@ -390,33 +418,37 @@
             const currentReset = getTodayResetTime();
             if (user.lastRankingReward && user.lastRankingReward > currentReset) return;
 
-            const onlineSnap = await get(ref(db, 'rankings/online'));
-            let onlineRank = -1;
-            let onlineTotal = 0;
-            if (onlineSnap.exists()) {
-                const sorted = Object.values(onlineSnap.val()).sort((a, b) => b.score - a.score);
-                onlineTotal = sorted.length;
-                onlineRank = sorted.findIndex(r => r.uid === user.uid) + 1;
-            }
+            try {
+                const onlineSnap = await get(ref(db, 'rankings/online'));
+                let onlineRank = -1;
+                let onlineTotal = 0;
+                if (onlineSnap.exists()) {
+                    const sorted = Object.values(onlineSnap.val()).sort((a, b) => b.score - a.score);
+                    onlineTotal = sorted.length;
+                    onlineRank = sorted.findIndex(r => r.uid === user.uid) + 1;
+                }
 
-            let gotReward = false;
-            let totalXp = 0;
-            let totalCoins = 0;
+                let gotReward = false;
+                let totalXp = 0;
+                let totalCoins = 0;
 
-            if (onlineRank > 0 && onlineRank <= 5 && onlineTotal > 0) {
-                if (onlineRank === 1) { totalXp += 50 * onlineTotal; totalCoins += 500 * onlineTotal; }
-                else if (onlineRank <= 3) { totalXp += 25 * onlineTotal; totalCoins += 250 * onlineTotal; }
-                else if (onlineRank <= 5) { totalXp += 15 * onlineTotal; totalCoins += 150 * onlineTotal; }
-                gotReward = true;
-            }
+                if (onlineRank > 0 && onlineRank <= 5 && onlineTotal > 0) {
+                    if (onlineRank === 1) { totalXp += 50 * onlineTotal; totalCoins += 500 * onlineTotal; }
+                    else if (onlineRank <= 3) { totalXp += 25 * onlineTotal; totalCoins += 250 * onlineTotal; }
+                    else if (onlineRank <= 5) { totalXp += 15 * onlineTotal; totalCoins += 150 * onlineTotal; }
+                    gotReward = true;
+                }
 
-            if (gotReward) {
-                user.xp += totalXp;
-                user.coins += totalCoins;
-                user.lastRankingReward = Date.now();
-                await saveUserData();
-                checkLevelUp();
-                showNotification(`昨日のランキング報酬獲得！ ✨${totalXp}XP / 🪙${totalCoins}`, true);
+                if (gotReward) {
+                    user.xp += totalXp;
+                    user.coins += totalCoins;
+                    user.lastRankingReward = Date.now();
+                    await saveUserData();
+                    checkLevelUp();
+                    showNotification(`昨日のランキング報酬獲得！ ✨${totalXp}XP / 🪙${totalCoins}`, true);
+                }
+            } catch(e) {
+                console.error("報酬チェックエラー:", e);
             }
         }
 
@@ -497,27 +529,32 @@
             document.getElementById("reward-info").innerText = `報酬: 🪙${Math.floor(earnedCoins)} / ✨${Math.floor(earnedXP)}XP`;
             
             if (gameMode !== "solo") {
-                const path = gameMode === "onlineRanking" ? "rankings/online" : `rankings/friend/${user.uid}`;
-                const snap = await get(ref(db, `${path}/${user.uid}`));
-                const existingScore = snap.exists() ? snap.val().score : 0;
+                try {
+                    const path = gameMode === "onlineRanking" ? "rankings/online" : `rankings/friend/${user.uid}`;
+                    const snap = await get(ref(db, `${path}/${user.uid}`));
+                    const existingScore = snap.exists() ? snap.val().score : 0;
 
-                if (score > existingScore) {
-                    await update(ref(db, `${path}/${user.uid}`), {
-                        uid: user.uid,
-                        name: user.name,
-                        score: score,
-                        timestamp: Date.now()
-                    });
-                    document.getElementById("ranking-result-info").innerText = "自己ベスト更新！ランキングを塗り替えました！";
-                } else {
-                    document.getElementById("ranking-result-info").innerText = `ベストスコア(${existingScore})に届きませんでした。`;
+                    if (score > existingScore) {
+                        await update(ref(db, `${path}/${user.uid}`), {
+                            uid: user.uid,
+                            name: user.name,
+                            score: score,
+                            timestamp: Date.now()
+                        });
+                        document.getElementById("ranking-result-info").innerText = "自己ベスト更新！ランキングを塗り替えました！";
+                    } else {
+                        document.getElementById("ranking-result-info").innerText = `ベストスコア(${existingScore})に届きませんでした。`;
+                    }
+                } catch(e) {
+                    console.error("ランキング保存エラー:", e);
+                    document.getElementById("ranking-result-info").innerText = "ランキングへの保存に失敗しました。";
                 }
             } else {
                  document.getElementById("ranking-result-info").innerText = "";
             }
 
             checkLevelUp();
-            await saveUserData();
+            await saveUserData(); // UI更新もこの中で行われる
         }
 
         function checkLevelUp() {
@@ -528,7 +565,6 @@
                 showNotification(`LEVEL UP! Lv.${user.level}`, true);
                 nextXP = user.level * 100;
             }
-            updateHUD();
         }
 
         /* --- キーボード入力 --- */
@@ -610,31 +646,36 @@
             
             let scores = [];
             
-            if (type === "online") {
-                const snap = await get(ref(db, `rankings/online`));
-                if (snap.exists()) scores = Object.values(snap.val());
-            } else {
-                const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
-                if (mySnap.exists()) scores.push(mySnap.val());
-                for (let fUid in user.friends) {
-                    const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
-                    if (fSnap.exists()) scores.push(fSnap.val());
+            try {
+                if (type === "online") {
+                    const snap = await get(ref(db, `rankings/online`));
+                    if (snap.exists()) scores = Object.values(snap.val());
+                } else {
+                    const mySnap = await get(ref(db, `rankings/friend/${user.uid}`));
+                    if (mySnap.exists()) scores.push(mySnap.val());
+                    for (let fUid in user.friends) {
+                        const fSnap = await get(ref(db, `rankings/friend/${fUid}`));
+                        if (fSnap.exists()) scores.push(fSnap.val());
+                    }
                 }
-            }
 
-            if (scores.length === 0) {
-                listContent.innerHTML = "記録がありません。";
-                return;
+                if (scores.length === 0) {
+                    listContent.innerHTML = "記録がありません。";
+                    return;
+                }
+                
+                scores.sort((a,b)=>b.score - a.score);
+                listContent.innerHTML = "";
+                scores.forEach((s, i) => {
+                    const div = document.createElement("div");
+                    div.className = `ranking-item top${i+1 > 3 ? '' : i+1}`;
+                    div.innerHTML = `<span>${i+1}位. ${s.name} ${s.uid === user.uid ? "(あなた)" : ""}</span><span>${s.score} pts</span>`;
+                    listContent.appendChild(div);
+                });
+            } catch (e) {
+                console.error("ランキング読み込みエラー:", e);
+                listContent.innerHTML = "ランキングの取得に失敗しました。";
             }
-            
-            scores.sort((a,b)=>b.score - a.score);
-            listContent.innerHTML = "";
-            scores.forEach((s, i) => {
-                const div = document.createElement("div");
-                div.className = `ranking-item top${i+1 > 3 ? '' : i+1}`;
-                div.innerHTML = `<span>${i+1}位. ${s.name} ${s.uid === user.uid ? "(あなた)" : ""}</span><span>${s.score} pts</span>`;
-                listContent.appendChild(div);
-            });
         }
 
         /* --- プロフィール・フレンド機能 --- */
@@ -648,7 +689,7 @@
         }
 
         document.getElementById("profile-open-btn").onclick = () => {
-            renderProfile();
+            renderProfile(); // パネルを開く時に確実に最新の状態にする
             openPanel("friend-panel");
         };
         document.getElementById("task-open-btn").onclick = () => {
@@ -665,7 +706,7 @@
             
             user.name = newName;
             user.nameChanges--;
-            await saveUserData();
+            await saveUserData(); // この中でrenderProfile()が呼ばれて画面が書き換わる
             showNotification("名前を変更しました！");
             document.getElementById("name-input").value = "";
         };
@@ -686,12 +727,18 @@
         document.getElementById("add-friend-btn").onclick = async () => {
             const code = document.getElementById("friend-search-input").value.trim();
             if (code === user.friendCode) return alert("自分のコードです。");
-            const targetUidSnap = await get(ref(db, `friendCodes/${code}`));
-            if (!targetUidSnap.exists()) return alert("見つかりません。");
-            const targetUid = targetUidSnap.val();
-            await set(ref(db, `users/${targetUid}/requests/${user.uid}`), { name: user.name, code: user.friendCode });
-            alert("申請を送りました！");
-            document.getElementById("friend-search-input").value = "";
+            
+            try {
+                const targetUidSnap = await get(ref(db, `friendCodes/${code}`));
+                if (!targetUidSnap.exists()) return alert("見つかりません。");
+                const targetUid = targetUidSnap.val();
+                await set(ref(db, `users/${targetUid}/requests/${user.uid}`), { name: user.name, code: user.friendCode });
+                alert("申請を送りました！");
+                document.getElementById("friend-search-input").value = "";
+            } catch (e) {
+                console.error("フレンド申請エラー:", e);
+                alert("エラーが発生しました。");
+            }
         };
 
         function listenToRequests() {
@@ -711,11 +758,15 @@
         }
 
         window.acceptFriend = async (uid, name, code) => {
-            await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
-            await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
-            await remove(ref(db, `users/${user.uid}/requests/${uid}`)); 
-            showNotification(`${name}さんとフレンドになりました！`);
-            renderFriendList();
+            try {
+                await update(ref(db, `users/${user.uid}/friends/${uid}`), { name, code });
+                await update(ref(db, `users/${uid}/friends/${user.uid}`), { name: user.name, code: user.friendCode });
+                await remove(ref(db, `users/${user.uid}/requests/${uid}`)); 
+                showNotification(`${name}さんとフレンドになりました！`);
+                renderFriendList();
+            } catch (e) {
+                console.error("フレンド許可エラー:", e);
+            }
         };
 
         async function renderFriendList() {
@@ -811,9 +862,8 @@
             }
             
             user.tasks[type].completed = true;
-            await saveUserData();
+            await saveUserData(); // UI更新と保存を同時に実行
             renderTasks();
-            updateHUD();
             checkLevelUp();
         }
 
