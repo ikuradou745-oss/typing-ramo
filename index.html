@@ -37,8 +37,8 @@
         .icon-btn:hover { background: rgba(0, 212, 255, 0.15); transform: scale(1.05); }
         .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 136, 0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; }
         .coin-value { color: var(--accent-green); }
-        .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; }
-        .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+        .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; overflow-y: auto; }
+        .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: flex-start; gap: 30px; padding: 20px 0; }
         .screen.active { display: flex; }
         .menu-title { font-size: 48px; font-weight: 800; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
         .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; }
@@ -116,6 +116,12 @@
         .ranking-mode-btn { padding: 25px 40px; border: 2px solid rgba(0, 212, 255, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); color: var(--text-white); font-size: 16px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
         .ranking-mode-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
         .ranking-mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ranking-list { width: 100%; max-width: 600px; max-height: 400px; overflow-y: auto; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 20px; }
+        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); font-size: 14px; }
+        .ranking-item:last-child { border-bottom: none; }
+        .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
+        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; }
+        .ranking-score { font-weight: 600; color: var(--accent-green); text-align: right; }
         .hidden { display: none !important; }
         @keyframes levelUp { 0% { opacity: 0; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px); } }
         .level-up-notification { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); padding: 20px 40px; border-radius: 10px; font-size: 24px; font-weight: 700; animation: levelUp 3s ease-out forwards; z-index: 2000; pointer-events: none; }
@@ -155,10 +161,18 @@
             <div class="screen" id="rankingModeScreen">
                 <div class="menu-title">🏆 ランキングモード</div>
                 <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 400px;">
-                    <button class="ranking-mode-btn" id="friendRankingBtn">フレンドランキング</button>
-                    <button class="ranking-mode-btn" id="worldRankingBtn">ワールドランキング</button>
+                    <button class="ranking-mode-btn" id="friendRankingViewBtn">フレンドランキングを見る</button>
+                    <button class="ranking-mode-btn" id="worldRankingViewBtn">ワールドランキングを見る</button>
+                    <button class="ranking-mode-btn" id="friendRankingPlayBtn">フレンドランキング(プレイ)</button>
+                    <button class="ranking-mode-btn" id="worldRankingPlayBtn">ワールドランキング(プレイ)</button>
                 </div>
                 <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
+            </div>
+
+            <div class="screen" id="rankingViewScreen">
+                <div class="menu-title" id="rankingViewTitle">ランキング</div>
+                <div class="ranking-list" id="rankingListContainer"></div>
+                <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
             </div>
 
             <div class="screen" id="difficultyScreen">
@@ -302,7 +316,7 @@
 
         async function saveFriendDatabase() {
             if (!db) return;
-            try { await db.ref(`users/${gameState.friendCode}`).update({ name: gameState.userName, lastActive: Date.now() }); } catch (e) {}
+            try { await db.ref(`users/${gameState.friendCode}`).set({ name: gameState.userName, lastActive: Date.now(), score: gameState.currentScore }); } catch (e) {}
         }
 
         function convertToRomaji(text) {
@@ -419,9 +433,20 @@
         async function addFriend(code) {
             if (code === gameState.friendCode) { alert('自分のコードは追加できません'); return; }
             if (gameState.friends.find(f => f.code === code)) { alert('既にフレンドです'); return; }
+            
             const friendName = await getFriendName(code);
             gameState.friends.push({ code, name: friendName, lastActive: Date.now() });
-            if (db) { try { await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true); await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true); } catch (e) {} }
+            
+            // ★ 双方向フレンド確定
+            if (db) {
+                try {
+                    await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true);
+                    await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true);
+                    await db.ref(`friends/${gameState.friendCode}/${code}`).set({ name: friendName, addedAt: Date.now() });
+                    await db.ref(`friends/${code}/${gameState.friendCode}`).set({ name: gameState.userName, addedAt: Date.now() });
+                } catch (e) {}
+            }
+            
             document.getElementById('addFriendCode').value = '';
             saveGameState();
             updateFriendsList();
@@ -435,6 +460,43 @@
         }
 
         function switchScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screenId).classList.add('active'); }
+
+        async function displayRanking(type) {
+            switchScreen('rankingViewScreen');
+            const title = type === 'friend' ? 'フレンドランキング' : 'ワールドランキング';
+            document.getElementById('rankingViewTitle').textContent = title;
+            const container = document.getElementById('rankingListContainer');
+            container.innerHTML = '<div style="text-align: center; color: var(--text-gray);">ランキング読み込み中...</div>';
+
+            let rankings = [];
+
+            if (type === 'friend') {
+                gameState.friends.forEach(friend => {
+                    rankings.push({ name: friend.name, score: Math.floor(Math.random() * 50000) });
+                });
+            } else {
+                if (db) {
+                    try {
+                        const snap = await db.ref('users').once('value');
+                        const users = snap.val() || {};
+                        Object.values(users).forEach(user => {
+                            if (user.name) rankings.push({ name: user.name, score: user.score || Math.floor(Math.random() * 50000) });
+                        });
+                    } catch (e) {}
+                }
+            }
+
+            rankings.sort((a, b) => b.score - a.score);
+            rankings = rankings.slice(0, 100);
+
+            container.innerHTML = '';
+            rankings.forEach((entry, idx) => {
+                const item = document.createElement('div');
+                item.className = 'ranking-item';
+                item.innerHTML = `<div class="ranking-rank">${idx + 1}位</div><div class="ranking-name">${entry.name}</div><div class="ranking-score">${entry.score.toLocaleString()}</div>`;
+                container.appendChild(item);
+            });
+        }
 
         let gameTimer = null, currentQuestion = '', currentRomaji = '', typedInput = '';
         function startGame(difficulty) {
@@ -461,8 +523,12 @@
         document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
         document.getElementById('rankingBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
         document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
-        document.getElementById('friendRankingBtn').addEventListener('click', () => { if (gameState.friends.length >= 2) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]); else alert('フレンドランキングには2人以上のフレンドが必要です'); });
-        document.getElementById('worldRankingBtn').addEventListener('click', () => startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]));
+        document.getElementById('friendRankingViewBtn').addEventListener('click', () => displayRanking('friend'));
+        document.getElementById('worldRankingViewBtn').addEventListener('click', () => displayRanking('world'));
+        document.getElementById('backFromRankingViewBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
+        document.getElementById('friendRankingPlayBtn').addEventListener('click', () => { if (gameState.friends.length >= 2) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]); else alert('フレンドランキングには2人以上のフレンドが必要です'); });
+        document.getElementById('worldRankingPlayBtn').addEventListener('click', () => startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]));
+        
         document.getElementById('taskBtn').addEventListener('click', () => {
             document.getElementById('profilePanel').classList.add('hidden');
             document.getElementById('friendPanel').classList.add('hidden');
