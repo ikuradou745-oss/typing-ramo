@@ -3,17 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>タイピングゲーム</title>
-    <!-- Firebase SDK -->
+    <title>⚡ タイピングゲーム - Firebase版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary-dark: #0a0e27;
             --accent-blue: #00d4ff;
@@ -23,836 +17,119 @@
             --text-white: #f0f0f0;
             --text-gray: #a0a0a0;
         }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%);
             color: var(--text-white);
-            overflow: hidden;
             height: 100vh;
-        }
-
-        .game-container {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
-            position: relative;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-            background: rgba(10, 14, 39, 0.95);
-            backdrop-filter: blur(10px);
-            gap: 20px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-        }
-
-        .game-title {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 2px;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .level-display {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            background: rgba(0, 212, 255, 0.1);
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-        }
-
-        .level-display .label {
-            font-size: 12px;
-            color: var(--text-gray);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .level-display .level-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-
-        .xp-bar {
-            width: 150px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .xp-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-            transition: width 0.3s ease;
-        }
-
-        .top-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .icon-btn {
-            width: 45px;
-            height: 45px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(0, 212, 255, 0.05);
-            color: var(--accent-blue);
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .icon-btn:hover {
-            background: rgba(0, 212, 255, 0.15);
-            border-color: var(--accent-blue);
-            transform: scale(1.05);
-        }
-
-        .coin-display {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 255, 136, 0.1);
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .coin-icon {
-            font-size: 24px;
-        }
-
-        .coin-value {
-            color: var(--accent-green);
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            position: relative;
-        }
-
-        .screen {
-            display: none;
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-        .menu-screen {
-            gap: 40px;
-        }
-
-        .menu-title {
-            font-size: 48px;
-            font-weight: 800;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
-            animation: fadeInDown 0.8s ease;
-        }
-
-        .menu-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .menu-btn {
-            padding: 30px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-            color: var(--text-white);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .menu-btn:hover {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
-            border-color: var(--accent-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
-        }
-
-        .menu-btn .icon {
-            font-size: 32px;
-        }
-
-        .difficulty-screen {
-            gap: 40px;
-        }
-
-        .difficulty-title {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-
-        .difficulty-options {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .difficulty-btn {
-            padding: 25px 40px;
-            border: 2px solid transparent;
-            border-radius: 10px;
-            background: rgba(26, 31, 58, 0.5);
-            color: var(--text-white);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .difficulty-btn.easy {
-            border-color: var(--accent-green);
-            color: var(--accent-green);
-        }
-
-        .difficulty-btn.normal {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-        }
-
-        .difficulty-btn.hard {
-            border-color: var(--accent-pink);
-            color: var(--accent-pink);
-        }
-
-        .game-screen {
-            gap: 20px;
-        }
-
-        .game-stats {
-            display: flex;
-            gap: 50px;
-            margin-bottom: 20px;
-        }
-
-        .stat-box {
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-gray);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 42px;
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .timer {
-            font-size: 56px;
-            font-weight: 800;
-            color: var(--accent-pink);
-            margin: 20px 0;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .current-question {
-            font-size: 48px;
-            font-weight: 600;
-            color: var(--accent-blue);
-            text-align: center;
-            min-height: 60px;
-            margin: 20px 0;
-            max-width: 600px;
-            font-family: 'Hiragino Maru Gothic', 'Yu Gothic', serif;
-        }
-
-        .romaji-display {
-            font-size: 32px;
-            color: var(--accent-green);
-            font-family: 'Courier New', monospace;
-            text-transform: lowercase;
-            letter-spacing: 3px;
-            margin-top: 10px;
-            min-height: 45px;
-        }
-
-        .romaji-typed {
-            color: var(--accent-blue);
-            font-weight: bold;
-        }
-
-        .romaji-remaining {
-            color: var(--text-gray);
-        }
-
-        .input-guide {
-            font-size: 14px;
-            color: var(--text-gray);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: none;
-            z-index: 999;
-        }
-
-        .overlay.active {
-            display: block;
-        }
-
-        .confirmation-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 12px;
-            padding: 40px;
-            width: 90%;
-            max-width: 400px;
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .confirmation-dialog.active {
-            display: flex;
-        }
-
-        .dialog-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-blue);
-            text-align: center;
-        }
-
-        .dialog-message {
-            font-size: 14px;
-            color: var(--text-white);
-            text-align: center;
-            line-height: 1.6;
-        }
-
-        .dialog-warning {
-            font-size: 12px;
-            color: var(--accent-pink);
-            background: rgba(255, 0, 110, 0.1);
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 0, 110, 0.3);
-            text-align: center;
-        }
-
-        .dialog-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .dialog-btn {
-            padding: 10px 20px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 6px;
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-blue);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-
-        .dialog-btn:hover {
-            background: rgba(0, 212, 255, 0.2);
-            border-color: var(--accent-blue);
-        }
-
-        .dialog-btn.danger {
-            background: rgba(255, 0, 110, 0.2);
-            border-color: rgba(255, 0, 110, 0.5);
-            color: var(--accent-pink);
-        }
-
-        .dialog-btn.danger:hover {
-            background: rgba(255, 0, 110, 0.3);
-            border-color: var(--accent-pink);
-        }
-
-        .side-panel {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%);
-            border-left: 1px solid rgba(0, 212, 255, 0.3);
-            backdrop-filter: blur(10px);
-            overflow-y: auto;
-            transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 1000;
-            padding: 30px 20px;
-        }
-
-        .side-panel.active {
-            right: 0;
-        }
-
-        .panel-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .panel-close {
-            background: none;
-            border: none;
-            color: var(--accent-blue);
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .profile-section {
-            margin-bottom: 30px;
-        }
-
-        .user-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-blue);
-            margin-bottom: 5px;
-        }
-
-        .user-id {
-            font-size: 12px;
-            color: var(--text-gray);
-            margin-bottom: 20px;
-        }
-
-        .change-name-input {
-            width: 100%;
-            padding: 10px 12px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 6px;
-            color: var(--text-white);
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .change-name-btn {
-            width: 100%;
-            padding: 10px;
-            background: rgba(0, 212, 255, 0.2);
-            border: 1px solid rgba(0, 212, 255, 0.5);
-            border-radius: 6px;
-            color: var(--accent-blue);
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 15px;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-
-        .friend-code {
-            background: rgba(124, 58, 237, 0.2);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(124, 58, 237, 0.5);
-            margin-top: 15px;
-        }
-
-        .friend-code-label {
-            font-size: 12px;
-            color: var(--text-gray);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .friend-code-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--accent-purple);
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-            text-align: center;
-        }
-
-        .friends-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .friend-item {
-            background: rgba(0, 212, 255, 0.05);
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .friend-info {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .friend-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--accent-green);
-            margin-top: 2px;
-        }
-
-        .friend-status.offline {
-            background: #ff4444;
-        }
-
-        .friend-details {
-            flex: 1;
-        }
-
-        .friend-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-white);
-            margin-bottom: 3px;
-        }
-
-        .friend-code-small {
-            font-size: 11px;
-            color: var(--text-gray);
-            font-family: 'Courier New', monospace;
-            margin-bottom: 5px;
-        }
-
-        .friend-status-text {
-            font-size: 11px;
-            color: var(--accent-green);
-            font-weight: 600;
-        }
-
-        .friend-status-text.offline {
-            color: #ff4444;
-        }
-
-        .friend-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .friend-btn {
-            padding: 6px 10px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 4px;
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-blue);
-            font-size: 11px;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .friend-btn.delete {
-            border-color: rgba(255, 0, 110, 0.5);
-            color: var(--accent-pink);
-            background: rgba(255, 0, 110, 0.1);
-        }
-
-        .friend-btn.block {
-            border-color: rgba(255, 100, 100, 0.5);
-            color: #ff6464;
-            background: rgba(255, 100, 100, 0.1);
-        }
-
-        .add-friend-section {
-            margin-bottom: 20px;
-        }
-
-        .add-friend-input {
-            width: 100%;
-            padding: 10px 12px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 6px;
-            color: var(--text-white);
-            font-size: 14px;
-            margin-bottom: 10px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .add-friend-btn {
-            width: 100%;
-            padding: 10px;
-            background: rgba(0, 212, 255, 0.2);
-            border: 1px solid rgba(0, 212, 255, 0.5);
-            border-radius: 6px;
-            color: var(--accent-blue);
-            font-weight: 600;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .task-item {
-            background: rgba(0, 212, 255, 0.05);
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            margin-bottom: 12px;
-        }
-
-        .task-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-white);
-            margin-bottom: 8px;
-        }
-
-        .task-progress {
-            font-size: 12px;
-            color: var(--text-gray);
-            margin-bottom: 8px;
-        }
-
-        .task-progress-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
             overflow: hidden;
         }
-
-        .task-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-            transition: width 0.3s ease;
-        }
-
-        .task-reward {
-            margin-top: 8px;
-            font-size: 12px;
-            color: var(--accent-green);
-            font-weight: 600;
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes levelUp {
-            0% { opacity: 0; transform: translateY(-50px); }
-            50% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-100px); }
-        }
-
-        .level-up-notification {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-            padding: 20px 40px;
-            border-radius: 10px;
-            font-size: 24px;
-            font-weight: 700;
-            animation: levelUp 3s ease-out forwards;
-            z-index: 2000;
-            pointer-events: none;
-        }
-
-        .tab-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-        }
-
-        .tab-btn {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            border-bottom: 2px solid transparent;
-            color: var(--text-gray);
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .tab-btn.active {
-            color: var(--accent-blue);
-            border-bottom-color: var(--accent-blue);
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .back-btn {
-            padding: 12px 24px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(0, 212, 255, 0.05);
-            color: var(--accent-blue);
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .ranking-mode-btn {
-            padding: 25px 40px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-            color: var(--text-white);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .ranking-mode-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .ranking-list {
-            width: 100%;
-            max-width: 600px;
-            max-height: 500px;
-            overflow-y: auto;
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .ranking-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-            font-size: 14px;
-        }
-
-        .ranking-rank {
-            font-weight: 700;
-            color: var(--accent-blue);
-            min-width: 40px;
-        }
-
-        .ranking-score {
-            font-weight: 600;
-            color: var(--accent-green);
-            min-width: 80px;
-            text-align: right;
-        }
+        .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); background: rgba(10, 14, 39, 0.95); }
+        .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0, 212, 255, 0.1); padding: 12px 20px; border-radius: 8px; }
+        .level-value { font-size: 20px; font-weight: 700; color: var(--accent-blue); }
+        .xp-bar { width: 150px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
+        .top-buttons { display: flex; gap: 10px; }
+        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .icon-btn:hover { background: rgba(0, 212, 255, 0.15); transform: scale(1.05); }
+        .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 136, 0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; }
+        .coin-value { color: var(--accent-green); }
+        .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; }
+        .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+        .screen.active { display: flex; }
+        .menu-title { font-size: 48px; font-weight: 800; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+        .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; }
+        .menu-btn { padding: 30px; border: 2px solid rgba(0, 212, 255, 0.3); background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
+        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
+        .menu-btn .icon { font-size: 32px; }
+        .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26, 31, 58, 0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
+        .difficulty-btn.easy { border-color: var(--accent-green); color: var(--accent-green); }
+        .difficulty-btn.normal { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .difficulty-btn.hard { border-color: var(--accent-pink); color: var(--accent-pink); }
+        .game-stats { display: flex; gap: 50px; }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 14px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 8px; }
+        .stat-value { font-size: 42px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .timer { font-size: 56px; font-weight: 800; color: var(--accent-pink); font-variant-numeric: tabular-nums; }
+        .current-question { font-size: 48px; font-weight: 600; color: var(--accent-blue); text-align: center; font-family: 'Hiragino Maru Gothic', 'Yu Gothic', serif; }
+        .romaji-display { font-size: 32px; color: var(--accent-green); font-family: 'Courier New', monospace; text-transform: lowercase; letter-spacing: 3px; }
+        .romaji-typed { color: var(--accent-blue); font-weight: bold; }
+        .romaji-remaining { color: var(--text-gray); }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+        .confirmation-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%); border: 1px solid rgba(0, 212, 255, 0.3); padding: 40px; max-width: 400px; border-radius: 12px; z-index: 2000; display: none; flex-direction: column; gap: 20px; }
+        .confirmation-dialog.active { display: flex; }
+        .dialog-title { font-size: 24px; font-weight: 700; color: var(--accent-blue); text-align: center; }
+        .dialog-message { font-size: 14px; color: var(--text-white); text-align: center; line-height: 1.6; }
+        .dialog-warning { font-size: 12px; color: var(--accent-pink); background: rgba(255, 0, 110, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(255, 0, 110, 0.3); display: none; }
+        .dialog-buttons { display: flex; gap: 10px; justify-content: center; }
+        .dialog-btn { padding: 10px 20px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); cursor: pointer; border-radius: 6px; font-weight: 600; text-transform: uppercase; font-size: 12px; transition: all 0.3s; }
+        .dialog-btn:hover { background: rgba(0, 212, 255, 0.2); }
+        .dialog-btn.danger { background: rgba(255, 0, 110, 0.2); border-color: rgba(255, 0, 110, 0.5); color: var(--accent-pink); }
+        .dialog-btn.danger:hover { background: rgba(255, 0, 110, 0.3); }
+        .side-panel { position: fixed; top: 0; right: -400px; width: 400px; height: 100%; background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%); border-left: 1px solid rgba(0, 212, 255, 0.3); overflow-y: auto; transition: right 0.4s; z-index: 1000; padding: 30px 20px; }
+        .side-panel.active { right: 0; }
+        .panel-header { font-size: 20px; font-weight: 700; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(0, 212, 255, 0.3); display: flex; justify-content: space-between; align-items: center; }
+        .panel-close { background: none; border: none; color: var(--accent-blue); font-size: 24px; cursor: pointer; }
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); }
+        .tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-gray); cursor: pointer; font-size: 14px; font-weight: 600; text-transform: uppercase; transition: all 0.3s; }
+        .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+        .profile-section { margin-bottom: 30px; }
+        .user-name { font-size: 24px; font-weight: 700; color: var(--accent-blue); margin-bottom: 5px; }
+        .user-id { font-size: 12px; color: var(--text-gray); margin-bottom: 20px; }
+        .change-name-input { width: 100%; padding: 10px 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; }
+        .change-name-btn { width: 100%; padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; margin-bottom: 15px; text-transform: uppercase; font-size: 12px; }
+        .name-change-count { font-size: 12px; color: var(--text-gray); margin-bottom: 15px; }
+        .friend-code { background: rgba(124, 58, 237, 0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(124, 58, 237, 0.5); margin-top: 15px; }
+        .friend-code-label { font-size: 12px; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; }
+        .friend-code-value { font-size: 18px; font-weight: 700; color: var(--accent-purple); font-family: 'Courier New', monospace; letter-spacing: 2px; text-align: center; }
+        .friends-list { display: flex; flex-direction: column; gap: 12px; }
+        .friend-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; flex-direction: column; gap: 12px; }
+        .friend-info { display: flex; align-items: flex-start; gap: 12px; }
+        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 2px; }
+        .friend-status.offline { background: #ff4444; }
+        .friend-details { flex: 1; }
+        .friend-name { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
+        .friend-code-small { font-size: 11px; color: var(--text-gray); font-family: 'Courier New', monospace; margin-bottom: 5px; }
+        .friend-status-text { font-size: 11px; color: var(--accent-green); font-weight: 600; }
+        .friend-status-text.offline { color: #ff4444; }
+        .friend-actions { display: flex; gap: 6px; }
+        .friend-btn { padding: 6px 10px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 600; flex: 1; text-transform: uppercase; transition: all 0.3s; }
+        .friend-btn.delete { border-color: rgba(255, 0, 110, 0.5); color: var(--accent-pink); background: rgba(255, 0, 110, 0.1); }
+        .friend-btn.delete:hover { background: rgba(255, 0, 110, 0.2); }
+        .friend-btn.block { border-color: rgba(255, 100, 100, 0.5); color: #ff6464; background: rgba(255, 100, 100, 0.1); }
+        .friend-btn.block:hover { background: rgba(255, 100, 100, 0.2); }
+        .add-friend-section { margin-bottom: 20px; }
+        .add-friend-input { width: 100%; padding: 10px 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; font-family: 'Courier New', monospace; }
+        .add-friend-btn { width: 100%; padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; text-transform: uppercase; }
+        .task-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 12px; }
+        .task-item.completed { background: rgba(0, 255, 136, 0.05); border-color: rgba(0, 255, 136, 0.3); }
+        .task-title { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
+        .task-progress { font-size: 12px; color: var(--text-gray); margin-bottom: 8px; }
+        .task-progress-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+        .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
+        .task-reward { margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600; }
+        .back-btn { padding: 12px 24px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-weight: 600; text-transform: uppercase; }
+        .ranking-mode-btn { padding: 25px 40px; border: 2px solid rgba(0, 212, 255, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); color: var(--text-white); font-size: 16px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
+        .ranking-mode-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
+        .ranking-mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .hidden { display: none !important; }
+        @keyframes levelUp { 0% { opacity: 0; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px); } }
+        .level-up-notification { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); padding: 20px 40px; border-radius: 10px; font-size: 24px; font-weight: 700; animation: levelUp 3s ease-out forwards; z-index: 2000; pointer-events: none; }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="header">
-            <div class="header-left">
+            <div style="display: flex; align-items: center; gap: 30px;">
                 <div class="game-title">⚡ TYPING</div>
             </div>
             <div class="header-right">
                 <div class="level-display">
-                    <div class="label">Level</div>
+                    <div style="font-size: 12px; color: var(--text-gray); text-transform: uppercase;">Level</div>
                     <div class="level-value" id="levelDisplay">1</div>
                     <div class="xp-bar">
                         <div class="xp-bar-fill" id="xpBarFill" style="width: 0%"></div>
@@ -860,34 +137,23 @@
                 </div>
                 <div class="top-buttons">
                     <button class="icon-btn" id="taskBtn">📋</button>
+                    <button class="icon-btn" id="profileBtn">👤</button>
                     <button class="icon-btn" id="friendBtn">👥</button>
                 </div>
             </div>
         </div>
 
         <div class="main-content">
-            <div class="screen active menu-screen" id="menuScreen">
+            <div class="screen active" id="menuScreen">
                 <div class="menu-title">🎮 タイピングゲーム</div>
                 <div class="menu-buttons">
                     <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
                     <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
-                    <button class="menu-btn" id="profileBtn"><div class="icon">👤</div><div>PROFILE</div></button>
-                    <button class="menu-btn" id="settingsBtn" style="opacity: 0.5; cursor: not-allowed;"><div class="icon">⚙️</div><div>SETTINGS</div></button>
                 </div>
             </div>
 
-            <div class="screen difficulty-screen" id="difficultyScreen">
-                <div class="difficulty-title">難易度を選択</div>
-                <div class="difficulty-options">
-                    <button class="difficulty-btn easy" data-difficulty="easy">初級</button>
-                    <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
-                    <button class="difficulty-btn hard" data-difficulty="hard">上級</button>
-                </div>
-                <button class="back-btn" id="backFromDifficultyBtn">戻る</button>
-            </div>
-
-            <div class="screen ranking-mode-screen" id="rankingModeScreen">
-                <div class="menu-title">ランキングモード</div>
+            <div class="screen" id="rankingModeScreen">
+                <div class="menu-title">🏆 ランキングモード</div>
                 <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 400px;">
                     <button class="ranking-mode-btn" id="friendRankingBtn">フレンドランキング</button>
                     <button class="ranking-mode-btn" id="worldRankingBtn">ワールドランキング</button>
@@ -895,7 +161,17 @@
                 <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
             </div>
 
-            <div class="screen game-screen" id="gameScreen">
+            <div class="screen" id="difficultyScreen">
+                <div style="font-size: 36px; font-weight: 700; color: var(--accent-blue);">難易度を選択</div>
+                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button class="difficulty-btn easy" data-difficulty="easy">初級</button>
+                    <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
+                    <button class="difficulty-btn hard" data-difficulty="hard">上級</button>
+                </div>
+                <button class="back-btn" id="backBtn">戻る</button>
+            </div>
+
+            <div class="screen" id="gameScreen">
                 <div class="game-stats">
                     <div class="stat-box">
                         <div class="stat-label">Score</div>
@@ -909,17 +185,14 @@
                 <div class="timer" id="timerDisplay">60</div>
                 <div class="current-question" id="questionDisplay">準備中...</div>
                 <div class="romaji-display" id="romajiDisplay"></div>
-                <div class="input-guide">キーボードで入力してください</div>
             </div>
 
-            <div class="screen menu-screen" id="resultScreen">
+            <div class="screen" id="resultScreen">
                 <div class="menu-title">ゲーム終了！</div>
-                <div style="text-align: center;">
-                    <div style="font-size: 32px; margin-bottom: 20px;">
-                        <div style="font-size: 14px; color: var(--text-gray); margin-bottom: 10px;">FINAL SCORE</div>
-                        <div id="finalScore" style="color: var(--accent-green);">0</div>
-                    </div>
-                    <div style="font-size: 20px; color: var(--text-gray); margin-bottom: 30px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-size: 14px; color: var(--text-gray); margin-bottom: 10px;">FINAL SCORE</div>
+                    <div id="finalScore" style="font-size: 48px; color: var(--accent-green); margin-bottom: 20px;">0</div>
+                    <div style="font-size: 20px; color: var(--text-gray);">
                         <div>+<span id="earnedCoins">0</span> 💰</div>
                         <div>+<span id="earnedXP">0</span> ⭐</div>
                     </div>
@@ -929,7 +202,7 @@
         </div>
 
         <div class="coin-display">
-            <div class="coin-icon">💰</div>
+            <div style="font-size: 24px;">💰</div>
             <div class="coin-value" id="coinDisplay">0</div>
         </div>
 
@@ -937,8 +210,8 @@
 
         <div class="confirmation-dialog" id="confirmationDialog">
             <div class="dialog-title" id="dialogTitle">確認</div>
-            <div class="dialog-message" id="dialogMessage">確認メッセージ</div>
-            <div class="dialog-warning" id="dialogWarning" style="display: none;"></div>
+            <div class="dialog-message" id="dialogMessage">メッセージ</div>
+            <div class="dialog-warning" id="dialogWarning"></div>
             <div class="dialog-buttons">
                 <button class="dialog-btn" id="dialogCancelBtn">キャンセル</button>
                 <button class="dialog-btn danger" id="dialogConfirmBtn">実行</button>
@@ -954,7 +227,7 @@
             <div id="profilePanel">
                 <div class="profile-section">
                     <div class="user-name" id="displayName">ユーザー</div>
-                    <div class="user-id" id="userId">ID: 000000000000</div>
+                    <div class="user-id" id="userId">ID: 000000</div>
                     
                     <input type="text" class="change-name-input" id="newNameInput" placeholder="新しい名前（最大20文字）" maxlength="20">
                     <button class="change-name-btn" id="changeNameBtn">名前を変更</button>
@@ -968,85 +241,33 @@
             </div>
 
             <div id="friendPanel" class="hidden">
-                <div class="tab-bar">
-                    <button class="tab-btn active" data-tab="friend-list">フレンド</button>
+                <div class="add-friend-section">
+                    <input type="text" class="add-friend-input" id="addFriendCode" placeholder="フレンドコードを入力" maxlength="9">
+                    <button class="add-friend-btn" id="addFriendBtn">追加する</button>
                 </div>
-
-                <div id="friend-list" class="tab-content">
-                    <div class="add-friend-section">
-                        <input type="text" class="add-friend-input" id="addFriendCode" placeholder="フレンドコードを入力" maxlength="9">
-                        <button class="add-friend-btn" id="addFriendBtn">追加する</button>
-                    </div>
-                    <div id="friendsList" class="friends-list"></div>
-                </div>
+                <div id="friendsList" class="friends-list"></div>
             </div>
 
             <div id="taskPanel" class="hidden">
                 <div class="tab-bar">
-                    <button class="tab-btn active" data-tab="daily-tasks">毎日</button>
-                    <button class="tab-btn" data-tab="weekly-tasks">週間</button>
+                    <button class="tab-btn active" data-tab="daily">毎日</button>
+                    <button class="tab-btn" data-tab="weekly">週間</button>
                 </div>
-
-                <div id="daily-tasks" class="tab-content">
-                    <div id="dailyTasksList"></div>
-                </div>
-
-                <div id="weekly-tasks" class="tab-content hidden">
-                    <div id="weeklyTasksList"></div>
-                </div>
+                <div id="dailyTasksList"></div>
+                <div id="weeklyTasksList" class="hidden"></div>
             </div>
         </div>
     </div>
 
     <script>
-        /* ========================================
-           ★ Firebase初期化
-           ========================================
-           あなたのFirebaseコンフィグを入力してください
-        */
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
+        const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com", databaseURL: "https://YOUR_PROJECT.firebaseio.com", projectId: "YOUR_PROJECT" };
         let db = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-        } catch (e) {
-            console.log('Firebase未初期化（ローカルストレージ機能のみ）');
-        }
+        try { firebase.initializeApp(firebaseConfig); db = firebase.database(); } catch (e) { console.log('Firebase未初期化'); }
 
-        /* ========================================
-           グローバル状態管理
-           ========================================
-        */
         const gameState = {
-            userId: null,
-            userName: 'User',
-            friendCode: '',
-            coins: 0,
-            level: 1,
-            xp: 0,
-            maxXp: 100,
-            
-            nameChangeCount: 0,
-            lastNameChangeReset: new Date().toDateString(),
-            
-            friends: [],
-            blockedUsers: [],
-            
-            currentScore: 0,
-            currentCombo: 0,
-            gameActive: false,
-            gameTime: 60,
-            currentDifficulty: null,
-            
+            userId: null, userName: 'User', friendCode: '', coins: 0, level: 1, xp: 0, maxXp: 100,
+            nameChangeCount: 0, lastNameChangeReset: new Date().toDateString(), friends: [], blockedUsers: [],
+            currentScore: 0, currentCombo: 0, gameActive: false, gameTime: 60, currentDifficulty: null,
             dailyTasks: [
                 { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
                 { id: 'score5k', title: 'スコア5000～50000を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
@@ -1065,66 +286,23 @@
             hard: ['ごんごどうだん', 'こうとうむけい', 'いしんでんしん', 'ひゃっかりょうらん', 'しめんそか', 'がしんしょうたん', 'ゆうずうむげ', 'せいれんけっぱく', 'あんちゅうもさく', 'でんぱぼうえんきょう', 'さんぎょうかくめい', 'しゅうぎいんぎいん', 'こくりつきょうぎじょう', 'せいしんほけんしてい', 'じんこうちのうかいはつ', 'ふろうふし', 'せいぶつたようせい', 'じぞくかのうせい', 'ひはかいけんさ', 'ぎむきょういくしょがっこう', 'しんらばんしょう']
         };
 
-        const romajiMap = {'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o', 'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko', 'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go', 'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so', 'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo', 'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to', 'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do', 'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no', 'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho', 'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo', 'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po', 'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo', 'や': 'ya', 'ゆ': 'yu', 'よ': 'yo', 'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro', 'わ': 'wa', 'を': 'wo', 'ん': 'nn', 'ぁ': 'la', 'ぃ': 'li', 'ぅ': 'lu', 'ぇ': 'le', 'ぉ': 'lo', 'っ': 'xtu'};
+        const romajiMap = {'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o', 'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko', 'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go', 'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so', 'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo', 'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to', 'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do', 'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no', 'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho', 'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo', 'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po', 'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo', 'や': 'ya', 'ゆ': 'yu', 'よ': 'yo', 'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro', 'わ': 'wa', 'を': 'wo', 'ん': 'nn', 'っ': 'xtu'};
 
         const youonMap = {'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo', 'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo', 'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo', 'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo', 'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo', 'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo', 'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo', 'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo', 'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo', 'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo', 'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'};
 
-        // ★ ブロック確認ダイアログ状態（修正）
-        let blockConfirmState = {
-            targetCode: null,
-            stage: 0  // 0=未開始, 1=第1段階確認, 2=第2段階確認
-        };
+        let blockConfirmState = { targetCode: null, stage: 0 };
 
-        function generateRandomId() {
-            return Math.random().toString(36).substr(2, 12).toUpperCase();
-        }
+        function generateRandomId() { return Math.random().toString(36).substr(2, 12).toUpperCase(); }
+        function generateFriendCode() { const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); const letters = Math.random().toString(36).substr(2, 3).toUpperCase(); return numbers + letters; }
 
-        function generateFriendCode() {
-            const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-            const letters = Math.random().toString(36).substr(2, 3).toUpperCase();
-            return numbers + letters;
-        }
-
-        /* ========================================
-           ★ Firebase フレンド名取得
-           ========================================
-        */
         async function getFriendName(code) {
             if (!db) return `Friend(${code.slice(0, 6)})`;
-            
-            try {
-                const snapshot = await db.ref(`users/${code}/name`).once('value');
-                return snapshot.val() || `Friend(${code.slice(0, 6)})`;
-            } catch (e) {
-                console.log('Firebase取得失敗:', e);
-                return `Friend(${code.slice(0, 6)})`;
-            }
+            try { const snap = await db.ref(`users/${code}/name`).once('value'); const name = snap.val(); return name && name.trim() ? name : `Friend(${code.slice(0, 6)})`; } catch (e) { return `Friend(${code.slice(0, 6)})`; }
         }
 
-        /* ========================================
-           ★ Firebase フレンド名保存
-           ========================================
-        */
         async function saveFriendDatabase() {
-            if (!db) {
-                // Firebase未使用時はローカルストレージ
-                let friendDb = JSON.parse(localStorage.getItem('friendsDatabase') || '{}');
-                friendDb[gameState.friendCode] = {
-                    name: gameState.userName,
-                    lastUpdated: Date.now()
-                };
-                localStorage.setItem('friendsDatabase', JSON.stringify(friendDb));
-                return;
-            }
-
-            try {
-                await db.ref(`users/${gameState.friendCode}`).update({
-                    name: gameState.userName,
-                    lastActive: Date.now()
-                });
-            } catch (e) {
-                console.log('Firebase保存失敗:', e);
-            }
+            if (!db) return;
+            try { await db.ref(`users/${gameState.friendCode}`).update({ name: gameState.userName, lastActive: Date.now() }); } catch (e) {}
         }
 
         function convertToRomaji(text) {
@@ -1172,266 +350,20 @@
             return result;
         }
 
-        function saveGameState() {
-            localStorage.setItem('gameState', JSON.stringify(gameState));
-            saveFriendDatabase();
-        }
-
-        function loadGameState() {
-            const saved = localStorage.getItem('gameState');
-            if (saved) {
-                Object.assign(gameState, JSON.parse(saved));
-            } else {
-                gameState.userId = generateRandomId();
-                gameState.friendCode = generateFriendCode();
-                saveGameState();
-            }
-            checkBlockExpiration();
-        }
-
-        function checkAndResetDaily() {
-            const today = new Date().toDateString();
-            if (gameState.lastNameChangeReset !== today) {
-                gameState.lastNameChangeReset = today;
-                gameState.nameChangeCount = 0;
-                gameState.dailyTasks.forEach(task => task.completed = false);
-                saveGameState();
-            }
-        }
-
-        function checkBlockExpiration() {
-            const now = Date.now();
-            gameState.blockedUsers = gameState.blockedUsers.filter(blocked => {
-                const blockTime = new Date(blocked.blockTime).getTime();
-                const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-                return (now - blockTime) < thirtyDaysMs;
-            });
-            saveGameState();
-        }
-
-        function getBlockRemaining(blockTime) {
-            const now = Date.now();
-            const blockTimeMs = new Date(blockTime).getTime();
-            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-            const remainingMs = thirtyDaysMs - (now - blockTimeMs);
-            
-            if (remainingMs <= 0) return null;
-            
-            const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
-            const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-            const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-            
-            return { days, hours, minutes };
-        }
-
-        function isUserBlocked(code) {
-            const blocked = gameState.blockedUsers.find(b => b.code === code);
-            if (!blocked) return null;
-            return getBlockRemaining(blocked.blockTime);
-        }
-
-        /* ========================================
-           ★ ブロック確認ダイアログ（修正版）
-           ========================================
-        */
-        function showBlockConfirmation(code) {
-            blockConfirmState.targetCode = code;
-            blockConfirmState.stage = 1;  // 第1段階
-
-            const dialog = document.getElementById('confirmationDialog');
-            const title = document.getElementById('dialogTitle');
-            const message = document.getElementById('dialogMessage');
-            const warning = document.getElementById('dialogWarning');
-            const confirmBtn = document.getElementById('dialogConfirmBtn');
-            const overlay = document.getElementById('overlay');
-
-            title.textContent = 'ブロック確認';
-            message.textContent = `${code}\nこのフレンドを1ヶ月間ブロックしますか？\n相手からのフレンド招待が受け取れなくなります。`;
-            warning.textContent = '⚠️ 相手はあなたをフレンド招待できなくなります';
-            warning.style.display = 'block';
-            confirmBtn.textContent = '確認済み - 次へ';
-            confirmBtn.classList.remove('danger');
-            confirmBtn.classList.add('danger');
-
-            dialog.classList.add('active');
-            overlay.classList.add('active');
-        }
-
-        function showDeleteConfirmation(code) {
-            const dialog = document.getElementById('confirmationDialog');
-            const title = document.getElementById('dialogTitle');
-            const message = document.getElementById('dialogMessage');
-            const warning = document.getElementById('dialogWarning');
-            const confirmBtn = document.getElementById('dialogConfirmBtn');
-            const overlay = document.getElementById('overlay');
-
-            blockConfirmState.targetCode = code;
-            blockConfirmState.stage = 'delete';
-
-            title.textContent = 'フレンドを削除';
-            message.textContent = `${code}\nこのフレンドを削除しますか？`;
-            warning.style.display = 'none';
-            confirmBtn.textContent = '削除';
-            confirmBtn.classList.remove('danger');
-            confirmBtn.classList.add('danger');
-
-            dialog.classList.add('active');
-            overlay.classList.add('active');
-        }
-
-        function closeConfirmationDialog() {
-            document.getElementById('confirmationDialog').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-            blockConfirmState = { targetCode: null, stage: 0 };
-        }
-
-        /* ========================================
-           ★ フレンド追加（相互確定）
-           ========================================
-        */
-        async function addFriend(code) {
-            if (code === gameState.friendCode) {
-                alert('自分のフレンドコードは追加できません');
-                return;
-            }
-
-            if (gameState.friends.find(f => f.code === code)) {
-                alert('既にフレンドです');
-                return;
-            }
-
-            const blocked = isUserBlocked(code);
-            if (blocked) {
-                const { days, hours, minutes } = blocked;
-                alert(`このユーザーはブロック中です\n残り: ${days}日${hours}時間${minutes}分`);
-                return;
-            }
-
-            // ★ Firebaseから相手の名前を取得
-            const friendName = await getFriendName(code);
-
-            // ★ フレンド追加（即座確定）
-            gameState.friends.push({
-                code: code,
-                name: friendName,
-                lastActive: Date.now()
-            });
-
-            document.getElementById('addFriendCode').value = '';
-            saveGameState();
-            updateFriendsList();
-            alert(`${friendName} をフレンドに追加しました！`);
-        }
-
-        function deleteFriend(code) {
-            gameState.friends = gameState.friends.filter(f => f.code !== code);
-            saveGameState();
-            updateFriendsList();
-            closeConfirmationDialog();
-        }
-
-        function blockFriend(code) {
-            if (blockConfirmState.stage === 1) {
-                // 第1段階完了 → 第2段階へ
-                blockConfirmState.stage = 2;
-
-                const dialog = document.getElementById('confirmationDialog');
-                const title = document.getElementById('dialogTitle');
-                const message = document.getElementById('dialogMessage');
-                const warning = document.getElementById('dialogWarning');
-                const confirmBtn = document.getElementById('dialogConfirmBtn');
-
-                title.textContent = 'ブロック最終確認';
-                message.textContent = `${code}\n本当にこのフレンドをブロックしますか？`;
-                warning.textContent = '⚠️ ⚠️ これは取り返しがつきません。よく確認してください。';
-                warning.style.display = 'block';
-                confirmBtn.textContent = 'ブロック実行';
-                return;
-            }
-
-            if (blockConfirmState.stage === 2) {
-                // 第2段階完了 → ブロック実行
-                gameState.blockedUsers.push({
-                    code: code,
-                    blockTime: new Date().toISOString()
-                });
-
-                gameState.friends = gameState.friends.filter(f => f.code !== code);
-                saveGameState();
-                updateFriendsList();
-                closeConfirmationDialog();
-                alert('フレンドをブロックしました（1ヶ月間）');
-            }
-        }
+        function saveGameState() { localStorage.setItem('gameState', JSON.stringify(gameState)); saveFriendDatabase(); }
+        function loadGameState() { const saved = localStorage.getItem('gameState'); if (saved) Object.assign(gameState, JSON.parse(saved)); else { gameState.userId = generateRandomId(); gameState.friendCode = generateFriendCode(); saveGameState(); } }
+        function checkAndResetDaily() { const today = new Date().toDateString(); if (gameState.lastNameChangeReset !== today) { gameState.lastNameChangeReset = today; gameState.nameChangeCount = 0; gameState.dailyTasks.forEach(task => task.completed = false); saveGameState(); } }
 
         function updateUI() {
             document.getElementById('levelDisplay').textContent = gameState.level;
-            const xpPercent = (gameState.xp / gameState.maxXp) * 100;
-            document.getElementById('xpBarFill').style.width = xpPercent + '%';
+            document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp) * 100 + '%';
             document.getElementById('coinDisplay').textContent = gameState.coins;
             document.getElementById('displayName').textContent = gameState.userName;
-            document.getElementById('userId').textContent = 'ID: ' + gameState.userId;
+            document.getElementById('userId').textContent = 'ID: ' + gameState.friendCode.slice(0, 6);
             document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
             document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
-
             updateFriendsList();
             updateTasksDisplay();
-            
-            const friendRankingBtn = document.getElementById('friendRankingBtn');
-            if (gameState.friends.length < 2) {
-                friendRankingBtn.disabled = true;
-            } else {
-                friendRankingBtn.disabled = false;
-            }
-        }
-
-        function updateFriendsList() {
-            const friendsList = document.getElementById('friendsList');
-            friendsList.innerHTML = '';
-
-            if (gameState.friends.length === 0) {
-                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
-                return;
-            }
-
-            gameState.friends.forEach(friend => {
-                const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
-
-                const friendEl = document.createElement('div');
-                friendEl.className = 'friend-item';
-
-                const statusText = isOnline ? 'オンライン' : 'オフライン';
-                const statusClass = isOnline ? '' : 'offline';
-
-                friendEl.innerHTML = `
-                    <div class="friend-info">
-                        <div class="friend-status ${statusClass}"></div>
-                        <div class="friend-details">
-                            <div class="friend-name">${friend.name}</div>
-                            <div class="friend-code-small">${friend.code}</div>
-                            <div class="friend-status-text ${statusClass}">${statusText}</div>
-                        </div>
-                    </div>
-                    <div class="friend-actions">
-                        <button class="friend-btn delete">削除</button>
-                        <button class="friend-btn block">ブロック</button>
-                    </div>
-                `;
-
-                const deleteBtn = friendEl.querySelector('.delete');
-                const blockBtn = friendEl.querySelector('.block');
-
-                deleteBtn.addEventListener('click', function() {
-                    showDeleteConfirmation(friend.code);
-                });
-
-                blockBtn.addEventListener('click', function() {
-                    blockConfirmState = { targetCode: null, stage: 0 };
-                    showBlockConfirmation(friend.code);
-                });
-
-                friendsList.appendChild(friendEl);
-            });
         }
 
         function updateTasksDisplay() {
@@ -1441,14 +373,7 @@
                 const taskEl = document.createElement('div');
                 taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
                 const percent = Math.min(100, (task.current / task.target) * 100);
-                taskEl.innerHTML = `
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-progress">${task.current} / ${task.target}</div>
-                    <div class="task-progress-bar">
-                        <div class="task-progress-fill" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>
-                `;
+                taskEl.innerHTML = `<div class="task-title">${task.title}</div><div class="task-progress">${task.current} / ${task.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width: ${percent}%"></div></div><div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>`;
                 dailyList.appendChild(taskEl);
             });
 
@@ -1458,203 +383,134 @@
                 const taskEl = document.createElement('div');
                 taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
                 const percent = Math.min(100, (task.current / task.target) * 100);
-                taskEl.innerHTML = `
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-progress">${task.current} / ${task.target}</div>
-                    <div class="task-progress-bar">
-                        <div class="task-progress-fill" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>
-                `;
+                taskEl.innerHTML = `<div class="task-title">${task.title}</div><div class="task-progress">${task.current} / ${task.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width: ${percent}%"></div></div><div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>`;
                 weeklyList.appendChild(taskEl);
             });
         }
 
-        function switchScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+        function updateFriendsList() {
+            const friendsList = document.getElementById('friendsList');
+            friendsList.innerHTML = '';
+            if (gameState.friends.length === 0) { friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>'; return; }
+            gameState.friends.forEach(friend => {
+                const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
+                const friendEl = document.createElement('div');
+                friendEl.className = 'friend-item';
+                friendEl.innerHTML = `<div class="friend-info"><div class="friend-status ${isOnline ? '' : 'offline'}"></div><div class="friend-details"><div class="friend-name">${friend.name}</div><div class="friend-code-small">${friend.code}</div><div class="friend-status-text ${isOnline ? '' : 'offline'}">${isOnline ? 'オンライン' : 'オフライン'}</div></div></div><div class="friend-actions"><button class="friend-btn delete">削除</button><button class="friend-btn block">ブロック</button></div>`;
+                friendEl.querySelector('.delete').addEventListener('click', () => showDeleteConfirmation(friend.code));
+                friendEl.querySelector('.block').addEventListener('click', () => { blockConfirmState = { targetCode: null, stage: 0 }; showBlockConfirmation(friend.code); });
+                friendsList.appendChild(friendEl);
+            });
         }
 
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'level-up-notification';
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+        function showDeleteConfirmation(code) { blockConfirmState.targetCode = code; blockConfirmState.stage = 'delete'; showDialog('フレンドを削除', `${code}\nこのフレンドを削除しますか？`, '', false, '削除'); }
+        function showBlockConfirmation(code) { blockConfirmState.targetCode = code; blockConfirmState.stage = 1; showDialog('ブロック確認', `${code}\nこのフレンドを1ヶ月間ブロックしますか？`, '⚠️ 相手はあなたをフレンド招待できなくなります', true, '確認済み - 次へ'); }
+        function showDialog(title, msg, warning, hasWarning, btnText = '実行') {
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = msg;
+            document.getElementById('dialogWarning').textContent = warning;
+            document.getElementById('dialogWarning').style.display = hasWarning ? 'block' : 'none';
+            document.getElementById('dialogConfirmBtn').textContent = btnText;
+            document.getElementById('confirmationDialog').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
         }
+        function closeConfirmationDialog() { document.getElementById('confirmationDialog').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); blockConfirmState = { targetCode: null, stage: 0 }; }
 
-        function addXP(amount) {
-            gameState.xp += amount;
-            
-            while (gameState.xp >= gameState.maxXp) {
-                gameState.xp -= gameState.maxXp;
-                gameState.level++;
-                gameState.maxXp = Math.floor(gameState.maxXp * 1.5);
-                showNotification(`🎉 レベルアップ！ 現在のレベル: ${gameState.level}`);
-            }
-            
+        async function addFriend(code) {
+            if (code === gameState.friendCode) { alert('自分のコードは追加できません'); return; }
+            if (gameState.friends.find(f => f.code === code)) { alert('既にフレンドです'); return; }
+            const friendName = await getFriendName(code);
+            gameState.friends.push({ code, name: friendName, lastActive: Date.now() });
+            if (db) { try { await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true); await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true); } catch (e) {} }
+            document.getElementById('addFriendCode').value = '';
             saveGameState();
-            updateUI();
+            updateFriendsList();
+            alert(`${friendName} をフレンドに追加しました！`);
         }
 
-        function openPanel(panelType) {
-            const overlay = document.getElementById('overlay');
-            const panel = document.getElementById('sidePanel');
-            const profilePanel = document.getElementById('profilePanel');
-            const friendPanel = document.getElementById('friendPanel');
-            const taskPanel = document.getElementById('taskPanel');
-
-            profilePanel.classList.add('hidden');
-            friendPanel.classList.add('hidden');
-            taskPanel.classList.add('hidden');
-
-            if (panelType === 'profile') {
-                profilePanel.classList.remove('hidden');
-                document.getElementById('panelTitle').textContent = 'プロフィール';
-            } else if (panelType === 'friend') {
-                friendPanel.classList.remove('hidden');
-                document.getElementById('panelTitle').textContent = 'フレンド';
-            } else if (panelType === 'task') {
-                taskPanel.classList.remove('hidden');
-                document.getElementById('panelTitle').textContent = 'タスク';
-            }
-
-            overlay.classList.add('active');
-            panel.classList.add('active');
+        function deleteFriend(code) { gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); }
+        function blockFriend(code) {
+            if (blockConfirmState.stage === 1) { blockConfirmState.stage = 2; showDialog('ブロック最終確認', `${code}\n本当にブロックしますか？`, '⚠️ ⚠️ これは取り返しがつきません', true, 'ブロック実行'); return; }
+            if (blockConfirmState.stage === 2) { gameState.blockedUsers.push({ code, blockTime: new Date().toISOString() }); gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); alert('フレンドをブロックしました（1ヶ月間）'); }
         }
 
-        function closePanel() {
-            document.getElementById('overlay').classList.remove('active');
-            document.getElementById('sidePanel').classList.remove('active');
-        }
+        function switchScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screenId).classList.add('active'); }
 
-        let gameTimer = null;
-        let currentQuestion = '';
-        let currentRomaji = '';
-        let typedInput = '';
-
+        let gameTimer = null, currentQuestion = '', currentRomaji = '', typedInput = '';
         function startGame(difficulty) {
-            gameState.currentDifficulty = difficulty || ['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)];
-            gameState.currentScore = 0;
-            gameState.currentCombo = 0;
-            gameState.gameTime = 60;
-            gameState.gameActive = true;
-            typedInput = '';
-
-            document.getElementById('scoreDisplay').textContent = '0';
-            document.getElementById('comboDisplay').textContent = '0';
-            document.getElementById('timerDisplay').textContent = '60';
-
-            switchScreen('gameScreen');
-            nextQuestion();
-            startTimer();
-
-            gameState.dailyTasks[0].current++;
-            gameState.weeklyTasks[0].current++;
-            updateTasksDisplay();
-            saveGameState();
+            gameState.currentDifficulty = difficulty; gameState.currentScore = 0; gameState.currentCombo = 0; gameState.gameTime = 60; gameState.gameActive = true; typedInput = '';
+            document.getElementById('scoreDisplay').textContent = '0'; document.getElementById('comboDisplay').textContent = '0'; document.getElementById('timerDisplay').textContent = '60';
+            switchScreen('gameScreen'); nextQuestion(); startTimer();
+            gameState.dailyTasks[0].current++; gameState.weeklyTasks[0].current++; updateTasksDisplay(); saveGameState();
         }
 
-        function nextQuestion() {
-            const qArray = questions[gameState.currentDifficulty];
-            currentQuestion = qArray[Math.floor(Math.random() * qArray.length)];
-            currentRomaji = convertToRomaji(currentQuestion).toLowerCase();
-            typedInput = '';
-            
-            document.getElementById('questionDisplay').textContent = currentQuestion;
-            updateRomajiDisplay();
-        }
-
-        function updateRomajiDisplay() {
-            const romajiEl = document.getElementById('romajiDisplay');
-            const typed = `<span class="romaji-typed">${typedInput}</span>`;
-            const remaining = `<span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`;
-            romajiEl.innerHTML = typed + remaining;
-        }
-
-        function startTimer() {
-            gameTimer = setInterval(() => {
-                gameState.gameTime--;
-                document.getElementById('timerDisplay').textContent = gameState.gameTime;
-
-                if (gameState.gameTime <= 0) {
-                    endGame();
-                }
-            }, 1000);
-        }
-
+        function nextQuestion() { const qArray = questions[gameState.currentDifficulty]; currentQuestion = qArray[Math.floor(Math.random() * qArray.length)]; currentRomaji = convertToRomaji(currentQuestion).toLowerCase(); typedInput = ''; document.getElementById('questionDisplay').textContent = currentQuestion; updateRomajiDisplay(); }
+        function updateRomajiDisplay() { const romajiEl = document.getElementById('romajiDisplay'); romajiEl.innerHTML = `<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; }
+        function startTimer() { gameTimer = setInterval(() => { gameState.gameTime--; document.getElementById('timerDisplay').textContent = gameState.gameTime; if (gameState.gameTime <= 0) endGame(); }, 1000); }
         function endGame() {
-            gameState.gameActive = false;
-            clearInterval(gameTimer);
-
-            const earnedCoins = Math.floor(gameState.currentScore / 10);
-            const earnedXP = Math.floor(gameState.currentScore / 100);
-
-            gameState.coins += earnedCoins;
-            addXP(earnedXP);
-
-            if (gameState.currentScore >= 5000) {
-                gameState.dailyTasks[1].current++;
-            }
-            if (gameState.currentCombo >= 50) {
-                gameState.dailyTasks[2].current++;
-                gameState.weeklyTasks[2].current++;
-            }
-
-            if (gameState.currentScore >= 500) {
-                gameState.weeklyTasks[1].current++;
-            }
-
+            gameState.gameActive = false; clearInterval(gameTimer); const coins = Math.floor(gameState.currentScore / 10); const xp = Math.floor(gameState.currentScore / 100); gameState.coins += coins; gameState.xp += xp;
+            if (gameState.currentScore >= 5000) gameState.dailyTasks[1].current++;
+            if (gameState.currentCombo >= 50) { gameState.dailyTasks[2].current++; gameState.weeklyTasks[2].current++; }
+            if (gameState.currentScore >= 500) gameState.weeklyTasks[1].current++;
+            if (gameState.xp >= gameState.maxXp) { gameState.xp -= gameState.maxXp; gameState.level++; }
             saveGameState();
-
-            document.getElementById('finalScore').textContent = gameState.currentScore;
-            document.getElementById('earnedCoins').textContent = earnedCoins;
-            document.getElementById('earnedXP').textContent = earnedXP;
-            
-            switchScreen('resultScreen');
+            document.getElementById('finalScore').textContent = gameState.currentScore; document.getElementById('earnedCoins').textContent = coins; document.getElementById('earnedXP').textContent = xp;
+            switchScreen('resultScreen'); updateUI();
         }
 
-        document.getElementById('playBtn').addEventListener('click', function() { switchScreen('difficultyScreen'); });
-        document.getElementById('rankingBtn').addEventListener('click', function() { switchScreen('rankingModeScreen'); });
-        document.getElementById('profileBtn').addEventListener('click', function() { openPanel('profile'); });
-        document.getElementById('friendRankingBtn').addEventListener('click', function() { if (gameState.friends.length >= 2) startGame(); });
-        document.getElementById('worldRankingBtn').addEventListener('click', function() { startGame(); });
-        document.getElementById('continueBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
-        document.getElementById('friendBtn').addEventListener('click', function() { openPanel('friend'); });
-        document.getElementById('taskBtn').addEventListener('click', function() { openPanel('task'); });
-        document.getElementById('backFromDifficultyBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
-        document.getElementById('backFromRankingModeBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
-
-        document.querySelectorAll('.difficulty-btn').forEach(btn => {
-            btn.addEventListener('click', function() { startGame(this.dataset.difficulty); });
+        document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
+        document.getElementById('rankingBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
+        document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
+        document.getElementById('friendRankingBtn').addEventListener('click', () => { if (gameState.friends.length >= 2) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]); else alert('フレンドランキングには2人以上のフレンドが必要です'); });
+        document.getElementById('worldRankingBtn').addEventListener('click', () => startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]));
+        document.getElementById('taskBtn').addEventListener('click', () => {
+            document.getElementById('profilePanel').classList.add('hidden');
+            document.getElementById('friendPanel').classList.add('hidden');
+            document.getElementById('taskPanel').classList.remove('hidden');
+            document.getElementById('panelTitle').textContent = 'タスク';
+            document.getElementById('sidePanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        });
+        document.getElementById('profileBtn').addEventListener('click', () => {
+            document.getElementById('profilePanel').classList.remove('hidden');
+            document.getElementById('friendPanel').classList.add('hidden');
+            document.getElementById('taskPanel').classList.add('hidden');
+            document.getElementById('panelTitle').textContent = 'プロフィール';
+            document.getElementById('sidePanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        });
+        document.getElementById('friendBtn').addEventListener('click', () => {
+            document.getElementById('profilePanel').classList.add('hidden');
+            document.getElementById('friendPanel').classList.remove('hidden');
+            document.getElementById('taskPanel').classList.add('hidden');
+            document.getElementById('panelTitle').textContent = 'フレンド';
+            document.getElementById('sidePanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
         });
 
-        document.getElementById('overlay').addEventListener('click', closePanel);
-        document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
-
-        document.getElementById('dialogCancelBtn').addEventListener('click', closeConfirmationDialog);
-        document.getElementById('dialogConfirmBtn').addEventListener('click', function() {
-            if (blockConfirmState.stage === 'delete') {
-                deleteFriend(blockConfirmState.targetCode);
-            } else if (blockConfirmState.stage === 1 || blockConfirmState.stage === 2) {
-                blockFriend(blockConfirmState.targetCode);
-            }
-        });
-
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.addEventListener('click', () => startGame(btn.dataset.difficulty)));
+        document.getElementById('backBtn').addEventListener('click', () => switchScreen('menuScreen'));
+        document.getElementById('continueBtn').addEventListener('click', () => { switchScreen('menuScreen'); updateUI(); });
+        document.getElementById('overlay').addEventListener('click', () => { document.getElementById('sidePanel').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); closeConfirmationDialog(); });
+        document.getElementById('panelCloseBtn').addEventListener('click', () => { document.getElementById('sidePanel').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); });
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const tabName = this.dataset.tab;
-                const tabBar = this.parentElement;
-                
-                tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                tabBar.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('dailyTasksList').classList.remove('hidden');
+                document.getElementById('weeklyTasksList').classList.add('hidden');
                 this.classList.add('active');
-                document.getElementById(tabName).classList.remove('hidden');
+                if (this.dataset.tab === 'weekly') {
+                    document.getElementById('dailyTasksList').classList.add('hidden');
+                    document.getElementById('weeklyTasksList').classList.remove('hidden');
+                }
             });
         });
-
-        document.getElementById('changeNameBtn').addEventListener('click', function() {
+        document.getElementById('dialogCancelBtn').addEventListener('click', closeConfirmationDialog);
+        document.getElementById('dialogConfirmBtn').addEventListener('click', () => {
+            if (blockConfirmState.stage === 'delete') deleteFriend(blockConfirmState.targetCode);
+            else if (blockConfirmState.stage === 1 || blockConfirmState.stage === 2) blockFriend(blockConfirmState.targetCode);
+        });
+        document.getElementById('changeNameBtn').addEventListener('click', () => {
             const newName = document.getElementById('newNameInput').value.trim();
             if (newName && gameState.nameChangeCount < 3) {
                 gameState.userName = newName;
@@ -1667,34 +523,20 @@
                 alert('本日の変更回数に達しました。明日00:00に更新されます。');
             }
         });
-
-        document.getElementById('addFriendBtn').addEventListener('click', function() {
-            const code = document.getElementById('addFriendCode').value.trim();
-            if (code) {
-                addFriend(code);
-            }
-        });
-
+        document.getElementById('addFriendBtn').addEventListener('click', () => { const code = document.getElementById('addFriendCode').value.trim(); if (code) addFriend(code); });
         document.addEventListener('keydown', (e) => {
             if (!gameState.gameActive) return;
-
             const key = e.key.toLowerCase();
-
             if (key.match(/[a-z]/)) {
                 const expectedChar = currentRomaji[typedInput.length];
-                
                 if (key === expectedChar) {
                     typedInput += key;
                     gameState.currentCombo++;
                     gameState.currentScore += 5 * gameState.currentCombo;
-                    
                     document.getElementById('scoreDisplay').textContent = gameState.currentScore;
                     document.getElementById('comboDisplay').textContent = gameState.currentCombo;
                     updateRomajiDisplay();
-                    
-                    if (typedInput === currentRomaji) {
-                        nextQuestion();
-                    }
+                    if (typedInput === currentRomaji) nextQuestion();
                 } else {
                     gameState.currentCombo = 0;
                     document.getElementById('comboDisplay').textContent = '0';
