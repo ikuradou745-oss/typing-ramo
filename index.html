@@ -14,7 +14,6 @@
         }
     </script>
     <style>
-        /* スタイルは同じなので省略（実際のコードでは元のスタイルをそのまま使用） */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary-dark: #0a0e27;
@@ -94,10 +93,10 @@
         .friend-code { background: rgba(124, 58, 237, 0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(124, 58, 237, 0.5); margin-top: 15px; }
         .friend-code-label { font-size: 12px; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; }
         .friend-code-value { font-size: 18px; font-weight: 700; color: var(--accent-purple); font-family: 'Courier New', monospace; letter-spacing: 2px; text-align: center; }
-        .friends-list { display: flex; flex-direction: column; gap: 12px; }
+        .friends-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
         .friend-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; flex-direction: column; gap: 12px; }
         .friend-info { display: flex; align-items: flex-start; gap: 12px; }
-        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 2px; }
+        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 6px; }
         .friend-status.offline { background: #ff4444; }
         .friend-details { flex: 1; }
         .friend-name { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
@@ -106,6 +105,7 @@
         .friend-status-text.offline { color: #ff4444; }
         .friend-actions { display: flex; gap: 6px; }
         .friend-btn { padding: 6px 10px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 600; flex: 1; text-transform: uppercase; transition: all 0.3s; }
+        .friend-btn:hover { background: rgba(0, 212, 255, 0.2); }
         .friend-btn.delete { border-color: rgba(255, 0, 110, 0.5); color: var(--accent-pink); background: rgba(255, 0, 110, 0.1); }
         .friend-btn.delete:hover { background: rgba(255, 0, 110, 0.2); }
         .friend-btn.block { border-color: rgba(255, 100, 100, 0.5); color: #ff6464; background: rgba(255, 100, 100, 0.1); }
@@ -360,7 +360,7 @@
         const youonMap = {'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo', 'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo', 'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo', 'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo', 'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo', 'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo', 'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo', 'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo', 'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo', 'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo', 'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'};
 
         let blockConfirmState = { targetCode: null, stage: 0 };
-        let friendsListener = null;
+        let friendsUnsubscribe = null;
 
         function generateRandomId() { return Math.random().toString(36).substr(2, 12).toUpperCase(); }
         function generateFriendCode() { 
@@ -474,7 +474,6 @@
             document.getElementById('userId').textContent = 'ID: ' + gameState.friendCode.slice(0, 6);
             document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
             document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
-            updateFriendsList();
             updateTasksDisplay();
         }
 
@@ -500,91 +499,95 @@
             });
         }
 
-        // Firebaseからフレンドリストを監視する関数
+        // ===== フレンド機能（成功例から移植）=====
         function setupFriendsListener() {
             if (!firebaseReady || !db || !gameState.friendCode) return;
             
             // 既存のリスナーを解除
-            if (friendsListener) {
-                friendsListener();
-                friendsListener = null;
+            if (friendsUnsubscribe) {
+                friendsUnsubscribe();
+                friendsUnsubscribe = null;
             }
             
-            const friendsRef = ref(db, `friends/${gameState.friendCode}`);
+            const friendsRef = ref(db, `users/${gameState.friendCode}/friends`);
             
-            // フレンドリストの変更を監視
-            friendsListener = onValue(friendsRef, async (snapshot) => {
+            friendsUnsubscribe = onValue(friendsRef, async (snapshot) => {
                 const friendsData = snapshot.val();
+                const friendsList = document.getElementById('friendsList');
+                
                 if (!friendsData) {
+                    friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
                     gameState.friends = [];
-                } else {
-                    // フレンドデータを配列に変換
-                    const newFriends = [];
-                    for (const [code, data] of Object.entries(friendsData)) {
-                        // 相手の最新の名前を取得
-                        let friendName = data.name;
-                        try {
-                            const nameSnap = await get(ref(db, `users/${code}/name`));
-                            const latestName = nameSnap.val();
-                            if (latestName) friendName = latestName;
-                        } catch (e) {
-                            console.warn(`名前取得エラー ${code}:`, e);
-                        }
-                        
-                        newFriends.push({
-                            code,
-                            name: friendName,
-                            addedAt: data.addedAt || Date.now()
-                        });
-                    }
-                    gameState.friends = newFriends;
+                    localStorage.setItem('gameState', JSON.stringify(gameState));
+                    return;
                 }
                 
-                // ローカルストレージを更新
+                // フレンドの配列を作成
+                const friendCodes = Object.keys(friendsData);
+                const newFriends = [];
+                
+                for (const code of friendCodes) {
+                    try {
+                        // 各フレンドの詳細情報を取得
+                        const userSnap = await get(ref(db, `users/${code}`));
+                        const userData = userSnap.val() || {};
+                        
+                        // オンライン状態を取得
+                        const statusSnap = await get(ref(db, `status/${code}`));
+                        const status = statusSnap.val();
+                        const isOnline = status && status.state === 'online';
+                        
+                        newFriends.push({
+                            code: code,
+                            name: userData.name || `ユーザー${code.slice(0, 4)}`,
+                            isOnline: isOnline,
+                            lastActive: userData.lastActive || Date.now()
+                        });
+                    } catch (e) {
+                        console.warn(`フレンド情報取得エラー (${code}):`, e);
+                        newFriends.push({
+                            code: code,
+                            name: `ユーザー${code.slice(0, 4)}`,
+                            isOnline: false,
+                            lastActive: Date.now()
+                        });
+                    }
+                }
+                
+                // gameStateを更新
+                gameState.friends = newFriends;
                 localStorage.setItem('gameState', JSON.stringify(gameState));
                 
-                // フレンドリストUIを更新
-                updateFriendsList();
+                // UIを更新
+                renderFriendsList(newFriends);
+                
             }, (error) => {
                 console.error('フレンドリスト監視エラー:', error);
             });
         }
 
-        async function updateFriendsList() {
+        function renderFriendsList(friends) {
             const friendsList = document.getElementById('friendsList');
-            friendsList.innerHTML = '';
             
-            if (gameState.friends.length === 0) { 
-                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>'; 
-                return; 
+            if (!friends || friends.length === 0) {
+                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
+                return;
             }
             
-            // 各フレンドの情報を取得（オンライン状態など）
-            for (const friend of gameState.friends) {
-                let isOnline = false;
-                
-                if (firebaseReady && db) {
-                    try {
-                        // オンライン状態を取得
-                        const statusSnap = await get(ref(db, `status/${friend.code}`));
-                        const status = statusSnap.val();
-                        isOnline = status && status.state === 'online';
-                    } catch (e) {
-                        console.warn(`ステータス取得エラー (${friend.code}):`, e.message);
-                    }
-                }
-                
+            friendsList.innerHTML = '';
+            
+            friends.forEach(friend => {
                 const friendEl = document.createElement('div');
                 friendEl.className = 'friend-item';
                 friendEl.id = `friend-item-${friend.code}`;
                 friendEl.innerHTML = `
                     <div class="friend-info">
-                        <div class="friend-status ${isOnline ? '' : 'offline'}"></div>
+                        <div class="friend-status ${friend.isOnline ? '' : 'offline'}"></div>
                         <div class="friend-details">
                             <div class="friend-name">${friend.name}</div>
                             <div class="friend-code-small">${friend.code}</div>
-                            <div class="friend-status-text ${isOnline ? '' : 'offline'}">
-                                ${isOnline ? 'オンライン' : 'オフライン'}
+                            <div class="friend-status-text ${friend.isOnline ? '' : 'offline'}">
+                                ${friend.isOnline ? 'オンライン' : 'オフライン'}
                             </div>
                         </div>
                     </div>
@@ -594,7 +597,7 @@
                     </div>
                 `;
                 friendsList.appendChild(friendEl);
-            }
+            });
         }
         
         window.deleteFriendHandler = (code) => {
@@ -656,31 +659,13 @@
                 }
                 
                 const targetData = targetSnap.val();
-                const friendName = targetData.name || `Friend(${code.slice(0, 6)})`;
+                const friendName = targetData.name || `ユーザー${code.slice(0, 4)}`;
                 
                 console.log('👤 フレンド名:', friendName);
                 
-                // 相互フレンド関係を構築
-                await set(ref(db, `friends/${gameState.friendCode}/${code}`), {
-                    name: friendName,
-                    addedAt: Date.now()
-                });
-                
-                await set(ref(db, `friends/${code}/${gameState.friendCode}`), {
-                    name: gameState.userName,
-                    addedAt: Date.now()
-                });
-                
-                // ローカルでもフレンドを追加（リスナーが更新するが、即時表示のため）
-                if (!gameState.friends.find(f => f.code === code)) {
-                    gameState.friends.push({ 
-                        code, 
-                        name: friendName, 
-                        addedAt: Date.now() 
-                    });
-                }
-                
-                saveGameState();
+                // 相互フレンド関係を構築（成功例と同じ方法）
+                await update(ref(db, `users/${gameState.friendCode}/friends/${code}`), { active: true });
+                await update(ref(db, `users/${code}/friends/${gameState.friendCode}`), { active: true });
                 
                 document.getElementById('addFriendCode').value = '';
                 alert(`✅ ${friendName} をフレンドに追加しました！`);
@@ -695,20 +680,16 @@
             if (!firebaseReady || !db) {
                 gameState.friends = gameState.friends.filter(f => f.code !== code);
                 saveGameState();
-                updateFriendsList();
+                renderFriendsList(gameState.friends);
                 closeConfirmationDialog();
                 return;
             }
             
             try {
-                await remove(ref(db, `friends/${gameState.friendCode}/${code}`));
-                await remove(ref(db, `friends/${code}/${gameState.friendCode}`));
+                await remove(ref(db, `users/${gameState.friendCode}/friends/${code}`));
+                await remove(ref(db, `users/${code}/friends/${gameState.friendCode}`));
                 
-                gameState.friends = gameState.friends.filter(f => f.code !== code);
-                saveGameState();
-                await updateFriendsList();
                 closeConfirmationDialog();
-                
                 console.log(`✅ フレンド ${code} を削除しました`);
                 
             } catch (e) {
@@ -730,7 +711,7 @@
                 }); 
                 gameState.friends = gameState.friends.filter(f => f.code !== code); 
                 saveGameState(); 
-                updateFriendsList(); 
+                renderFriendsList(gameState.friends); 
                 closeConfirmationDialog(); 
                 alert('✅ フレンドをブロックしました（1ヶ月間）'); 
             }
@@ -921,7 +902,8 @@
             document.getElementById('panelTitle').textContent = 'フレンド';
             document.getElementById('sidePanel').classList.add('active');
             document.getElementById('overlay').classList.add('active');
-            updateFriendsList();
+            // フレンドリストを表示
+            renderFriendsList(gameState.friends);
         });
 
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
@@ -1026,25 +1008,42 @@
         updateUI();
 
         // Firebase同期とフレンドリスナー設定
-        setTimeout(() => {
-            syncUserWithFirebase(gameState);
-            setupFriendsListener(); // フレンドリスナーを設定
-            
-            // オンライン状態を設定
-            const userStatusRef = ref(db, `status/${gameState.friendCode}`);
-            const connectedRef = ref(db, '.info/connected');
-            onValue(connectedRef, (snap) => {
-                if (snap.val() === true) {
-                    set(userStatusRef, {
-                        state: 'online',
-                        lastOnline: Date.now()
+        setTimeout(async () => {
+            // ユーザーデータをFirebaseに保存
+            if (firebaseReady && db && gameState.friendCode) {
+                try {
+                    await set(ref(db, `users/${gameState.friendCode}`), {
+                        name: gameState.userName,
+                        lastActive: Date.now(),
+                        level: gameState.level,
+                        xp: gameState.xp,
+                        coins: gameState.coins,
+                        score: gameState.currentScore
                     });
-                    onDisconnect(userStatusRef).set({
-                        state: 'offline',
-                        lastOnline: Date.now()
+                    console.log('✅ ユーザーデータ同期完了');
+                    
+                    // フレンドリスナーを設定
+                    setupFriendsListener();
+                    
+                    // オンライン状態を設定
+                    const userStatusRef = ref(db, `status/${gameState.friendCode}`);
+                    const connectedRef = ref(db, '.info/connected');
+                    onValue(connectedRef, (snap) => {
+                        if (snap.val() === true) {
+                            set(userStatusRef, {
+                                state: 'online',
+                                lastOnline: Date.now()
+                            });
+                            onDisconnect(userStatusRef).set({
+                                state: 'offline',
+                                lastOnline: Date.now()
+                            });
+                        }
                     });
+                } catch (e) {
+                    console.warn('Firebase 初期化エラー:', e);
                 }
-            });
+            }
         }, 1000);
     </script>
 </body>
