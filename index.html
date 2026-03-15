@@ -1,190 +1,1495 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Typekey - タイプキー</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイピングゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #1a1f3a;
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-pink: #ff006e;
+            --accent-purple: #7c3aed;
+            --text-white: #f0f0f0;
+            --text-gray: #a0a0a0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%);
+            color: var(--text-white);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+            position: relative;
+        }
+
+        /* ===== ヘッダー ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .game-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .level-display {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .level-display .label {
+            font-size: 12px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .level-display .level-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .xp-bar {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            transition: width 0.3s ease;
+        }
+
+        .top-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 45px;
+            height: 45px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.05);
+            color: var(--accent-blue);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        /* ===== コイン表示 ===== */
+        .coin-display {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .coin-icon {
+            font-size: 24px;
+        }
+
+        .coin-value {
+            color: var(--accent-green);
+        }
+
+        /* ===== メインコンテンツ ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* ===== メニュー画面 ===== */
+        .menu-screen {
+            gap: 40px;
+        }
+
+        .menu-title {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .menu-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .menu-btn {
+            padding: 30px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
+            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .menu-btn .icon {
+            font-size: 32px;
+        }
+
+        /* ===== 難易度選択 ===== */
+        .difficulty-screen {
+            gap: 40px;
+        }
+
+        .difficulty-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .difficulty-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .difficulty-btn {
+            padding: 25px 40px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background: rgba(26, 31, 58, 0.5);
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .difficulty-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        .difficulty-btn.easy {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .difficulty-btn.easy:hover {
+            background: rgba(0, 255, 136, 0.15);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .difficulty-btn.normal {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .difficulty-btn.normal:hover {
+            background: rgba(0, 212, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .difficulty-btn.hard {
+            border-color: var(--accent-pink);
+            color: var(--accent-pink);
+        }
+
+        .difficulty-btn.hard:hover {
+            background: rgba(255, 0, 110, 0.15);
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+        }
+
+        /* ===== ゲーム画面 ===== */
+        .game-screen {
+            gap: 20px;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 50px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .timer {
+            font-size: 56px;
+            font-weight: 800;
+            color: var(--accent-pink);
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .current-question {
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            text-align: center;
+            min-height: 60px;
+            margin: 20px 0;
+            max-width: 600px;
+        }
+
+        .input-guide {
+            font-size: 14px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* ===== オーバーレイ ===== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* ===== サイドパネル ===== */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%);
+            border-left: 1px solid rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1000;
+            padding: 30px 20px;
+        }
+
+        .side-panel.active {
+            right: 0;
+        }
+
+        .panel-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            color: var(--accent-blue);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .panel-close:hover {
+            transform: rotate(90deg);
+        }
+
+        /* ===== プロフィール ===== */
+        .profile-section {
+            margin-bottom: 30px;
+        }
+
+        .user-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 5px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 20px;
+        }
+
+        .change-name-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: var(--text-white);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .change-name-input::placeholder {
+            color: var(--text-gray);
+        }
+
+        .change-name-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            border-radius: 6px;
+            color: var(--accent-blue);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .change-name-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .change-name-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .name-change-count {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 15px;
+        }
+
+        .friend-code {
+            background: rgba(124, 58, 237, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(124, 58, 237, 0.5);
+            margin-top: 15px;
+        }
+
+        .friend-code-label {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .friend-code-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-purple);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .friend-code-value:hover {
+            color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        /* ===== タブバー ===== */
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-gray);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-btn:hover {
+            color: var(--accent-blue);
+        }
+
+        /* ===== フレンドリスト ===== */
+        .friends-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .friend-item {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .friend-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .friend-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .friend-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .friend-status.offline {
+            background: #ff4444;
+        }
+
+        .friend-details {
+            flex: 1;
+        }
+
+        .friend-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-white);
+        }
+
+        .friend-code-small {
+            font-size: 12px;
+            color: var(--text-gray);
+            font-family: 'Courier New', monospace;
+        }
+
+        .friend-delete-btn {
+            padding: 6px 12px;
+            background: rgba(255, 0, 110, 0.2);
+            border: 1px solid rgba(255, 0, 110, 0.5);
+            border-radius: 4px;
+            color: var(--accent-pink);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .friend-delete-btn:hover {
+            background: rgba(255, 0, 110, 0.3);
+        }
+
+        /* ===== フレンド追加 ===== */
+        .add-friend-section {
+            margin-bottom: 20px;
+        }
+
+        .add-friend-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: var(--text-white);
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .add-friend-input::placeholder {
+            color: var(--text-gray);
+        }
+
+        .add-friend-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            border-radius: 6px;
+            color: var(--accent-blue);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .add-friend-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== フレンド申請 ===== */
+        .friend-request {
+            background: rgba(255, 165, 0, 0.1);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            margin-bottom: 12px;
+        }
+
+        .friend-request-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-white);
+            margin-bottom: 8px;
+        }
+
+        .friend-request-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .friend-request-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .friend-request-btn.accept {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.5);
+            color: var(--accent-green);
+        }
+
+        .friend-request-btn.accept:hover {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .friend-request-btn.reject {
+            background: rgba(255, 0, 110, 0.2);
+            border-color: rgba(255, 0, 110, 0.5);
+            color: var(--accent-pink);
+        }
+
+        .friend-request-btn.reject:hover {
+            background: rgba(255, 0, 110, 0.3);
+        }
+
+        /* ===== タスク ===== */
+        .task-item {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            margin-bottom: 12px;
+        }
+
+        .task-item.completed {
+            background: rgba(0, 255, 136, 0.05);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-white);
+            margin-bottom: 8px;
+        }
+
+        .task-progress {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 8px;
+        }
+
+        .task-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .task-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            transition: width 0.3s ease;
+        }
+
+        .task-reward {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* ===== アニメーション ===== */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes levelUp {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+        }
+
+        .level-up-notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: 700;
+            animation: levelUp 3s ease-out forwards;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .task-complete-notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            animation: levelUp 3s ease-out forwards;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        /* ===== レスポンシブ ===== */
+        @media (max-width: 768px) {
+            .menu-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .side-panel {
+                width: 100%;
+                right: -100%;
+            }
+
+            .header {
+                flex-direction: column;
+                padding: 15px;
+            }
+
+            .menu-title {
+                font-size: 32px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+    </style>
 </head>
 <body>
-
-  <!-- HUD -->
-  <header id="hud">
-    <div id="hud-left">
-      <div id="coin-display">
-        <span class="coin-sym">¤</span>
-        <span id="coin-val">0</span>
-      </div>
-    </div>
-    <div id="hud-right">
-      <div id="lv-wrap">
-        <span>Lv.<span id="lv-num">1</span></span>
-        <div id="xp-track"><div id="xp-fill"></div></div>
-        <span id="xp-text"><span id="xp-cur">0</span>/<span id="xp-max">100</span></span>
-      </div>
-      <button class="icon-btn" id="btn-task">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
-      </button>
-      <button class="icon-btn" id="btn-friend">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- トースト -->
-  <div id="toast-lv" class="toast">
-    <span class="t-icon">↑</span>
-    <div><div class="t-title">Level up!</div><div class="t-body">Lv.<span id="toast-lv-n"></span> になりました</div></div>
-  </div>
-  <div id="toast-task" class="toast" style="top:68px">
-    <span class="t-icon">✓</span>
-    <div><div class="t-title">タスク達成！</div><div class="t-body" id="toast-task-body"></div></div>
-  </div>
-
-  <!-- ① メイン -->
-  <main id="screen-main" class="screen active">
-    <h1 id="site-title">typekey</h1>
-    <p id="site-sub">タイプキー — 日本語タイピングゲーム</p>
-    <button class="cta-btn" id="btn-play">
-      プレイする
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </button>
-  </main>
-
-  <!-- ② 難易度 -->
-  <main id="screen-diff" class="screen">
-    <h2 class="pg-title">難易度を選択</h2>
-    <div class="diff-list">
-      <button class="diff-row" id="btn-easy">
-        <div class="diff-name">Easy</div>
-        <div class="diff-hint">3〜6文字 · 入門向け</div>
-        <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <button class="diff-row" id="btn-normal">
-        <div class="diff-name">Normal</div>
-        <div class="diff-hint">5〜12文字 · 標準難易度</div>
-        <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <button class="diff-row" id="btn-hard">
-        <div class="diff-name">Hard</div>
-        <div class="diff-hint">10〜20文字 · 上級者向け</div>
-        <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-    </div>
-    <button class="link-btn" id="btn-diff-back">← 戻る</button>
-  </main>
-
-  <!-- ③ ゲーム -->
-  <main id="screen-game" class="screen">
-    <div id="game-stats">
-      <div class="gstat"><div class="gstat-label">TIME</div><div class="gstat-val" id="g-time">60</div></div>
-      <div class="gstat"><div class="gstat-label">SCORE</div><div class="gstat-val" id="g-score">0</div></div>
-      <div class="gstat"><div class="gstat-label">COMBO</div><div class="gstat-val" id="g-combo">0</div></div>
-    </div>
-    <div id="word-area">
-      <div id="g-ja"></div>
-      <div id="g-hint"></div>
-      <div id="g-input-row">
-        <span id="g-ok"></span><span id="g-cur">|</span><span id="g-rest"></span>
-      </div>
-    </div>
-    <div id="miss-flash"></div>
-  </main>
-
-  <!-- ④ 結果 -->
-  <main id="screen-result" class="screen">
-    <h2 class="pg-title">結果</h2>
-    <div class="res-grid">
-      <div class="res-cell"><span class="rc-label">Score</span><span class="rc-val" id="r-score">0</span></div>
-      <div class="res-cell"><span class="rc-label">Max Combo</span><span class="rc-val" id="r-combo">0</span></div>
-      <div class="res-cell"><span class="rc-label">獲得コイン</span><span class="rc-val" id="r-coins">0</span></div>
-      <div class="res-cell"><span class="rc-label">獲得XP</span><span class="rc-val" id="r-xp">0</span></div>
-    </div>
-    <div class="res-btns">
-      <button class="cta-btn" id="btn-retry">もう一度</button>
-      <button class="link-btn" id="btn-end">終了</button>
-    </div>
-  </main>
-
-  <!-- 暗転 -->
-  <div id="dim"></div>
-
-  <!-- フレンドパネル -->
-  <aside id="panel-friend" class="panel">
-    <div class="panel-head">
-      <div class="panel-tabs">
-        <button class="ptab active" id="ptab-profile">プロフィール</button>
-        <button class="ptab" id="ptab-friends">フレンド</button>
-      </div>
-      <button class="icon-btn" id="btn-friend-close">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <!-- プロフィール -->
-    <div class="pane active" id="pane-profile">
-      <div class="avatar-row">
-        <div class="avatar">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <div class="game-container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <div class="header-left">
+                <div class="game-title">⚡ TYPING</div>
+            </div>
+            <div class="header-right">
+                <div class="level-display">
+                    <div class="label">Level</div>
+                    <div class="level-value" id="levelDisplay">1</div>
+                    <div class="xp-bar">
+                        <div class="xp-bar-fill" id="xpBarFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="top-buttons">
+                    <button class="icon-btn" id="taskBtn" title="タスク">📋</button>
+                    <button class="icon-btn" id="friendBtn" title="フレンド">👥</button>
+                </div>
+            </div>
         </div>
-        <div>
-          <div id="p-name" class="p-name-text">---</div>
-          <button class="mini-btn" id="btn-edit-name">名前を変更</button>
-        </div>
-      </div>
-      <div id="name-change-left" class="hint-line"></div>
-      <div id="name-edit-area" class="hidden">
-        <div class="input-row">
-          <input type="text" id="name-input" maxlength="20" placeholder="名前（最大20文字）">
-          <button class="mini-btn solid" id="btn-save-name">保存</button>
-        </div>
-      </div>
-      <div class="section-title">フレンドコード</div>
-      <div id="my-fc" class="fc-val">------</div>
-    </div>
-    <!-- フレンド -->
-    <div class="pane" id="pane-friends">
-      <div class="subtabs">
-        <button class="stab active" id="stab-add">追加</button>
-        <button class="stab" id="stab-req">申請<span id="req-badge" class="badge hidden">0</span></button>
-        <button class="stab" id="stab-list">リスト</button>
-      </div>
-      <div class="sp active" id="sp-add">
-        <div class="input-row">
-          <input type="text" id="fc-input" placeholder="フレンドコードを入力">
-          <button class="mini-btn solid" id="btn-add-friend">送信</button>
-        </div>
-        <p id="add-msg" class="msg"></p>
-      </div>
-      <div class="sp" id="sp-req"><div id="req-list"></div></div>
-      <div class="sp" id="sp-list"><div id="friend-list"></div></div>
-    </div>
-  </aside>
 
-  <!-- タスクパネル -->
-  <aside id="panel-task" class="panel">
-    <div class="panel-head">
-      <div class="panel-tabs">
-        <button class="ptab active" id="ttab-daily">毎日</button>
-        <button class="ptab" id="ttab-weekly">週間</button>
-      </div>
-      <button class="icon-btn" id="btn-task-close">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="tpane active" id="tp-daily">
-      <div class="reward-tag">報酬: 50 XP · 1,500 ¤</div>
-      <div id="daily-tasks"></div>
-    </div>
-    <div class="tpane" id="tp-weekly">
-      <div class="reward-tag">報酬: 500 XP · 15,000 ¤</div>
-      <div id="weekly-tasks"></div>
-    </div>
-  </aside>
+        <!-- メインコンテンツ -->
+        <div class="main-content">
+            <!-- メニュー画面 -->
+            <div class="screen active menu-screen" id="menuScreen">
+                <div class="menu-title">🎮 タイピングゲーム</div>
+                <div class="menu-buttons">
+                    <button class="menu-btn" id="playBtn">
+                        <div class="icon">🚀</div>
+                        <div>PLAY</div>
+                    </button>
+                    <button class="menu-btn" id="profileBtn">
+                        <div class="icon">👤</div>
+                        <div>PROFILE</div>
+                    </button>
+                </div>
+            </div>
 
-  <!-- Firebase ESM + app.js (module) -->
-  <script type="module" src="app.js"></script>
+            <!-- 難易度選択画面 -->
+            <div class="screen difficulty-screen" id="difficultyScreen">
+                <div class="difficulty-title">難易度を選択</div>
+                <div class="difficulty-options">
+                    <button class="difficulty-btn easy" data-difficulty="easy">簡単</button>
+                    <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
+                    <button class="difficulty-btn hard" data-difficulty="hard">難しい</button>
+                </div>
+            </div>
+
+            <!-- ゲーム画面 -->
+            <div class="screen game-screen" id="gameScreen">
+                <div class="game-stats">
+                    <div class="stat-box">
+                        <div class="stat-label">Score</div>
+                        <div class="stat-value" id="scoreDisplay">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Combo</div>
+                        <div class="stat-value" id="comboDisplay">0</div>
+                    </div>
+                </div>
+                <div class="timer" id="timerDisplay">60</div>
+                <div class="current-question" id="questionDisplay">準備中...</div>
+                <div class="input-guide">キーボードで入力してください</div>
+            </div>
+
+            <!-- 結果画面 -->
+            <div class="screen menu-screen" id="resultScreen">
+                <div class="menu-title">ゲーム終了！</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: var(--text-gray); margin-bottom: 10px;">FINAL SCORE</div>
+                        <div id="finalScore" style="color: var(--accent-green);">0</div>
+                    </div>
+                    <div style="font-size: 20px; color: var(--text-gray); margin-bottom: 30px;">
+                        <div>+<span id="earnedCoins">0</span> 💰</div>
+                        <div>+<span id="earnedXP">0</span> ⭐</div>
+                    </div>
+                </div>
+                <button class="menu-btn" id="continueBtn" style="width: 100%; max-width: 300px; grid-column: 1 / -1;">
+                    <div>続ける</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- コイン表示 -->
+        <div class="coin-display">
+            <div class="coin-icon">💰</div>
+            <div class="coin-value" id="coinDisplay">0</div>
+        </div>
+
+        <!-- オーバーレイ -->
+        <div class="overlay" id="overlay"></div>
+
+        <!-- サイドパネル -->
+        <div class="side-panel" id="sidePanel">
+            <div class="panel-header" id="panelHeader">
+                <span>パネル</span>
+                <button class="panel-close" id="panelCloseBtn">✕</button>
+            </div>
+
+            <!-- プロフィールパネル -->
+            <div id="profilePanel">
+                <div class="profile-section">
+                    <div class="user-name" id="displayName">ユーザー</div>
+                    <div class="user-id" id="userId">ID: 000000000000</div>
+                    
+                    <input type="text" class="change-name-input" id="newNameInput" placeholder="新しい名前（最大20文字）" maxlength="20">
+                    <button class="change-name-btn" id="changeNameBtn">名前を変更</button>
+                    <div class="name-change-count" id="nameChangeCount">本日の変更回数: 0/3</div>
+
+                    <div class="friend-code">
+                        <div class="friend-code-label">フレンドコード</div>
+                        <div class="friend-code-value" id="friendCodeDisplay">000000ABC</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フレンドパネル -->
+            <div id="friendPanel" class="hidden">
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="friend-list">フレンド</button>
+                    <button class="tab-btn" data-tab="friend-request">申請</button>
+                </div>
+
+                <!-- フレンドリスト -->
+                <div id="friend-list" class="tab-content">
+                    <div class="add-friend-section">
+                        <input type="text" class="add-friend-input" id="addFriendCode" placeholder="フレンドコードを入力" maxlength="9">
+                        <button class="add-friend-btn" id="addFriendBtn">追加する</button>
+                    </div>
+                    <div id="friendsList" class="friends-list"></div>
+                </div>
+
+                <!-- フレンド申請 -->
+                <div id="friend-request" class="tab-content hidden">
+                    <div id="friendRequestsList"></div>
+                </div>
+            </div>
+
+            <!-- タスクパネル -->
+            <div id="taskPanel" class="hidden">
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="daily-tasks">毎日</button>
+                    <button class="tab-btn" data-tab="weekly-tasks">週間</button>
+                </div>
+
+                <!-- 毎日のタスク -->
+                <div id="daily-tasks" class="tab-content">
+                    <div id="dailyTasksList"></div>
+                </div>
+
+                <!-- 週間のタスク -->
+                <div id="weekly-tasks" class="tab-content hidden">
+                    <div id="weeklyTasksList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // グローバル状態管理
+        // ============================================
+        const gameState = {
+            userId: null,
+            userName: 'User',
+            friendCode: '',
+            coins: 0,
+            level: 1,
+            xp: 0,
+            maxXp: 100,
+            nameChangeCount: 0,
+            lastNameChangeReset: new Date().toDateString(),
+            friends: [],
+            friendRequests: [],
+            currentScore: 0,
+            currentCombo: 0,
+            gameActive: false,
+            gameTime: 60,
+            currentDifficulty: null,
+            dailyTasks: [
+                { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
+                { id: 'score5k', title: 'スコア5000～50000を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
+                { id: 'combo50', title: 'コンボ50～150を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false }
+            ],
+            weeklyTasks: [
+                { id: 'play100', title: '100回タイピングをプレイ', current: 0, target: 100, reward: { xp: 500, coins: 15000 }, completed: false },
+                { id: 'score10x', title: 'スコア500～50000を10回叩き出す', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false },
+                { id: 'comboWeekly', title: 'コンボ50～150を叩き出す', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false }
+            ]
+        };
+
+        // ============================================
+        // 問題データベース
+        // ============================================
+        const questions = {
+            easy: [
+                'りんご', 'いぬ', 'ねこ', 'たべる', 'のむ', 'すうがく',
+                'えいご', 'ほん', 'かみ', 'ペン', 'そら', 'ひ', 'つき', 'ほし', 'かぜ', 'あめ'
+            ],
+            normal: [
+                'コンピューター', 'インターネット', 'プログラミング', 'キーボード', 'マウス',
+                'ディスプレイ', 'ソフトウェア', 'ハードウェア', 'アルゴリズム', 'データベース',
+                'セキュリティ', 'ネットワーク', 'クラウド', 'サーバー', 'クライアント'
+            ],
+            hard: [
+                'アーキテクチャー', 'パフォーマンス', 'エンジニアリング', 'カスタマイズ',
+                'ビジュアライゼーション', 'オプティマイゼーション', 'ノーマライゼーション',
+                'フラグメンテーション', 'デバッグ', 'リファクタリング', 'デプロイメント',
+                'シミュレーション', 'ドキュメンテーション', 'スケーラビリティ', 'コンプライアンス'
+            ]
+        };
+
+        // ローマ字マッピング
+        const romajiMap = {
+            'あ': ['a'], 'い': ['i'], 'う': ['u'], 'え': ['e'], 'お': ['o'],
+            'か': ['ka', 'ca'], 'き': ['ki'], 'く': ['ku'], 'け': ['ke'], 'こ': ['ko', 'co'],
+            'が': ['ga'], 'ぎ': ['gi'], 'ぐ': ['gu'], 'げ': ['ge'], 'ご': ['go'],
+            'さ': ['sa'], 'し': ['si', 'shi'], 'す': ['su'], 'せ': ['se'], 'そ': ['so'],
+            'ざ': ['za'], 'じ': ['zi', 'ji'], 'ず': ['zu'], 'ぜ': ['ze'], 'ぞ': ['zo'],
+            'た': ['ta'], 'ち': ['ti', 'chi'], 'つ': ['tu', 'tsu'], 'て': ['te'], 'と': ['to'],
+            'だ': ['da'], 'ぢ': ['di'], 'づ': ['du'], 'で': ['de'], 'ど': ['do'],
+            'な': ['na'], 'に': ['ni'], 'ぬ': ['nu'], 'ね': ['ne'], 'の': ['no'],
+            'は': ['ha'], 'ひ': ['hi'], 'ふ': ['hu', 'fu'], 'へ': ['he'], 'ほ': ['ho'],
+            'ば': ['ba'], 'び': ['bi'], 'ぶ': ['bu'], 'べ': ['be'], 'ぼ': ['bo'],
+            'ぱ': ['pa'], 'ぴ': ['pi'], 'ぷ': ['pu'], 'ぺ': ['pe'], 'ぽ': ['po'],
+            'ま': ['ma'], 'み': ['mi'], 'む': ['mu'], 'め': ['me'], 'も': ['mo'],
+            'や': ['ya'], 'ゆ': ['yu'], 'よ': ['yo'],
+            'ら': ['ra'], 'り': ['ri'], 'る': ['ru'], 're': ['re'], 'ろ': ['ro'],
+            'わ': ['wa'], 'を': ['wo', 'o'], 'ん': ['n']
+        };
+
+        // ============================================
+        // ユーティリティ関数
+        // ============================================
+
+        function generateRandomId() {
+            return Math.random().toString(36).substr(2, 12).toUpperCase();
+        }
+
+        function generateFriendCode() {
+            const numbers = Math.random().toString().substr(2, 6);
+            const letters = Math.random().toString(36).substr(2, 3).toUpperCase();
+            return numbers + letters;
+        }
+
+        function convertToRomaji(hiragana) {
+            const chars = hiragana.split('');
+            let romaji = [];
+            for (let char of chars) {
+                if (romajiMap[char]) {
+                    romaji.push(romajiMap[char][0]);
+                }
+            }
+            return romaji.join('');
+        }
+
+        function saveGameState() {
+            localStorage.setItem('gameState', JSON.stringify(gameState));
+        }
+
+        function loadGameState() {
+            const saved = localStorage.getItem('gameState');
+            if (saved) {
+                Object.assign(gameState, JSON.parse(saved));
+            } else {
+                gameState.userId = generateRandomId();
+                gameState.friendCode = generateFriendCode();
+                saveGameState();
+            }
+        }
+
+        function checkAndResetDaily() {
+            const today = new Date().toDateString();
+            if (gameState.lastNameChangeReset !== today) {
+                gameState.lastNameChangeReset = today;
+                gameState.nameChangeCount = 0;
+                gameState.dailyTasks.forEach(task => task.completed = false);
+                saveGameState();
+            }
+        }
+
+        // ============================================
+        // UI更新関数
+        // ============================================
+
+        function updateUI() {
+            // レベルとXP
+            document.getElementById('levelDisplay').textContent = gameState.level;
+            const xpPercent = (gameState.xp / gameState.maxXp) * 100;
+            document.getElementById('xpBarFill').style.width = xpPercent + '%';
+
+            // コイン
+            document.getElementById('coinDisplay').textContent = gameState.coins;
+
+            // プロフィール
+            document.getElementById('displayName').textContent = gameState.userName;
+            document.getElementById('userId').textContent = 'ID: ' + gameState.userId;
+            document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
+            document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
+            document.getElementById('newNameInput').value = '';
+
+            // フレンドリスト
+            updateFriendsList();
+
+            // タスク
+            updateTasksDisplay();
+        }
+
+        function updateFriendsList() {
+            const friendsList = document.getElementById('friendsList');
+            friendsList.innerHTML = '';
+
+            if (gameState.friends.length === 0) {
+                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
+                return;
+            }
+
+            gameState.friends.forEach(friend => {
+                const friendEl = document.createElement('div');
+                friendEl.className = 'friend-item';
+                friendEl.innerHTML = `
+                    <div class="friend-info">
+                        <div class="friend-status ${friend.online ? '' : 'offline'}"></div>
+                        <div class="friend-details">
+                            <div class="friend-name">${friend.name}</div>
+                            <div class="friend-code-small">${friend.code}</div>
+                        </div>
+                    </div>
+                    <button class="friend-delete-btn">削除</button>
+                `;
+                friendEl.querySelector('.friend-delete-btn').addEventListener('click', () => {
+                    gameState.friends = gameState.friends.filter(f => f.code !== friend.code);
+                    saveGameState();
+                    updateFriendsList();
+                });
+                friendsList.appendChild(friendEl);
+            });
+        }
+
+        function updateTasksDisplay() {
+            // 毎日のタスク
+            const dailyList = document.getElementById('dailyTasksList');
+            dailyList.innerHTML = '';
+            gameState.dailyTasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
+                const percent = Math.min(100, (task.current / task.target) * 100);
+                taskEl.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-progress">${task.current} / ${task.target}</div>
+                    <div class="task-progress-bar">
+                        <div class="task-progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>
+                `;
+                dailyList.appendChild(taskEl);
+            });
+
+            // 週間のタスク
+            const weeklyList = document.getElementById('weeklyTasksList');
+            weeklyList.innerHTML = '';
+            gameState.weeklyTasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
+                const percent = Math.min(100, (task.current / task.target) * 100);
+                taskEl.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-progress">${task.current} / ${task.target}</div>
+                    <div class="task-progress-bar">
+                        <div class="task-progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>
+                `;
+                weeklyList.appendChild(taskEl);
+            });
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showNotification(message, type = 'level-up') {
+            const notification = document.createElement('div');
+            notification.className = `${type}-notification`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        function addXP(amount) {
+            gameState.xp += amount;
+            
+            while (gameState.xp >= gameState.maxXp) {
+                gameState.xp -= gameState.maxXp;
+                gameState.level++;
+                gameState.maxXp = Math.floor(gameState.maxXp * 1.5);
+                showNotification(`🎉 レベルアップ！ 現在のレベル: ${gameState.level}`, 'level-up');
+            }
+            
+            saveGameState();
+            updateUI();
+        }
+
+        // ============================================
+        // パネル制御
+        // ============================================
+
+        function openPanel(panelType) {
+            const overlay = document.getElementById('overlay');
+            const panel = document.getElementById('sidePanel');
+            const profilePanel = document.getElementById('profilePanel');
+            const friendPanel = document.getElementById('friendPanel');
+            const taskPanel = document.getElementById('taskPanel');
+
+            profilePanel.classList.add('hidden');
+            friendPanel.classList.add('hidden');
+            taskPanel.classList.add('hidden');
+
+            if (panelType === 'profile') {
+                profilePanel.classList.remove('hidden');
+                document.getElementById('panelHeader').innerHTML = '<span>プロフィール</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+            } else if (panelType === 'friend') {
+                friendPanel.classList.remove('hidden');
+                document.getElementById('panelHeader').innerHTML = '<span>フレンド</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+            } else if (panelType === 'task') {
+                taskPanel.classList.remove('hidden');
+                document.getElementById('panelHeader').innerHTML = '<span>タスク</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+            }
+
+            overlay.classList.add('active');
+            panel.classList.add('active');
+
+            document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+        }
+
+        function closePanel() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('sidePanel').classList.remove('active');
+        }
+
+        // ============================================
+        // ゲーム制御
+        // ============================================
+
+        let gameTimer = null;
+        let currentQuestion = '';
+        let typedInput = '';
+
+        function startGame(difficulty) {
+            gameState.currentDifficulty = difficulty;
+            gameState.currentScore = 0;
+            gameState.currentCombo = 0;
+            gameState.gameTime = 60;
+            gameState.gameActive = true;
+            typedInput = '';
+
+            switchScreen('gameScreen');
+            nextQuestion();
+            startTimer();
+
+            // タスク更新
+            gameState.dailyTasks[0].current++;
+            gameState.weeklyTasks[0].current++;
+            updateTasksDisplay();
+        }
+
+        function nextQuestion() {
+            const qArray = questions[gameState.currentDifficulty];
+            currentQuestion = qArray[Math.floor(Math.random() * qArray.length)];
+            typedInput = '';
+            
+            const romaji = convertToRomaji(currentQuestion);
+            document.getElementById('questionDisplay').textContent = romaji.toLowerCase();
+        }
+
+        function startTimer() {
+            gameTimer = setInterval(() => {
+                gameState.gameTime--;
+                document.getElementById('timerDisplay').textContent = gameState.gameTime;
+
+                if (gameState.gameTime <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameState.gameActive = false;
+            clearInterval(gameTimer);
+
+            const earnedCoins = Math.floor(gameState.currentScore / 10);
+            const earnedXP = Math.floor(gameState.currentScore / 100);
+
+            gameState.coins += earnedCoins;
+            addXP(earnedXP);
+
+            // スコアに応じてタスク更新
+            if (gameState.currentScore >= 5000) {
+                gameState.dailyTasks[1].current++;
+            }
+            if (gameState.currentCombo >= 50) {
+                gameState.dailyTasks[2].current++;
+                gameState.weeklyTasks[2].current++;
+            }
+
+            // 週間タスク更新
+            if (gameState.currentScore >= 500) {
+                gameState.weeklyTasks[1].current++;
+            }
+
+            saveGameState();
+
+            // 結果表示
+            document.getElementById('finalScore').textContent = gameState.currentScore;
+            document.getElementById('earnedCoins').textContent = earnedCoins;
+            document.getElementById('earnedXP').textContent = earnedXP;
+            
+            switchScreen('resultScreen');
+        }
+
+        // ============================================
+        // イベントリスナー
+        // ============================================
+
+        // メニュー
+        document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
+        document.getElementById('profileBtn').addEventListener('click', () => openPanel('profile'));
+
+        // 難易度選択
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => startGame(btn.dataset.difficulty));
+        });
+
+        // 結果画面
+        document.getElementById('continueBtn').addEventListener('click', () => {
+            switchScreen('menuScreen');
+        });
+
+        // パネルボタン
+        document.getElementById('friendBtn').addEventListener('click', () => openPanel('friend'));
+        document.getElementById('taskBtn').addEventListener('click', () => openPanel('task'));
+        document.getElementById('overlay').addEventListener('click', closePanel);
+
+        // タブ切り替え
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                const panel = btn.parentElement.parentElement;
+                
+                panel.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                panel.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                
+                btn.classList.add('active');
+                panel.querySelector('#' + tabName).classList.remove('hidden');
+            });
+        });
+
+        // プロフィール - 名前変更
+        document.getElementById('changeNameBtn').addEventListener('click', () => {
+            const newName = document.getElementById('newNameInput').value.trim();
+            if (newName && gameState.nameChangeCount < 3) {
+                gameState.userName = newName;
+                gameState.nameChangeCount++;
+                saveGameState();
+                updateUI();
+            } else if (gameState.nameChangeCount >= 3) {
+                alert('本日の変更回数に達しました。明日00:00に更新されます。');
+            }
+        });
+
+        // フレンド追加
+        document.getElementById('addFriendBtn').addEventListener('click', () => {
+            const code = document.getElementById('addFriendCode').value.trim();
+            if (code === gameState.friendCode) {
+                alert('自分のフレンドコードは追加できません');
+                return;
+            }
+            if (code && !gameState.friends.find(f => f.code === code)) {
+                gameState.friends.push({
+                    code: code,
+                    name: '新しいフレンド',
+                    online: Math.random() > 0.5
+                });
+                document.getElementById('addFriendCode').value = '';
+                saveGameState();
+                updateFriendsList();
+            }
+        });
+
+        // ゲーム中のキーボード入力
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.gameActive) return;
+
+            const key = e.key.toLowerCase();
+            const currentRomaji = convertToRomaji(currentQuestion).toLowerCase();
+
+            if (key.match(/[a-z]/)) {
+                typedInput += key;
+                
+                if (typedInput === currentRomaji) {
+                    // 正解
+                    gameState.currentCombo++;
+                    gameState.currentScore += 5 * gameState.currentCombo;
+                    
+                    document.getElementById('scoreDisplay').textContent = gameState.currentScore;
+                    document.getElementById('comboDisplay').textContent = gameState.currentCombo;
+                    
+                    nextQuestion();
+                } else if (!currentRomaji.startsWith(typedInput)) {
+                    // ミス
+                    gameState.currentCombo = 0;
+                    document.getElementById('comboDisplay').textContent = '0';
+                    typedInput = '';
+                }
+            }
+        });
+
+        // 初期化
+        loadGameState();
+        checkAndResetDaily();
+        updateUI();
+    </script>
 </body>
 </html>
