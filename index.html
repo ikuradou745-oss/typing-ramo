@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングゲーム - Firebase版</title>
+    <title>⚡ タイピングゲーム - フレンド・ランキング機能付き</title>
     <!-- Firebase 10.8.0 - ES Modules -->
     <script type="importmap">
         {
@@ -39,9 +39,10 @@
         .level-value { font-size: 20px; font-weight: 700; color: var(--accent-blue); }
         .xp-bar { width: 150px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
         .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
-        .top-buttons { display: flex; gap: 10px; }
-        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .top-buttons { display: flex; gap: 10px; position: relative; }
+        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; }
         .icon-btn:hover { background: rgba(0, 212, 255, 0.15); transform: scale(1.05); }
+        .gift-badge { position: absolute; top: -5px; right: -5px; background: var(--accent-pink); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--primary-dark); }
         .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 136, 0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; }
         .coin-value { color: var(--accent-green); }
         .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; overflow-y: auto; }
@@ -130,6 +131,15 @@
         .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
         .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; }
         .ranking-score { font-weight: 600; color: var(--accent-green); text-align: right; }
+        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #2a1e3a, #1a0e2a); border: 2px solid var(--accent-gold, #ffd700); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }
+        .gift-dialog.active { display: flex; }
+        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold, #ffd700); text-align: center; }
+        .gift-content { font-size: 18px; color: var(--text-white); text-align: center; line-height: 1.8; }
+        .gift-reward { font-size: 24px; font-weight: 700; color: var(--accent-green); }
+        .gift-button { padding: 15px 40px; background: linear-gradient(90deg, #ffd700, #ffa500); border: none; border-radius: 10px; color: var(--primary-dark); font-size: 20px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
+        .gift-button:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
+        .gift-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-gray); font-size: 24px; cursor: pointer; }
+        .ranking-update-timer { font-size: 12px; color: var(--accent-green); text-align: center; margin-top: 10px; padding: 5px; background: rgba(0, 255, 136, 0.1); border-radius: 5px; }
         .hidden { display: none !important; }
         @keyframes levelUp { 0% { opacity: 0; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px); } }
         .level-up-notification { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); padding: 20px 40px; border-radius: 10px; font-size: 24px; font-weight: 700; animation: levelUp 3s ease-out forwards; z-index: 2000; pointer-events: none; }
@@ -154,6 +164,7 @@
                     </div>
                 </div>
                 <div class="top-buttons">
+                    <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">1</span></button>
                     <button class="icon-btn" id="taskBtn">📋</button>
                     <button class="icon-btn" id="profileBtn">👤</button>
                     <button class="icon-btn" id="friendBtn">👥</button>
@@ -178,6 +189,7 @@
                     <button class="ranking-mode-btn" id="friendRankingPlayBtn">フレンドランキング(プレイ)</button>
                     <button class="ranking-mode-btn" id="worldRankingPlayBtn">ワールドランキング(プレイ)</button>
                 </div>
+                <div class="ranking-update-timer" id="rankingUpdateTimer">次回更新まで: 00:00:00</div>
                 <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
             </div>
 
@@ -242,6 +254,16 @@
                 <button class="dialog-btn" id="dialogCancelBtn">キャンセル</button>
                 <button class="dialog-btn danger" id="dialogConfirmBtn">実行</button>
             </div>
+        </div>
+
+        <div class="gift-dialog" id="giftDialog">
+            <button class="gift-close" id="giftCloseBtn">✕</button>
+            <div class="gift-title">🎁 ランキング報酬 🎁</div>
+            <div class="gift-content" id="giftContent">
+                ワールドランキングからの報酬<br>
+                <span class="gift-reward" id="giftReward">5000 XP, 10000 コイン</span>
+            </div>
+            <button class="gift-button" id="claimRewardBtn">受け取る</button>
         </div>
 
         <div class="side-panel" id="sidePanel">
@@ -337,15 +359,21 @@
             gameActive: false, 
             gameTime: 60, 
             currentDifficulty: null,
+            // ランキング報酬受け取り済みフラグ
+            claimedRankings: {
+                world: null, // 最後に受け取った日付 (YYYY-MM-DD)
+                friend: null
+            },
+            // タスク
             dailyTasks: [
                 { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
-                { id: 'score5k', title: 'スコア5000～50000を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
-                { id: 'combo50', title: 'コンボ50～150を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false }
+                { id: 'score5k', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
+                { id: 'combo50', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false }
             ],
             weeklyTasks: [
                 { id: 'play100', title: '100回タイピングをプレイ', current: 0, target: 100, reward: { xp: 500, coins: 15000 }, completed: false },
-                { id: 'score10x', title: 'スコア500～50000を10回叩き出す', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false },
-                { id: 'comboWeekly', title: 'コンボ50～150を叩き出す', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false }
+                { id: 'score10x', title: 'スコア5000以上を10回達成', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false },
+                { id: 'comboWeekly', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false }
             ]
         };
 
@@ -361,6 +389,9 @@
 
         let blockConfirmState = { targetCode: null, stage: 0 };
         let friendsUnsubscribe = null;
+        let rankingUpdateTimer = null;
+        let worldRankings = [];
+        let friendRankings = [];
 
         function generateRandomId() { return Math.random().toString(36).substr(2, 12).toUpperCase(); }
         function generateFriendCode() { 
@@ -377,11 +408,178 @@
                     lastActive: Date.now(),
                     level: gameState.level,
                     xp: gameState.xp,
-                    coins: gameState.coins
+                    coins: gameState.coins,
+                    score: gameState.currentScore
                 });
             } catch (e) {
                 console.warn('Firebase 保存エラー:', e.message);
             }
+        }
+
+        // ===== ランキング関連 =====
+        function getCurrentDate() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
+
+        function getTimeUntil7AM() {
+            const now = new Date();
+            const next7AM = new Date(now);
+            next7AM.setHours(7, 0, 0, 0);
+            
+            if (now > next7AM) {
+                next7AM.setDate(next7AM.getDate() + 1);
+            }
+            
+            const diff = next7AM - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startRankingUpdateTimer() {
+            if (rankingUpdateTimer) clearInterval(rankingUpdateTimer);
+            
+            rankingUpdateTimer = setInterval(() => {
+                const timerEl = document.getElementById('rankingUpdateTimer');
+                if (timerEl) {
+                    timerEl.innerText = `次回更新まで: ${getTimeUntil7AM()}`;
+                }
+            }, 1000);
+        }
+
+        function getRankingReward(rank, type) {
+            if (type === 'world') {
+                if (rank === 1) return { xp: 5000, coins: 10000 };
+                if (rank === 2 || rank === 3) return { xp: 2000, coins: 5000 };
+                if (rank <= 10) return { xp: 1000, coins: 2000 };
+            } else if (type === 'friend') {
+                if (rank === 1) return { xp: 500, coins: 3000 };
+                if (rank <= 5) return { xp: 200, coins: 1000 };
+            }
+            return null;
+        }
+
+        function checkRankingRewards() {
+            const today = getCurrentDate();
+            const worldRankings = JSON.parse(localStorage.getItem('worldRankings')) || [];
+            const friendRankings = JSON.parse(localStorage.getItem('friendRankings')) || [];
+            const claimed = gameState.claimedRankings || { world: null, friend: null };
+            
+            let hasReward = false;
+            
+            // ワールドランキングの報酬チェック
+            if (claimed.world !== today) {
+                const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
+                if (myRank > 0 && myRank <= 10) {
+                    hasReward = true;
+                }
+            }
+            
+            // フレンドランキングの報酬チェック
+            if (claimed.friend !== today) {
+                const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
+                if (myFriendRank > 0 && myFriendRank <= 5) {
+                    hasReward = true;
+                }
+            }
+            
+            const badge = document.getElementById('giftBadge');
+            if (badge) {
+                badge.textContent = hasReward ? '1' : '0';
+                badge.style.display = hasReward ? 'flex' : 'none';
+            }
+            
+            return hasReward;
+        }
+
+        function showGiftDialog() {
+            const today = getCurrentDate();
+            const worldRankings = JSON.parse(localStorage.getItem('worldRankings')) || [];
+            const friendRankings = JSON.parse(localStorage.getItem('friendRankings')) || [];
+            const claimed = gameState.claimedRankings || { world: null, friend: null };
+            
+            let rewards = [];
+            
+            // ワールドランキング
+            if (claimed.world !== today) {
+                const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
+                const reward = getRankingReward(myRank, 'world');
+                if (reward) {
+                    rewards.push({
+                        type: 'world',
+                        rank: myRank,
+                        reward: reward
+                    });
+                }
+            }
+            
+            // フレンドランキング
+            if (claimed.friend !== today) {
+                const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
+                const reward = getRankingReward(myFriendRank, 'friend');
+                if (reward) {
+                    rewards.push({
+                        type: 'friend',
+                        rank: myFriendRank,
+                        reward: reward
+                    });
+                }
+            }
+            
+            if (rewards.length === 0) {
+                alert('現在受け取れる報酬はありません');
+                return;
+            }
+            
+            const content = document.getElementById('giftContent');
+            const rewardText = document.getElementById('giftReward');
+            
+            let totalXp = 0;
+            let totalCoins = 0;
+            rewards.forEach(r => {
+                totalXp += r.reward.xp;
+                totalCoins += r.reward.coins;
+            });
+            
+            content.innerHTML = 'ワールドランキング＆フレンドランキングからの報酬<br>';
+            rewardText.innerHTML = `${totalXp} XP, ${totalCoins.toLocaleString()} コイン`;
+            
+            document.getElementById('giftDialog').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+            
+            // 受け取りボタンのイベントを設定
+            document.getElementById('claimRewardBtn').onclick = () => {
+                // 報酬を受け取る
+                gameState.xp += totalXp;
+                gameState.coins += totalCoins;
+                
+                // レベルアップ処理
+                while (gameState.xp >= gameState.maxXp) {
+                    gameState.xp -= gameState.maxXp;
+                    gameState.level++;
+                    gameState.maxXp = Math.floor(gameState.maxXp * 1.5);
+                }
+                
+                // 受け取り済みにする
+                if (!gameState.claimedRankings) gameState.claimedRankings = {};
+                gameState.claimedRankings.world = today;
+                gameState.claimedRankings.friend = today;
+                
+                saveGameState();
+                updateUI();
+                
+                // ダイアログを閉じる
+                document.getElementById('giftDialog').classList.remove('active');
+                document.getElementById('overlay').classList.remove('active');
+                
+                // バッジを非表示
+                checkRankingRewards();
+                
+                alert(`✅ 報酬を受け取りました！\n+${totalXp} XP, +${totalCoins.toLocaleString()} コイン`);
+            };
         }
 
         function convertToRomaji(text) {
@@ -453,6 +651,7 @@
             gameState.userId = generateRandomId();
             gameState.friendCode = generateFriendCode();
             gameState.userName = 'ユーザー' + gameState.friendCode.slice(0, 4);
+            gameState.claimedRankings = { world: null, friend: null };
             saveGameState();
         }
 
@@ -469,12 +668,13 @@
         function updateUI() {
             document.getElementById('levelDisplay').textContent = gameState.level;
             document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp) * 100 + '%';
-            document.getElementById('coinDisplay').textContent = gameState.coins;
+            document.getElementById('coinDisplay').textContent = gameState.coins.toLocaleString();
             document.getElementById('displayName').textContent = gameState.userName;
             document.getElementById('userId').textContent = 'ID: ' + gameState.friendCode.slice(0, 6);
             document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
             document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
             updateTasksDisplay();
+            checkRankingRewards();
         }
 
         function updateTasksDisplay() {
@@ -499,7 +699,7 @@
             });
         }
 
-        // ===== フレンド機能（成功例から移植）=====
+        // ===== フレンド機能（成功例から完全移植）=====
         function setupFriendsListener() {
             if (!firebaseReady || !db || !gameState.friendCode) return;
             
@@ -553,6 +753,13 @@
                         });
                     }
                 }
+                
+                // オンライン順にソート（オンラインが先）
+                newFriends.sort((a, b) => {
+                    if (a.isOnline && !b.isOnline) return -1;
+                    if (!a.isOnline && b.isOnline) return 1;
+                    return 0;
+                });
                 
                 // gameStateを更新
                 gameState.friends = newFriends;
@@ -732,6 +939,7 @@
             let rankings = [];
 
             if (type === 'friend') {
+                // フレンドランキング
                 for (const friend of gameState.friends) {
                     let score = 0;
                     if (firebaseReady && db) {
@@ -749,6 +957,7 @@
                     });
                 }
             } else {
+                // ワールドランキング
                 if (firebaseReady && db) {
                     try {
                         const snap = await get(ref(db, 'users'));
@@ -768,16 +977,30 @@
                 }
             }
 
+            // スコアでソート
             rankings.sort((a, b) => b.score - a.score);
             rankings = rankings.slice(0, 100);
 
+            // ランキングを保存
+            if (type === 'friend') {
+                friendRankings = rankings;
+                localStorage.setItem('friendRankings', JSON.stringify(rankings));
+            } else {
+                worldRankings = rankings;
+                localStorage.setItem('worldRankings', JSON.stringify(rankings));
+            }
+
             container.innerHTML = '';
             rankings.forEach((entry, idx) => {
+                const isCurrentUser = entry.code === gameState.friendCode;
                 const item = document.createElement('div');
                 item.className = 'ranking-item';
-                item.innerHTML = `<div class="ranking-rank">${idx + 1}位</div><div class="ranking-name">${entry.name}</div><div class="ranking-score">${entry.score.toLocaleString()}</div>`;
+                item.innerHTML = `<div class="ranking-rank">${idx + 1}位</div><div class="ranking-name" style="${isCurrentUser ? 'color: var(--accent-green); font-weight: bold;' : ''}">${entry.name}${isCurrentUser ? ' (あなた)' : ''}</div><div class="ranking-score">${entry.score.toLocaleString()}</div>`;
                 container.appendChild(item);
             });
+            
+            // 報酬チェック
+            checkRankingRewards();
         }
 
         let gameTimer = null, currentQuestion = '', currentRomaji = '', typedInput = '';
@@ -836,7 +1059,7 @@
                 gameState.dailyTasks[2].current++; 
                 gameState.weeklyTasks[2].current++; 
             }
-            if (gameState.currentScore >= 500) gameState.weeklyTasks[1].current++;
+            if (gameState.currentScore >= 5000) gameState.weeklyTasks[1].current++;
             
             while (gameState.xp >= gameState.maxXp) { 
                 gameState.xp -= gameState.maxXp; 
@@ -859,7 +1082,10 @@
 
         // イベントリスナーの設定
         document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
-        document.getElementById('rankingBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
+        document.getElementById('rankingBtn').addEventListener('click', () => {
+            switchScreen('rankingModeScreen');
+            startRankingUpdateTimer();
+        });
         document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
         document.getElementById('friendRankingViewBtn').addEventListener('click', () => displayRanking('friend'));
         document.getElementById('worldRankingViewBtn').addEventListener('click', () => displayRanking('world'));
@@ -875,6 +1101,12 @@
         
         document.getElementById('worldRankingPlayBtn').addEventListener('click', () => {
             startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]);
+        });
+        
+        document.getElementById('giftBtn').addEventListener('click', showGiftDialog);
+        document.getElementById('giftCloseBtn').addEventListener('click', () => {
+            document.getElementById('giftDialog').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
         });
         
         document.getElementById('taskBtn').addEventListener('click', () => {
@@ -919,6 +1151,7 @@
         document.getElementById('overlay').addEventListener('click', () => { 
             document.getElementById('sidePanel').classList.remove('active'); 
             document.getElementById('overlay').classList.remove('active'); 
+            document.getElementById('giftDialog').classList.remove('active');
             closeConfirmationDialog(); 
         });
         
@@ -1044,6 +1277,18 @@
                     console.warn('Firebase 初期化エラー:', e);
                 }
             }
+            
+            // ランキングタイマー開始
+            startRankingUpdateTimer();
+            
+            // 既存のランキングを読み込み
+            const savedWorld = localStorage.getItem('worldRankings');
+            if (savedWorld) worldRankings = JSON.parse(savedWorld);
+            const savedFriend = localStorage.getItem('friendRankings');
+            if (savedFriend) friendRankings = JSON.parse(savedFriend);
+            
+            // 報酬チェック
+            checkRankingRewards();
         }, 1000);
     </script>
 </body>
