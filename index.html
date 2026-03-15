@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <!-- HUD -->
+  <!-- HUD（常時表示） -->
   <header id="hud">
     <div id="hud-left">
       <div id="coin-display">
@@ -25,64 +25,79 @@
         <div id="xp-track"><div id="xp-fill"></div></div>
         <span id="xp-text"><span id="xp-cur">0</span>/<span id="xp-max">100</span></span>
       </div>
-      <button class="icon-btn" id="task-btn" aria-label="タスク">
+      <button class="icon-btn" onclick="openTaskPanel()">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
       </button>
-      <button class="icon-btn" id="friend-btn" aria-label="フレンド">
+      <button class="icon-btn" onclick="openFriendPanel()">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- トースト -->
+  <!-- トースト通知 -->
   <div id="toast-lv" class="toast">
     <span class="t-icon">↑</span>
-    <div><div class="t-title">Level up</div><div class="t-body">Lv.<span id="toast-lv-n"></span> になりました</div></div>
+    <div>
+      <div class="t-title">Level up!</div>
+      <div class="t-body">Lv.<span id="toast-lv-n"></span> になりました</div>
+    </div>
   </div>
   <div id="toast-task" class="toast" style="top:68px">
     <span class="t-icon">✓</span>
-    <div><div class="t-title">タスク達成</div><div class="t-body" id="toast-task-body"></div></div>
+    <div>
+      <div class="t-title">タスク達成！</div>
+      <div class="t-body" id="toast-task-body"></div>
+    </div>
   </div>
 
-  <!-- メイン -->
+  <!-- ① メインスクリーン -->
   <main id="screen-main" class="screen active">
     <h1 id="site-title">typekey</h1>
     <p id="site-sub">タイプキー — 日本語タイピングゲーム</p>
-    <button class="cta-btn" id="btn-play">
+    <button class="cta-btn" onclick="showScreen('screen-diff')">
       プレイする
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </main>
 
-  <!-- 難易度 -->
+  <!-- ② 難易度選択 -->
   <main id="screen-diff" class="screen">
     <h2 class="pg-title">難易度を選択</h2>
     <div class="diff-list">
-      <button class="diff-row" data-diff="easy">
+      <button class="diff-row" onclick="startGame('easy')">
         <div class="diff-name">Easy</div>
         <div class="diff-hint">3〜6文字 · 入門向け</div>
         <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      <button class="diff-row" data-diff="normal">
+      <button class="diff-row" onclick="startGame('normal')">
         <div class="diff-name">Normal</div>
         <div class="diff-hint">5〜12文字 · 標準難易度</div>
         <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      <button class="diff-row" data-diff="hard">
+      <button class="diff-row" onclick="startGame('hard')">
         <div class="diff-name">Hard</div>
         <div class="diff-hint">10〜20文字 · 上級者向け</div>
         <svg class="diff-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     </div>
-    <button class="link-btn" id="diff-back">← 戻る</button>
+    <button class="link-btn" onclick="showScreen('screen-main')">← 戻る</button>
   </main>
 
-  <!-- ゲーム -->
+  <!-- ③ ゲーム -->
   <main id="screen-game" class="screen">
     <div id="game-stats">
-      <div class="gstat"><div class="gstat-label">TIME</div><div class="gstat-val" id="g-time">60</div></div>
-      <div class="gstat"><div class="gstat-label">SCORE</div><div class="gstat-val" id="g-score">0</div></div>
-      <div class="gstat"><div class="gstat-label">COMBO</div><div class="gstat-val" id="g-combo">0</div></div>
+      <div class="gstat">
+        <div class="gstat-label">TIME</div>
+        <div class="gstat-val" id="g-time">60</div>
+      </div>
+      <div class="gstat">
+        <div class="gstat-label">SCORE</div>
+        <div class="gstat-val" id="g-score">0</div>
+      </div>
+      <div class="gstat">
+        <div class="gstat-label">COMBO</div>
+        <div class="gstat-val" id="g-combo">0</div>
+      </div>
     </div>
     <div id="word-area">
       <div id="g-ja"></div>
@@ -94,7 +109,7 @@
     <div id="miss-flash"></div>
   </main>
 
-  <!-- 結果 -->
+  <!-- ④ 結果 -->
   <main id="screen-result" class="screen">
     <h2 class="pg-title">結果</h2>
     <div class="res-grid">
@@ -104,55 +119,59 @@
       <div class="res-cell"><span class="rc-label">獲得XP</span><span class="rc-val" id="r-xp">0</span></div>
     </div>
     <div class="res-btns">
-      <button class="cta-btn" id="btn-retry">もう一度</button>
-      <button class="link-btn" id="btn-end">終了</button>
+      <button class="cta-btn" onclick="showScreen('screen-diff')">もう一度</button>
+      <button class="link-btn" onclick="showScreen('screen-main')">終了</button>
     </div>
   </main>
 
-  <!-- 暗転 -->
-  <div id="dim" class="hidden"></div>
+  <!-- 暗転オーバーレイ -->
+  <div id="dim" style="display:none" onclick="closeAnyPanel()"></div>
 
   <!-- フレンドパネル -->
-  <aside id="panel-friend" class="panel hidden">
+  <aside id="panel-friend" class="panel" style="display:none">
     <div class="panel-head">
       <div class="panel-tabs">
-        <button class="ptab active" data-ptab="profile">プロフィール</button>
-        <button class="ptab" data-ptab="friends">フレンド</button>
+        <button class="ptab active" id="ptab-profile" onclick="switchFriendTab('profile')">プロフィール</button>
+        <button class="ptab" id="ptab-friends" onclick="switchFriendTab('friends')">フレンド</button>
       </div>
-      <button class="icon-btn" id="friend-close">
+      <button class="icon-btn" onclick="closeAnyPanel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
+
+    <!-- プロフィールペイン -->
     <div class="pane active" id="pane-profile">
       <div class="avatar-row">
         <div class="avatar">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         </div>
         <div>
-          <div id="p-name" class="p-name-text"></div>
-          <button class="mini-btn" id="btn-edit-name">名前を変更</button>
+          <div id="p-name" class="p-name-text">---</div>
+          <button class="mini-btn" onclick="toggleNameEdit()">名前を変更</button>
         </div>
       </div>
       <div id="name-change-left" class="hint-line"></div>
-      <div id="name-edit-area" class="hidden">
+      <div id="name-edit-area" style="display:none">
         <div class="input-row">
-          <input type="text" id="name-input" maxlength="20" placeholder="名前（最大20文字）">
-          <button class="mini-btn solid" id="btn-save-name">保存</button>
+          <input type="text" id="name-input" maxlength="20" placeholder="名前（最大20文字）" onkeydown="if(event.key==='Enter')saveNameEdit()">
+          <button class="mini-btn solid" onclick="saveNameEdit()">保存</button>
         </div>
       </div>
       <div class="section-title">フレンドコード</div>
-      <div id="my-fc" class="fc-val"></div>
+      <div id="my-fc" class="fc-val">------</div>
     </div>
+
+    <!-- フレンドペイン -->
     <div class="pane" id="pane-friends">
       <div class="subtabs">
-        <button class="stab active" data-stab="add">追加</button>
-        <button class="stab" data-stab="req">申請<span id="req-badge" class="badge hidden">0</span></button>
-        <button class="stab" data-stab="list">リスト</button>
+        <button class="stab active" id="stab-add" onclick="switchFriendSubTab('add')">追加</button>
+        <button class="stab" id="stab-req" onclick="switchFriendSubTab('req')">申請<span id="req-badge" style="display:none" class="badge">0</span></button>
+        <button class="stab" id="stab-list" onclick="switchFriendSubTab('list')">リスト</button>
       </div>
       <div class="sp active" id="sp-add">
         <div class="input-row">
-          <input type="text" id="fc-input" placeholder="フレンドコードを入力">
-          <button class="mini-btn solid" id="btn-add-friend">送信</button>
+          <input type="text" id="fc-input" placeholder="フレンドコードを入力" onkeydown="if(event.key==='Enter')sendFriendRequest()">
+          <button class="mini-btn solid" onclick="sendFriendRequest()">送信</button>
         </div>
         <p id="add-msg" class="msg"></p>
       </div>
@@ -162,13 +181,13 @@
   </aside>
 
   <!-- タスクパネル -->
-  <aside id="panel-task" class="panel hidden">
+  <aside id="panel-task" class="panel" style="display:none">
     <div class="panel-head">
       <div class="panel-tabs">
-        <button class="ptab active" data-ttab="daily">毎日</button>
-        <button class="ptab" data-ttab="weekly">週間</button>
+        <button class="ptab active" id="ttab-daily" onclick="switchTaskTab('daily')">毎日</button>
+        <button class="ptab" id="ttab-weekly" onclick="switchTaskTab('weekly')">週間</button>
       </div>
-      <button class="icon-btn" id="task-close">
+      <button class="icon-btn" onclick="closeAnyPanel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
@@ -182,11 +201,8 @@
     </div>
   </aside>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <!-- ゲーム本体（通常scriptタグ、モジュール不使用） -->
+  <!-- app.js は最後に読み込む（DOM構築後） -->
   <script src="app.js"></script>
+
 </body>
 </html>
