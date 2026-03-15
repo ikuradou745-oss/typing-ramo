@@ -21,6 +21,7 @@
             --accent-green: #00ff88;
             --accent-pink: #ff006e;
             --accent-purple: #7c3aed;
+            --accent-gold: #ffd700;
             --text-white: #f0f0f0;
             --text-gray: #a0a0a0;
         }
@@ -97,7 +98,7 @@
         .friends-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
         .friend-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; flex-direction: column; gap: 12px; }
         .friend-info { display: flex; align-items: flex-start; gap: 12px; }
-        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 6px; }
+        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 6px; flex-shrink: 0; }
         .friend-status.offline { background: #ff4444; }
         .friend-details { flex: 1; }
         .friend-name { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
@@ -129,11 +130,11 @@
         .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); font-size: 14px; }
         .ranking-item:last-child { border-bottom: none; }
         .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
-        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; }
+        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ranking-score { font-weight: 600; color: var(--accent-green); text-align: right; }
-        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #2a1e3a, #1a0e2a); border: 2px solid var(--accent-gold, #ffd700); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }
+        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #2a1e3a, #1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }
         .gift-dialog.active { display: flex; }
-        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold, #ffd700); text-align: center; }
+        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold); text-align: center; }
         .gift-content { font-size: 18px; color: var(--text-white); text-align: center; line-height: 1.8; }
         .gift-reward { font-size: 24px; font-weight: 700; color: var(--accent-green); }
         .gift-button { padding: 15px 40px; background: linear-gradient(90deg, #ffd700, #ffa500); border: none; border-radius: 10px; color: var(--primary-dark); font-size: 20px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
@@ -392,6 +393,7 @@
         let rankingUpdateTimer = null;
         let worldRankings = [];
         let friendRankings = [];
+        let friendItemsMap = new Map(); // フレンド要素を保持するマップ
 
         function generateRandomId() { return Math.random().toString(36).substr(2, 12).toUpperCase(); }
         function generateFriendCode() { 
@@ -468,18 +470,22 @@
             const friendRankings = JSON.parse(localStorage.getItem('friendRankings')) || [];
             const claimed = gameState.claimedRankings || { world: null, friend: null };
             
+            // 自分のスコアを取得
+            const myWorldEntry = worldRankings.find(r => r.code === gameState.friendCode);
+            const myFriendEntry = friendRankings.find(r => r.code === gameState.friendCode);
+            
             let hasReward = false;
             
-            // ワールドランキングの報酬チェック
-            if (claimed.world !== today) {
+            // ワールドランキングの報酬チェック（スコアが0より大きい場合のみ）
+            if (claimed.world !== today && myWorldEntry && myWorldEntry.score > 0) {
                 const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
                 if (myRank > 0 && myRank <= 10) {
                     hasReward = true;
                 }
             }
             
-            // フレンドランキングの報酬チェック
-            if (claimed.friend !== today) {
+            // フレンドランキングの報酬チェック（スコアが0より大きい場合のみ）
+            if (claimed.friend !== today && myFriendEntry && myFriendEntry.score > 0) {
                 const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
                 if (myFriendRank > 0 && myFriendRank <= 5) {
                     hasReward = true;
@@ -503,8 +509,12 @@
             
             let rewards = [];
             
-            // ワールドランキング
-            if (claimed.world !== today) {
+            // 自分のスコアを取得
+            const myWorldEntry = worldRankings.find(r => r.code === gameState.friendCode);
+            const myFriendEntry = friendRankings.find(r => r.code === gameState.friendCode);
+            
+            // ワールドランキング（スコアが0より大きい場合のみ）
+            if (claimed.world !== today && myWorldEntry && myWorldEntry.score > 0) {
                 const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
                 const reward = getRankingReward(myRank, 'world');
                 if (reward) {
@@ -516,8 +526,8 @@
                 }
             }
             
-            // フレンドランキング
-            if (claimed.friend !== today) {
+            // フレンドランキング（スコアが0より大きい場合のみ）
+            if (claimed.friend !== today && myFriendEntry && myFriendEntry.score > 0) {
                 const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
                 const reward = getRankingReward(myFriendRank, 'friend');
                 if (reward) {
@@ -699,7 +709,7 @@
             });
         }
 
-        // ===== フレンド機能（成功例から完全移植）=====
+        // ===== フレンド機能（改良版：要素を保持して差分更新）=====
         function setupFriendsListener() {
             if (!firebaseReady || !db || !gameState.friendCode) return;
             
@@ -718,13 +728,16 @@
                 if (!friendsData) {
                     friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
                     gameState.friends = [];
+                    friendItemsMap.clear();
                     localStorage.setItem('gameState', JSON.stringify(gameState));
                     return;
                 }
                 
                 // フレンドの配列を作成
                 const friendCodes = Object.keys(friendsData);
-                const newFriends = [];
+                
+                // 新しいフレンドデータを取得
+                const newFriendsMap = new Map();
                 
                 for (const code of friendCodes) {
                     try {
@@ -737,7 +750,7 @@
                         const status = statusSnap.val();
                         const isOnline = status && status.state === 'online';
                         
-                        newFriends.push({
+                        newFriendsMap.set(code, {
                             code: code,
                             name: userData.name || `ユーザー${code.slice(0, 4)}`,
                             isOnline: isOnline,
@@ -745,7 +758,7 @@
                         });
                     } catch (e) {
                         console.warn(`フレンド情報取得エラー (${code}):`, e);
-                        newFriends.push({
+                        newFriendsMap.set(code, {
                             code: code,
                             name: `ユーザー${code.slice(0, 4)}`,
                             isOnline: false,
@@ -754,56 +767,108 @@
                     }
                 }
                 
-                // オンライン順にソート（オンラインが先）
-                newFriends.sort((a, b) => {
-                    if (a.isOnline && !b.isOnline) return -1;
-                    if (!a.isOnline && b.isOnline) return 1;
-                    return 0;
-                });
-                
                 // gameStateを更新
-                gameState.friends = newFriends;
+                gameState.friends = Array.from(newFriendsMap.values());
                 localStorage.setItem('gameState', JSON.stringify(gameState));
                 
-                // UIを更新
-                renderFriendsList(newFriends);
+                // UIを差分更新
+                updateFriendsListDiff(newFriendsMap);
                 
             }, (error) => {
                 console.error('フレンドリスト監視エラー:', error);
             });
         }
 
-        function renderFriendsList(friends) {
+        function updateFriendsListDiff(newFriendsMap) {
             const friendsList = document.getElementById('friendsList');
             
-            if (!friends || friends.length === 0) {
+            if (newFriendsMap.size === 0) {
                 friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
+                friendItemsMap.clear();
                 return;
             }
             
-            friendsList.innerHTML = '';
+            // 既存の要素をチェック
+            const currentCodes = Array.from(friendItemsMap.keys());
+            const newCodes = Array.from(newFriendsMap.keys());
             
-            friends.forEach(friend => {
-                const friendEl = document.createElement('div');
-                friendEl.className = 'friend-item';
-                friendEl.id = `friend-item-${friend.code}`;
-                friendEl.innerHTML = `
-                    <div class="friend-info">
-                        <div class="friend-status ${friend.isOnline ? '' : 'offline'}"></div>
-                        <div class="friend-details">
-                            <div class="friend-name">${friend.name}</div>
-                            <div class="friend-code-small">${friend.code}</div>
-                            <div class="friend-status-text ${friend.isOnline ? '' : 'offline'}">
-                                ${friend.isOnline ? 'オンライン' : 'オフライン'}
+            // 削除されたフレンドを特定
+            const removedCodes = currentCodes.filter(code => !newFriendsMap.has(code));
+            removedCodes.forEach(code => {
+                const element = friendItemsMap.get(code);
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+                friendItemsMap.delete(code);
+            });
+            
+            // 追加・更新されたフレンドを処理
+            newFriendsMap.forEach((friend, code) => {
+                let element = friendItemsMap.get(code);
+                
+                if (element) {
+                    // 既存要素を更新（ステータスのみ）
+                    const statusDot = element.querySelector('.friend-status');
+                    const statusText = element.querySelector('.friend-status-text');
+                    
+                    if (statusDot) {
+                        statusDot.className = `friend-status ${friend.isOnline ? '' : 'offline'}`;
+                    }
+                    if (statusText) {
+                        statusText.className = `friend-status-text ${friend.isOnline ? '' : 'offline'}`;
+                        statusText.textContent = friend.isOnline ? 'オンライン' : 'オフライン';
+                    }
+                } else {
+                    // 新規要素を作成
+                    element = document.createElement('div');
+                    element.className = 'friend-item';
+                    element.id = `friend-item-${code}`;
+                    element.innerHTML = `
+                        <div class="friend-info">
+                            <div class="friend-status ${friend.isOnline ? '' : 'offline'}"></div>
+                            <div class="friend-details">
+                                <div class="friend-name">${friend.name}</div>
+                                <div class="friend-code-small">${code}</div>
+                                <div class="friend-status-text ${friend.isOnline ? '' : 'offline'}">
+                                    ${friend.isOnline ? 'オンライン' : 'オフライン'}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="friend-actions">
-                        <button class="friend-btn delete" onclick="window.deleteFriendHandler('${friend.code}')">削除</button>
-                        <button class="friend-btn block" onclick="window.blockFriendHandler('${friend.code}')">ブロック</button>
-                    </div>
-                `;
-                friendsList.appendChild(friendEl);
+                        <div class="friend-actions">
+                            <button class="friend-btn delete" onclick="window.deleteFriendHandler('${code}')">削除</button>
+                            <button class="friend-btn block" onclick="window.blockFriendHandler('${code}')">ブロック</button>
+                        </div>
+                    `;
+                    
+                    friendsList.appendChild(element);
+                    friendItemsMap.set(code, element);
+                }
+            });
+            
+            // オンライン順に並び替え
+            const sortedFriends = Array.from(newFriendsMap.values()).sort((a, b) => {
+                if (a.isOnline && !b.isOnline) return -1;
+                if (!a.isOnline && b.isOnline) return 1;
+                return 0;
+            });
+            
+            // 並び順を反映
+            sortedFriends.forEach((friend, index) => {
+                const element = friendItemsMap.get(friend.code);
+                if (element) {
+                    // 現在の位置を確認
+                    const currentIndex = Array.from(friendsList.children).indexOf(element);
+                    if (currentIndex !== index) {
+                        if (index === 0) {
+                            friendsList.insertBefore(element, friendsList.firstChild);
+                        } else {
+                            const prevElement = friendsList.children[index];
+                            if (prevElement && prevElement !== element) {
+                                friendsList.insertBefore(element, prevElement);
+                            }
+                        }
+                    }
+                }
             });
         }
         
@@ -870,7 +935,7 @@
                 
                 console.log('👤 フレンド名:', friendName);
                 
-                // 相互フレンド関係を構築（成功例と同じ方法）
+                // 相互フレンド関係を構築
                 await update(ref(db, `users/${gameState.friendCode}/friends/${code}`), { active: true });
                 await update(ref(db, `users/${code}/friends/${gameState.friendCode}`), { active: true });
                 
@@ -886,6 +951,7 @@
         async function deleteFriend(code) { 
             if (!firebaseReady || !db) {
                 gameState.friends = gameState.friends.filter(f => f.code !== code);
+                friendItemsMap.delete(code);
                 saveGameState();
                 renderFriendsList(gameState.friends);
                 closeConfirmationDialog();
@@ -895,6 +961,16 @@
             try {
                 await remove(ref(db, `users/${gameState.friendCode}/friends/${code}`));
                 await remove(ref(db, `users/${code}/friends/${gameState.friendCode}`));
+                
+                // 要素を削除
+                const element = friendItemsMap.get(code);
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+                friendItemsMap.delete(code);
+                
+                gameState.friends = gameState.friends.filter(f => f.code !== code);
+                saveGameState();
                 
                 closeConfirmationDialog();
                 console.log(`✅ フレンド ${code} を削除しました`);
@@ -917,8 +993,15 @@
                     blockTime: new Date().toISOString() 
                 }); 
                 gameState.friends = gameState.friends.filter(f => f.code !== code); 
+                
+                // 要素を削除
+                const element = friendItemsMap.get(code);
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+                friendItemsMap.delete(code);
+                
                 saveGameState(); 
-                renderFriendsList(gameState.friends); 
                 closeConfirmationDialog(); 
                 alert('✅ フレンドをブロックしました（1ヶ月間）'); 
             }
@@ -963,7 +1046,7 @@
                         const snap = await get(ref(db, 'users'));
                         const users = snap.val() || {};
                         Object.entries(users).forEach(([code, user]) => {
-                            if (user.name && user.score) {
+                            if (user.name && user.score && user.score > 0) { // スコア0は除外
                                 rankings.push({ 
                                     name: user.name, 
                                     score: user.score,
@@ -1134,8 +1217,7 @@
             document.getElementById('panelTitle').textContent = 'フレンド';
             document.getElementById('sidePanel').classList.add('active');
             document.getElementById('overlay').classList.add('active');
-            // フレンドリストを表示
-            renderFriendsList(gameState.friends);
+            // フレンドリストを表示（既存の要素があるので何もしなくてOK）
         });
 
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
