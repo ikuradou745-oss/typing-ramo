@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>タイピングゲーム</title>
     <style>
-        /* ===== リセット ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        /* ===== CSS変数定義 ===== */
         :root {
             --primary-dark: #0a0e27;
             --secondary-dark: #1a1f3a;
@@ -41,7 +39,6 @@
             position: relative;
         }
 
-        /* ===== ヘッダー ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -269,20 +266,9 @@
             letter-spacing: 1px;
         }
 
-        .difficulty-btn:hover {
-            background: rgba(0, 212, 255, 0.15);
-            border-color: var(--accent-blue);
-            transform: scale(1.05);
-        }
-
         .difficulty-btn.easy {
             border-color: var(--accent-green);
             color: var(--accent-green);
-        }
-
-        .difficulty-btn.easy:hover {
-            background: rgba(0, 255, 136, 0.15);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
 
         .difficulty-btn.normal {
@@ -290,19 +276,9 @@
             color: var(--accent-blue);
         }
 
-        .difficulty-btn.normal:hover {
-            background: rgba(0, 212, 255, 0.15);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-        }
-
         .difficulty-btn.hard {
             border-color: var(--accent-pink);
             color: var(--accent-pink);
-        }
-
-        .difficulty-btn.hard:hover {
-            background: rgba(255, 0, 110, 0.15);
-            box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
         }
 
         .game-screen {
@@ -381,97 +357,22 @@
             letter-spacing: 2px;
         }
 
-        .ranking-mode-screen {
-            gap: 40px;
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            z-index: 999;
         }
 
-        .ranking-mode-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-            max-width: 400px;
+        .overlay.active {
+            display: block;
         }
 
-        .ranking-mode-btn {
-            padding: 25px 40px;
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-            color: var(--text-white);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .ranking-mode-btn:hover {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
-            border-color: var(--accent-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
-        }
-
-        .ranking-mode-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .ranking-display-screen {
-            gap: 20px;
-            overflow-y: auto;
-        }
-
-        .ranking-list {
-            width: 100%;
-            max-width: 600px;
-            max-height: 500px;
-            overflow-y: auto;
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .ranking-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-            font-size: 14px;
-        }
-
-        .ranking-item:last-child {
-            border-bottom: none;
-        }
-
-        .ranking-item.my-rank {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 4px;
-        }
-
-        .ranking-rank {
-            font-weight: 700;
-            color: var(--accent-blue);
-            min-width: 40px;
-        }
-
-        .ranking-name {
-            flex: 1;
-            color: var(--text-white);
-        }
-
-        .ranking-score {
-            font-weight: 600;
-            color: var(--accent-green);
-            min-width: 80px;
-            text-align: right;
-        }
-
-        /* ===== 確認ダイアログ ===== */
         .confirmation-dialog {
             position: fixed;
             top: 50%;
@@ -537,39 +438,12 @@
             letter-spacing: 1px;
         }
 
-        .dialog-btn:hover {
-            background: rgba(0, 212, 255, 0.2);
-            border-color: var(--accent-blue);
-        }
-
         .dialog-btn.danger {
             background: rgba(255, 0, 110, 0.2);
             border-color: rgba(255, 0, 110, 0.5);
             color: var(--accent-pink);
         }
 
-        .dialog-btn.danger:hover {
-            background: rgba(255, 0, 110, 0.3);
-            border-color: var(--accent-pink);
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: none;
-            z-index: 999;
-        }
-
-        .overlay.active {
-            display: block;
-        }
-
-        /* ===== サイドパネル ===== */
         .side-panel {
             position: fixed;
             top: 0;
@@ -641,10 +515,6 @@
             margin-bottom: 10px;
         }
 
-        .change-name-input::placeholder {
-            color: var(--text-gray);
-        }
-
         .change-name-btn {
             width: 100%;
             padding: 10px;
@@ -659,10 +529,6 @@
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-
-        .change-name-btn:hover {
-            background: rgba(0, 212, 255, 0.3);
         }
 
         .name-change-count {
@@ -694,13 +560,6 @@
             font-family: 'Courier New', monospace;
             letter-spacing: 2px;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .friend-code-value:hover {
-            color: var(--accent-blue);
-            transform: scale(1.05);
         }
 
         .tab-bar {
@@ -729,17 +588,12 @@
             border-bottom-color: var(--accent-blue);
         }
 
-        .tab-btn:hover {
-            color: var(--accent-blue);
-        }
-
         .friends-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        /* ===== フレンドアイテム ===== */
         .friend-item {
             background: rgba(0, 212, 255, 0.05);
             padding: 15px;
@@ -754,11 +608,6 @@
         .friend-item:hover {
             background: rgba(0, 212, 255, 0.1);
             border-color: rgba(0, 212, 255, 0.4);
-        }
-
-        .friend-item.blocked {
-            background: rgba(255, 0, 110, 0.05);
-            border-color: rgba(255, 0, 110, 0.2);
         }
 
         .friend-info {
@@ -809,15 +658,6 @@
             color: #ff4444;
         }
 
-        .blocked-notice {
-            font-size: 11px;
-            color: var(--accent-pink);
-            background: rgba(255, 0, 110, 0.1);
-            padding: 6px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 0, 110, 0.3);
-        }
-
         .friend-actions {
             display: flex;
             gap: 6px;
@@ -838,10 +678,6 @@
             flex: 1;
         }
 
-        .friend-btn:hover {
-            background: rgba(0, 212, 255, 0.2);
-        }
-
         .friend-btn.delete {
             border-color: rgba(255, 0, 110, 0.5);
             color: var(--accent-pink);
@@ -850,7 +686,6 @@
 
         .friend-btn.delete:hover {
             background: rgba(255, 0, 110, 0.2);
-            border-color: var(--accent-pink);
         }
 
         .friend-btn.block {
@@ -861,7 +696,6 @@
 
         .friend-btn.block:hover {
             background: rgba(255, 100, 100, 0.2);
-            border-color: #ff6464;
         }
 
         .add-friend-section {
@@ -880,10 +714,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        .add-friend-input::placeholder {
-            color: var(--text-gray);
-        }
-
         .add-friend-btn {
             width: 100%;
             padding: 10px;
@@ -896,10 +726,6 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-
-        .add-friend-btn:hover {
-            background: rgba(0, 212, 255, 0.3);
         }
 
         .task-item {
@@ -1026,10 +852,6 @@
             border-radius: 4px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 212, 255, 0.5);
-        }
-
         .back-btn {
             padding: 12px 24px;
             border: 1px solid rgba(0, 212, 255, 0.3);
@@ -1048,11 +870,61 @@
             background: rgba(0, 212, 255, 0.15);
             border-color: var(--accent-blue);
         }
+
+        .ranking-mode-btn {
+            padding: 25px 40px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ranking-mode-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .ranking-list {
+            width: 100%;
+            max-width: 600px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .ranking-rank {
+            font-weight: 700;
+            color: var(--accent-blue);
+            min-width: 40px;
+        }
+
+        .ranking-score {
+            font-weight: 600;
+            color: var(--accent-green);
+            min-width: 80px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <!-- ===== ヘッダー ===== -->
         <div class="header">
             <div class="header-left">
                 <div class="game-title">⚡ TYPING</div>
@@ -1072,32 +944,17 @@
             </div>
         </div>
 
-        <!-- ===== メインコンテンツ ===== -->
         <div class="main-content">
-            <!-- メニュー画面 -->
             <div class="screen active menu-screen" id="menuScreen">
                 <div class="menu-title">🎮 タイピングゲーム</div>
                 <div class="menu-buttons">
-                    <button class="menu-btn" id="playBtn">
-                        <div class="icon">🚀</div>
-                        <div>PLAY</div>
-                    </button>
-                    <button class="menu-btn" id="rankingBtn">
-                        <div class="icon">🏆</div>
-                        <div>RANKING</div>
-                    </button>
-                    <button class="menu-btn" id="profileBtn">
-                        <div class="icon">👤</div>
-                        <div>PROFILE</div>
-                    </button>
-                    <button class="menu-btn" id="settingsBtn" style="opacity: 0.5; cursor: not-allowed;">
-                        <div class="icon">⚙️</div>
-                        <div>SETTINGS</div>
-                    </button>
+                    <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
+                    <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
+                    <button class="menu-btn" id="profileBtn"><div class="icon">👤</div><div>PROFILE</div></button>
+                    <button class="menu-btn" id="settingsBtn" style="opacity: 0.5; cursor: not-allowed;"><div class="icon">⚙️</div><div>SETTINGS</div></button>
                 </div>
             </div>
 
-            <!-- 難易度選択画面 -->
             <div class="screen difficulty-screen" id="difficultyScreen">
                 <div class="difficulty-title">難易度を選択</div>
                 <div class="difficulty-options">
@@ -1108,10 +965,9 @@
                 <button class="back-btn" id="backFromDifficultyBtn">戻る</button>
             </div>
 
-            <!-- ランキングモード選択 -->
             <div class="screen ranking-mode-screen" id="rankingModeScreen">
                 <div class="menu-title">ランキングモード</div>
-                <div class="ranking-mode-buttons">
+                <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 400px;">
                     <button class="ranking-mode-btn" id="friendRankingBtn">フレンドランキング</button>
                     <button class="ranking-mode-btn" id="worldRankingBtn">ワールドランキング</button>
                     <button class="ranking-mode-btn" id="viewRankingBtn">ランキングを見る</button>
@@ -1119,14 +975,12 @@
                 <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
             </div>
 
-            <!-- ランキング表示 -->
             <div class="screen ranking-display-screen" id="rankingDisplayScreen">
                 <div class="menu-title" id="rankingTitle">ランキング</div>
                 <div class="ranking-list" id="rankingList"></div>
                 <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
             </div>
 
-            <!-- ゲーム画面 -->
             <div class="screen game-screen" id="gameScreen">
                 <div class="game-stats">
                     <div class="stat-box">
@@ -1144,7 +998,6 @@
                 <div class="input-guide">キーボードで入力してください</div>
             </div>
 
-            <!-- 結果画面 -->
             <div class="screen menu-screen" id="resultScreen">
                 <div class="menu-title">ゲーム終了！</div>
                 <div style="text-align: center;">
@@ -1157,22 +1010,17 @@
                         <div>+<span id="earnedXP">0</span> ⭐</div>
                     </div>
                 </div>
-                <button class="menu-btn" id="continueBtn" style="width: 100%; max-width: 300px; grid-column: 1 / -1;">
-                    <div>続ける</div>
-                </button>
+                <button class="menu-btn" id="continueBtn" style="width: 100%; max-width: 300px; grid-column: 1 / -1;"><div>続ける</div></button>
             </div>
         </div>
 
-        <!-- ===== コイン表示 ===== -->
         <div class="coin-display">
             <div class="coin-icon">💰</div>
             <div class="coin-value" id="coinDisplay">0</div>
         </div>
 
-        <!-- ===== オーバーレイ ===== -->
         <div class="overlay" id="overlay"></div>
 
-        <!-- ===== 確認ダイアログ ===== -->
         <div class="confirmation-dialog" id="confirmationDialog">
             <div class="dialog-title" id="dialogTitle">確認</div>
             <div class="dialog-message" id="dialogMessage">確認メッセージ</div>
@@ -1183,14 +1031,12 @@
             </div>
         </div>
 
-        <!-- ===== サイドパネル ===== -->
         <div class="side-panel" id="sidePanel">
             <div class="panel-header">
                 <span id="panelTitle">パネル</span>
                 <button class="panel-close" id="panelCloseBtn">✕</button>
             </div>
 
-            <!-- プロフィールパネル -->
             <div id="profilePanel">
                 <div class="profile-section">
                     <div class="user-name" id="displayName">ユーザー</div>
@@ -1207,13 +1053,11 @@
                 </div>
             </div>
 
-            <!-- フレンドパネル -->
             <div id="friendPanel" class="hidden">
                 <div class="tab-bar">
                     <button class="tab-btn active" data-tab="friend-list">フレンド</button>
                 </div>
 
-                <!-- フレンドリスト -->
                 <div id="friend-list" class="tab-content">
                     <div class="add-friend-section">
                         <input type="text" class="add-friend-input" id="addFriendCode" placeholder="フレンドコードを入力" maxlength="9">
@@ -1223,19 +1067,16 @@
                 </div>
             </div>
 
-            <!-- タスクパネル -->
             <div id="taskPanel" class="hidden">
                 <div class="tab-bar">
                     <button class="tab-btn active" data-tab="daily-tasks">毎日</button>
                     <button class="tab-btn" data-tab="weekly-tasks">週間</button>
                 </div>
 
-                <!-- 毎日のタスク -->
                 <div id="daily-tasks" class="tab-content">
                     <div id="dailyTasksList"></div>
                 </div>
 
-                <!-- 週間のタスク -->
                 <div id="weekly-tasks" class="tab-content hidden">
                     <div id="weeklyTasksList"></div>
                 </div>
@@ -1245,9 +1086,9 @@
 
     <script>
         /* ========================================
-           グローバル状態管理 - フレンドシステム改善版
+           グローバル状態管理 - 即座フレンドシステム
            ========================================
-           相互フレンド、ブロック機能を実装
+           片方が入力したら即座に両方フレンド成立
         */
         const gameState = {
             userId: null,
@@ -1261,18 +1102,15 @@
             nameChangeCount: 0,
             lastNameChangeReset: new Date().toDateString(),
             
-            // ★ フレンドシステム改善
-            friends: [],          // 相互フレンド {code, name, lastActive}
-            friendRequests: [],   // フレンドリクエスト {code, name, status: 'sent'|'received'}
-            blockedUsers: [],     // ブロック中 {code, blockTime}
+            // ★ フレンド（即座確定、リクエスト不要）
+            friends: [],          // {code, name, lastActive}
+            blockedUsers: [],     // {code, blockTime}
             
             currentScore: 0,
             currentCombo: 0,
             gameActive: false,
             gameTime: 60,
             currentDifficulty: null,
-            currentRankingMode: null,
-            lastRankingRewardDate: new Date().toDateString(),
             
             dailyTasks: [
                 { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
@@ -1287,70 +1125,16 @@
         };
 
         const questions = {
-            easy: [
-                'そら', 'うみ', 'えがお', 'へいわ', 'きずな', 'きぼう', 'ひかり', 'かぜ', 'みらい', 'じゆう',
-                'ゆうき', 'かんしゃ', 'とけい', 'たいよう', 'けしき', 'まほう', 'こきゅう', 'ほうせき', 'きおく', 'ぼうけん'
-            ],
-            normal: [
-                'いっしょうけんめい', 'しこうさくご', 'せっさたくま', 'おんこちしん', 'いちごいちえ',
-                'しんきいってん', 'りんきおうへん', 'としょかん', 'しんかんせん', 'すいへいせん',
-                'てんたいかんそく', 'しんりんよく', 'りょうりきょうしつ', 'しょくぶつえん', 'はくぶつかん',
-                'うちゅうひこうし', 'つうしんきょういく', 'ちきゅうおんだんか', 'じこしょうかい', 'こうきょうしせつ'
-            ],
-            hard: [
-                'ごんごどうだん', 'こうとうむけい', 'いしんでんしん', 'ひゃっかりょうらん', 'しめんそか',
-                'がしんしょうたん', 'ゆうずうむげ', 'せいれんけっぱく', 'あんちゅうもさく', 'でんぱぼうえんきょう',
-                'さんぎょうかくめい', 'しゅうぎいんぎいん', 'こくりつきょうぎじょう', 'せいしんほけんしてい', 'じんこうちのうかいはつ',
-                'ふろうふし', 'せいぶつたようせい', 'じぞくかのうせい', 'ひはかいけんさ', 'ぎむきょういくしょがっこう',
-                'しんらばんしょう'
-            ]
+            easy: ['そら', 'うみ', 'えがお', 'へいわ', 'きずな', 'きぼう', 'ひかり', 'かぜ', 'みらい', 'じゆう', 'ゆうき', 'かんしゃ', 'とけい', 'たいよう', 'けしき', 'まほう', 'こきゅう', 'ほうせき', 'きおく', 'ぼうけん'],
+            normal: ['いっしょうけんめい', 'しこうさくご', 'せっさたくま', 'おんこちしん', 'いちごいちえ', 'しんきいってん', 'りんきおうへん', 'としょかん', 'しんかんせん', 'すいへいせん', 'てんたいかんそく', 'しんりんよく', 'りょうりきょうしつ', 'しょくぶつえん', 'はくぶつかん', 'うちゅうひこうし', 'つうしんきょういく', 'ちきゅうおんだんか', 'じこしょうかい', 'こうきょうしせつ'],
+            hard: ['ごんごどうだん', 'こうとうむけい', 'いしんでんしん', 'ひゃっかりょうらん', 'しめんそか', 'がしんしょうたん', 'ゆうずうむげ', 'せいれんけっぱく', 'あんちゅうもさく', 'でんぱぼうえんきょう', 'さんぎょうかくめい', 'しゅうぎいんぎいん', 'こくりつきょうぎじょう', 'せいしんほけんしてい', 'じんこうちのうかいはつ', 'ふろうふし', 'せいぶつたようせい', 'じぞくかのうせい', 'ひはかいけんさ', 'ぎむきょういくしょがっこう', 'しんらばんしょう']
         };
 
-        const romajiMap = {
-            'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
-            'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
-            'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
-            'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so',
-            'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
-            'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to',
-            'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do',
-            'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
-            'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
-            'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
-            'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
-            'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
-            'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
-            'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
-            'わ': 'wa', 'を': 'wo', 'ん': 'nn',
-            'ぁ': 'la', 'ぃ': 'li', 'ぅ': 'lu', 'ぇ': 'le', 'ぉ': 'lo',
-            'っ': 'xtu'
-        };
+        const romajiMap = {'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o', 'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko', 'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go', 'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so', 'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo', 'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to', 'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do', 'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no', 'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho', 'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo', 'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po', 'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo', 'や': 'ya', 'ゆ': 'yu', 'よ': 'yo', 'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro', 'わ': 'wa', 'を': 'wo', 'ん': 'nn', 'ぁ': 'la', 'ぃ': 'li', 'ぅ': 'lu', 'ぇ': 'le', 'ぉ': 'lo', 'っ': 'xtu'};
 
-        const youonMap = {
-            'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo',
-            'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo',
-            'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo',
-            'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo',
-            'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo',
-            'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo',
-            'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo',
-            'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo',
-            'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo',
-            'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo',
-            'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'
-        };
+        const youonMap = {'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo', 'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo', 'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo', 'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo', 'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo', 'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo', 'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo', 'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo', 'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo', 'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo', 'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'};
 
-        // ★ 確認ダイアログ状態
-        let dialogState = {
-            action: null,
-            targetCode: null,
-            confirmCount: 0
-        };
-
-        /* ========================================
-           ユーティリティ関数
-           ========================================
-        */
+        let dialogState = { action: null, targetCode: null, confirmCount: 0 };
 
         function generateRandomId() {
             return Math.random().toString(36).substr(2, 12).toUpperCase();
@@ -1360,6 +1144,25 @@
             const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
             const letters = Math.random().toString(36).substr(2, 3).toUpperCase();
             return numbers + letters;
+        }
+
+        /* ========================================
+           ★ フレンドデータベース
+           ========================================
+           相手の名前を保存・取得するDB
+        */
+        function saveFriendDatabase() {
+            let db = JSON.parse(localStorage.getItem('friendsDatabase') || '{}');
+            db[gameState.friendCode] = {
+                name: gameState.userName,
+                lastUpdated: Date.now()
+            };
+            localStorage.setItem('friendsDatabase', JSON.stringify(db));
+        }
+
+        function getFriendName(code) {
+            const db = JSON.parse(localStorage.getItem('friendsDatabase') || '{}');
+            return db[code]?.name || `Unknown(${code.slice(0, 6)})`;
         }
 
         function convertToRomaji(text) {
@@ -1409,6 +1212,7 @@
 
         function saveGameState() {
             localStorage.setItem('gameState', JSON.stringify(gameState));
+            saveFriendDatabase();
         }
 
         function loadGameState() {
@@ -1432,11 +1236,6 @@
                 saveGameState();
             }
         }
-
-        /* ========================================
-           ブロック機能
-           ========================================
-        */
 
         function checkBlockExpiration() {
             const now = Date.now();
@@ -1468,11 +1267,6 @@
             if (!blocked) return null;
             return getBlockRemaining(blocked.blockTime);
         }
-
-        /* ========================================
-           確認ダイアログ
-           ========================================
-        */
 
         function showConfirmationDialog(action, code) {
             dialogState.action = action;
@@ -1525,10 +1319,10 @@
         }
 
         /* ========================================
-           フレンドシステム - 相互フレンド機能
+           ★ フレンド追加（即座確定）
            ========================================
+           片方が入力したら即座に両方フレンド
         */
-
         function addFriend(code) {
             if (code === gameState.friendCode) {
                 alert('自分のフレンドコードは追加できません');
@@ -1540,12 +1334,7 @@
                 return;
             }
 
-            if (gameState.friendRequests.find(f => f.code === code)) {
-                alert('既にリクエスト中です');
-                return;
-            }
-
-            // ★ ブロック確認
+            // ブロック確認
             const blocked = isUserBlocked(code);
             if (blocked) {
                 const { days, hours, minutes } = blocked;
@@ -1553,52 +1342,24 @@
                 return;
             }
 
-            // ★ フレンドリクエスト送信
-            gameState.friendRequests.push({
-                code: code,
-                name: `Friend${Date.now()}`, // 仮の名前
-                status: 'sent',
-                addedTime: Date.now()
-            });
+            // ★ 相手の名前を取得（保存されていれば使用）
+            const friendName = getFriendName(code);
 
-            // ★ 相互フレンド確定チェック
-            checkMutualFriends();
+            // ★ 即座にフレンド追加（リクエスト不要）
+            gameState.friends.push({
+                code: code,
+                name: friendName,
+                lastActive: Date.now()
+            });
 
             document.getElementById('addFriendCode').value = '';
             saveGameState();
             updateFriendsList();
-            alert('フレンドリクエストを送信しました');
-        }
-
-        function checkMutualFriends() {
-            // リクエスト中で相手からも同じコードでリクエストがあれば相互フレンド確定
-            const newFriends = [];
-            const remainingRequests = [];
-
-            gameState.friendRequests.forEach(req => {
-                const matchingReq = gameState.friendRequests.find(r => 
-                    r.code === req.code && r.status === 'received'
-                );
-
-                if (matchingReq) {
-                    // 相互フレンド成立
-                    newFriends.push({
-                        code: req.code,
-                        name: matchingReq.name || req.name,
-                        lastActive: Date.now()
-                    });
-                } else {
-                    remainingRequests.push(req);
-                }
-            });
-
-            gameState.friends.push(...newFriends);
-            gameState.friendRequests = remainingRequests;
+            alert(`${friendName} をフレンドに追加しました！`);
         }
 
         function deleteFriend(code) {
             gameState.friends = gameState.friends.filter(f => f.code !== code);
-            gameState.friendRequests = gameState.friendRequests.filter(f => f.code !== code);
             saveGameState();
             updateFriendsList();
             closeConfirmationDialog();
@@ -1606,31 +1367,23 @@
 
         function blockFriend(code) {
             if (dialogState.confirmCount === 0) {
-                // 1回目：警告を表示
                 dialogState.confirmCount = 1;
                 showConfirmationDialog('block', code);
                 return;
             }
 
-            // 2回目：実行
             gameState.blockedUsers.push({
                 code: code,
                 blockTime: new Date().toISOString()
             });
 
             gameState.friends = gameState.friends.filter(f => f.code !== code);
-            gameState.friendRequests = gameState.friendRequests.filter(f => f.code !== code);
             
             saveGameState();
             updateFriendsList();
             closeConfirmationDialog();
             alert('フレンドをブロックしました（1ヶ月間）');
         }
-
-        /* ========================================
-           UI更新関数
-           ========================================
-        */
 
         function updateUI() {
             document.getElementById('levelDisplay').textContent = gameState.level;
@@ -1664,7 +1417,6 @@
             }
 
             gameState.friends.forEach(friend => {
-                // ★ オンライン状況：5分以内でオンライン
                 const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
 
                 const friendEl = document.createElement('div');
@@ -1767,11 +1519,6 @@
             updateUI();
         }
 
-        /* ========================================
-           パネル制御
-           ========================================
-        */
-
         function openPanel(panelType) {
             const overlay = document.getElementById('overlay');
             const panel = document.getElementById('sidePanel');
@@ -1803,23 +1550,13 @@
             document.getElementById('sidePanel').classList.remove('active');
         }
 
-        /* ========================================
-           ゲーム制御（省略 - 前のコードと同じ）
-           ========================================
-        */
-
         let gameTimer = null;
         let currentQuestion = '';
         let currentRomaji = '';
         let typedInput = '';
 
-        function startGame(difficulty, isRankingMode = false) {
-            gameState.currentDifficulty = difficulty;
-            
-            if (isRankingMode) {
-                gameState.currentDifficulty = ['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)];
-            }
-            
+        function startGame(difficulty) {
+            gameState.currentDifficulty = difficulty || ['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)];
             gameState.currentScore = 0;
             gameState.currentCombo = 0;
             gameState.gameTime = 60;
@@ -1899,81 +1636,24 @@
             switchScreen('resultScreen');
         }
 
-        function displayRanking(mode, title) {
-            let ranking = [];
-            
-            document.getElementById('rankingTitle').textContent = title;
-            
-            const rankingList = document.getElementById('rankingList');
-            rankingList.innerHTML = '<div style="text-align: center; color: var(--text-gray); padding: 20px;">ランキングデータがありません</div>';
-        }
-
-        /* ========================================
-           イベントリスナー設定
-           ========================================
-        */
-
-        document.getElementById('playBtn').addEventListener('click', function() {
-            switchScreen('difficultyScreen');
-        });
-
-        document.getElementById('rankingBtn').addEventListener('click', function() {
-            switchScreen('rankingModeScreen');
-        });
-
-        document.getElementById('profileBtn').addEventListener('click', function() {
-            openPanel('profile');
-        });
-
-        document.getElementById('friendRankingBtn').addEventListener('click', function() {
-            if (gameState.friends.length >= 2) {
-                startGame(null, true);
-            }
-        });
-
-        document.getElementById('worldRankingBtn').addEventListener('click', function() {
-            startGame(null, true);
-        });
-
-        document.getElementById('viewRankingBtn').addEventListener('click', function() {
-            switchScreen('rankingDisplayScreen');
-            displayRanking('world', 'ワールドランキング');
-        });
+        document.getElementById('playBtn').addEventListener('click', function() { switchScreen('difficultyScreen'); });
+        document.getElementById('rankingBtn').addEventListener('click', function() { switchScreen('rankingModeScreen'); });
+        document.getElementById('profileBtn').addEventListener('click', function() { openPanel('profile'); });
+        document.getElementById('friendRankingBtn').addEventListener('click', function() { if (gameState.friends.length >= 2) startGame(); });
+        document.getElementById('worldRankingBtn').addEventListener('click', function() { startGame(); });
+        document.getElementById('continueBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
+        document.getElementById('friendBtn').addEventListener('click', function() { openPanel('friend'); });
+        document.getElementById('taskBtn').addEventListener('click', function() { openPanel('task'); });
+        document.getElementById('backFromDifficultyBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
+        document.getElementById('backFromRankingModeBtn').addEventListener('click', function() { switchScreen('menuScreen'); });
 
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                startGame(this.dataset.difficulty, false);
-            });
-        });
-
-        document.getElementById('continueBtn').addEventListener('click', function() {
-            switchScreen('menuScreen');
-        });
-
-        document.getElementById('friendBtn').addEventListener('click', function() {
-            openPanel('friend');
-        });
-
-        document.getElementById('taskBtn').addEventListener('click', function() {
-            openPanel('task');
-        });
-
-        document.getElementById('backFromDifficultyBtn').addEventListener('click', function() {
-            switchScreen('menuScreen');
-        });
-
-        document.getElementById('backFromRankingModeBtn').addEventListener('click', function() {
-            switchScreen('menuScreen');
-        });
-
-        document.getElementById('backFromRankingViewBtn').addEventListener('click', function() {
-            switchScreen('rankingModeScreen');
+            btn.addEventListener('click', function() { startGame(this.dataset.difficulty); });
         });
 
         document.getElementById('overlay').addEventListener('click', closePanel);
         document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
 
-        // ★ ダイアログイベント
         document.getElementById('dialogCancelBtn').addEventListener('click', closeConfirmationDialog);
         document.getElementById('dialogConfirmBtn').addEventListener('click', function() {
             if (dialogState.action === 'delete') {
@@ -2001,6 +1681,7 @@
             if (newName && gameState.nameChangeCount < 3) {
                 gameState.userName = newName;
                 gameState.nameChangeCount++;
+                saveFriendDatabase();
                 saveGameState();
                 updateUI();
             } else if (gameState.nameChangeCount >= 3) {
