@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ タイピングゲーム - Firebase版</title>
-    <!-- Firebase 7.24.0 - 最も安定したバージョン -->
-    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-database.js"></script>
+    <!-- Firebase 10.8.0 - ES Modules（成功例と同じバージョン） -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+            }
+        }
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -280,8 +286,12 @@
         <div class="firebase-status loading" id="firebaseStatus">⚡ Firebase 初期化中...</div>
     </div>
 
-    <script>
-        // ===== Firebase 設定（新しいプロジェクトの値）=====
+    <script type="module">
+        // ===== Firebase インポート（ES Modules形式）=====
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, update, remove, get, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ===== Firebase 設定 =====
         const firebaseConfig = {
             apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
             authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -292,8 +302,11 @@
             appId: "1:963797267101:web:0d5d700458fb1991021a74"
         };
 
-        let db = null;
-        let firebaseReady = false;
+        // Firebase 初期化
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let firebaseReady = true;
 
         function updateFirebaseStatus(connected, text) {
             const statusEl = document.getElementById('firebaseStatus');
@@ -303,103 +316,25 @@
             }
         }
 
-        // Firebase の初期化（シンプル版）
-        function initializeFirebase() {
-            try {
-                console.log('🔄 Firebase 初期化開始...');
-                updateFirebaseStatus(false, '🔄 Firebase 初期化中...');
-
-                // Firebase が利用可能か確認
-                if (typeof firebase === 'undefined') {
-                    console.error('❌ Firebase SDK が読み込まれていません');
-                    updateFirebaseStatus(false, '❌ SDK読み込み失敗');
-                    return;
-                }
-
-                console.log('✅ Firebase SDK 読み込み確認完了');
-
-                // 既存のアプリをチェック
-                if (firebase.apps.length === 0) {
-                    // 初期化
-                    firebase.initializeApp(firebaseConfig);
-                    console.log('📦 Firebase を初期化しました');
-                } else {
-                    console.log('📦 Firebase は既に初期化されています');
-                }
-
-                db = firebase.database();
-                console.log('✅ Database 参照取得成功');
-                
-                // 接続テスト
-                db.ref('.info/connected').once('value')
-                    .then((snap) => {
-                        if (snap.val() === true) {
-                            firebaseReady = true;
-                            console.log('✅ Firebase 接続成功');
-                            updateFirebaseStatus(true, '✅ Firebase 接続済み');
-                            
-                            // ユーザーデータを同期
-                            syncUserWithFirebase();
-                            
-                            // オンライン状態を設定
-                            setupPresence();
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('❌ Firebase 接続エラー:', error);
-                        updateFirebaseStatus(false, '❌ 接続エラー');
-                    });
-
-            } catch (error) {
-                console.error('❌ Firebase 初期化エラー:', error);
-                updateFirebaseStatus(false, `❌ エラー: ${error.message}`);
-                db = null;
-                firebaseReady = false;
-            }
-        }
-
-        // プレゼンス（オンライン状態）の設定
-        function setupPresence() {
-            if (!firebaseReady || !db || !gameState.friendCode) return;
-            
-            const userStatusRef = db.ref(`status/${gameState.friendCode}`);
-            const connectedRef = db.ref('.info/connected');
-            
-            connectedRef.on('value', (snap) => {
-                if (snap.val() === true) {
-                    console.log('🟢 オンライン状態を設定');
-                    userStatusRef.set({
-                        state: 'online',
-                        lastOnline: Date.now()
-                    });
-                    
-                    userStatusRef.onDisconnect().set({
-                        state: 'offline',
-                        lastOnline: Date.now()
-                    });
-                }
-            });
-        }
+        updateFirebaseStatus(true, '✅ Firebase 接続済み');
 
         // ユーザーデータをFirebaseと同期
-        function syncUserWithFirebase() {
-            if (!firebaseReady || !db || !gameState.friendCode) return;
+        async function syncUserWithFirebase(gameState) {
+            if (!gameState.friendCode) return;
             
             try {
                 console.log('🔄 ユーザーデータを同期中...');
                 
-                db.ref(`users/${gameState.friendCode}`).set({
+                await set(ref(db, `users/${gameState.friendCode}`), {
                     name: gameState.userName,
                     lastActive: Date.now(),
                     level: gameState.level,
                     xp: gameState.xp,
                     coins: gameState.coins,
                     score: gameState.currentScore
-                }).then(() => {
-                    console.log('✅ ユーザーデータ同期完了');
-                }).catch((error) => {
-                    console.warn('Firebase 同期エラー:', error.message);
                 });
+
+                console.log('✅ ユーザーデータ同期完了');
 
             } catch (e) {
                 console.warn('Firebase 同期エラー:', e.message);
@@ -459,7 +394,7 @@
         async function saveToFirebase() {
             if (!firebaseReady || !db) return;
             try {
-                await db.ref(`users/${gameState.friendCode}`).update({
+                await update(ref(db, `users/${gameState.friendCode}`), {
                     name: gameState.userName,
                     lastActive: Date.now(),
                     level: gameState.level,
@@ -604,7 +539,7 @@
                 if (firebaseReady && db) {
                     try {
                         // 最新の名前を取得
-                        const nameSnap = await db.ref(`users/${friend.code}/name`).once('value');
+                        const nameSnap = await get(ref(db, `users/${friend.code}/name`));
                         const latestName = nameSnap.val();
                         if (latestName) {
                             friendName = latestName;
@@ -612,7 +547,7 @@
                         }
                         
                         // オンライン状態を取得
-                        const statusSnap = await db.ref(`status/${friend.code}`).once('value');
+                        const statusSnap = await get(ref(db, `status/${friend.code}`));
                         const status = statusSnap.val();
                         isOnline = status && status.state === 'online';
                         
@@ -700,7 +635,7 @@
             try {
                 console.log('🔍 フレンド追加開始:', code);
                 
-                const targetSnap = await db.ref(`users/${code}`).once('value');
+                const targetSnap = await get(ref(db, `users/${code}`));
                 if (!targetSnap.exists()) {
                     alert('そのフレンドコードは存在しません');
                     return;
@@ -711,12 +646,12 @@
                 
                 console.log('👤 フレンド名:', friendName);
                 
-                await db.ref(`friends/${gameState.friendCode}/${code}`).set({
+                await set(ref(db, `friends/${gameState.friendCode}/${code}`), {
                     name: friendName,
                     addedAt: Date.now()
                 });
                 
-                await db.ref(`friends/${code}/${gameState.friendCode}`).set({
+                await set(ref(db, `friends/${code}/${gameState.friendCode}`), {
                     name: gameState.userName,
                     addedAt: Date.now()
                 });
@@ -749,8 +684,8 @@
             }
             
             try {
-                await db.ref(`friends/${gameState.friendCode}/${code}`).remove();
-                await db.ref(`friends/${code}/${gameState.friendCode}`).remove();
+                await remove(ref(db, `friends/${gameState.friendCode}/${code}`));
+                await remove(ref(db, `friends/${code}/${gameState.friendCode}`));
                 
                 gameState.friends = gameState.friends.filter(f => f.code !== code);
                 saveGameState();
@@ -803,7 +738,7 @@
                     let score = 0;
                     if (firebaseReady && db) {
                         try {
-                            const snap = await db.ref(`users/${friend.code}/score`).once('value');
+                            const snap = await get(ref(db, `users/${friend.code}/score`));
                             score = snap.val() || Math.floor(Math.random() * 50000);
                         } catch (e) {
                             score = Math.floor(Math.random() * 50000);
@@ -820,7 +755,7 @@
             } else {
                 if (firebaseReady && db) {
                     try {
-                        const snap = await db.ref('users').once('value');
+                        const snap = await get(ref(db, 'users'));
                         const users = snap.val() || {};
                         Object.entries(users).forEach(([code, user]) => {
                             if (user.name && user.score) {
@@ -927,7 +862,7 @@
             }
             
             if (firebaseReady && db) {
-                db.ref(`users/${gameState.friendCode}/score`).set(gameState.currentScore)
+                set(ref(db, `users/${gameState.friendCode}/score`), gameState.currentScore)
                     .then(() => console.log('✅ スコア保存完了'))
                     .catch(e => console.warn('スコア保存エラー:', e));
             }
@@ -1042,7 +977,7 @@
                 
                 if (firebaseReady && db) {
                     try {
-                        await db.ref(`users/${gameState.friendCode}/name`).set(newName);
+                        await set(ref(db, `users/${gameState.friendCode}/name`), newName);
                         console.log(`✅ Firebase に名前を保存しました: ${newName}`);
                     } catch (e) {
                         console.error('❌ Firebase 名前保存エラー:', e.message);
@@ -1089,8 +1024,26 @@
         checkAndResetDaily();
         updateUI();
 
-        // Firebase初期化開始（少し遅延させてSDKの読み込みを待つ）
-        setTimeout(() => initializeFirebase(), 1500);
+        // Firebase同期（少し遅延）
+        setTimeout(() => {
+            syncUserWithFirebase(gameState);
+            
+            // オンライン状態を設定
+            const userStatusRef = ref(db, `status/${gameState.friendCode}`);
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    set(userStatusRef, {
+                        state: 'online',
+                        lastOnline: Date.now()
+                    });
+                    onDisconnect(userStatusRef).set({
+                        state: 'offline',
+                        lastOnline: Date.now()
+                    });
+                }
+            });
+        }, 1000);
     </script>
 </body>
 </html>
