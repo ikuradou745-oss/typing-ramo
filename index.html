@@ -357,6 +357,15 @@
             max-width: 600px;
         }
 
+        .romaji-display {
+            font-size: 28px;
+            color: var(--accent-green);
+            font-family: 'Courier New', monospace;
+            text-transform: lowercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+
         .input-guide {
             font-size: 14px;
             color: var(--text-gray);
@@ -882,8 +891,8 @@
                     </div>
                 </div>
                 <div class="top-buttons">
-                    <button class="icon-btn" id="taskBtn" title="タスク">📋</button>
-                    <button class="icon-btn" id="friendBtn" title="フレンド">👥</button>
+                    <button class="icon-btn" id="taskBtn">📋</button>
+                    <button class="icon-btn" id="friendBtn">👥</button>
                 </div>
             </div>
         </div>
@@ -929,6 +938,7 @@
                 </div>
                 <div class="timer" id="timerDisplay">60</div>
                 <div class="current-question" id="questionDisplay">準備中...</div>
+                <div class="romaji-display" id="romajiDisplay"></div>
                 <div class="input-guide">キーボードで入力してください</div>
             </div>
 
@@ -962,8 +972,8 @@
 
         <!-- サイドパネル -->
         <div class="side-panel" id="sidePanel">
-            <div class="panel-header" id="panelHeader">
-                <span>パネル</span>
+            <div class="panel-header">
+                <span id="panelTitle">パネル</span>
                 <button class="panel-close" id="panelCloseBtn">✕</button>
             </div>
 
@@ -1082,21 +1092,31 @@
 
         // ローマ字マッピング
         const romajiMap = {
-            'あ': ['a'], 'い': ['i'], 'う': ['u'], 'え': ['e'], 'お': ['o'],
-            'か': ['ka', 'ca'], 'き': ['ki'], 'く': ['ku'], 'け': ['ke'], 'こ': ['ko', 'co'],
-            'が': ['ga'], 'ぎ': ['gi'], 'ぐ': ['gu'], 'げ': ['ge'], 'ご': ['go'],
-            'さ': ['sa'], 'し': ['si', 'shi'], 'す': ['su'], 'せ': ['se'], 'そ': ['so'],
-            'ざ': ['za'], 'じ': ['zi', 'ji'], 'ず': ['zu'], 'ぜ': ['ze'], 'ぞ': ['zo'],
-            'た': ['ta'], 'ち': ['ti', 'chi'], 'つ': ['tu', 'tsu'], 'て': ['te'], 'と': ['to'],
-            'だ': ['da'], 'ぢ': ['di'], 'づ': ['du'], 'で': ['de'], 'ど': ['do'],
-            'な': ['na'], 'に': ['ni'], 'ぬ': ['nu'], 'ね': ['ne'], 'の': ['no'],
-            'は': ['ha'], 'ひ': ['hi'], 'ふ': ['hu', 'fu'], 'へ': ['he'], 'ほ': ['ho'],
-            'ば': ['ba'], 'び': ['bi'], 'ぶ': ['bu'], 'べ': ['be'], 'ぼ': ['bo'],
-            'ぱ': ['pa'], 'ぴ': ['pi'], 'ぷ': ['pu'], 'ぺ': ['pe'], 'ぽ': ['po'],
-            'ま': ['ma'], 'み': ['mi'], 'む': ['mu'], 'め': ['me'], 'も': ['mo'],
-            'や': ['ya'], 'ゆ': ['yu'], 'よ': ['yo'],
-            'ら': ['ra'], 'り': ['ri'], 'る': ['ru'], 're': ['re'], 'ろ': ['ro'],
-            'わ': ['wa'], 'を': ['wo', 'o'], 'ん': ['n']
+            'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+            'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+            'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+            'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+            'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+            'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+            'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do',
+            'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+            'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+            'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+            'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
+            'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+            'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+            'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+            'わ': 'wa', 'を': 'wo', 'ん': 'n',
+            'ァ': 'a', 'ィ': 'i', 'ゥ': 'u', 'ェ': 'e', 'ォ': 'o',
+            'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
+            'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
+            'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
+            'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
+            'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
+            'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
+            'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
+            'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
+            'ワ': 'wa', 'ヲ': 'wo', 'ン': 'n'
         };
 
         // ============================================
@@ -1108,20 +1128,18 @@
         }
 
         function generateFriendCode() {
-            const numbers = Math.random().toString().substr(2, 6);
+            const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
             const letters = Math.random().toString(36).substr(2, 3).toUpperCase();
             return numbers + letters;
         }
 
-        function convertToRomaji(hiragana) {
-            const chars = hiragana.split('');
-            let romaji = [];
-            for (let char of chars) {
-                if (romajiMap[char]) {
-                    romaji.push(romajiMap[char][0]);
-                }
+        function convertToRomaji(text) {
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                result += romajiMap[char] || char;
             }
-            return romaji.join('');
+            return result;
         }
 
         function saveGameState() {
@@ -1154,25 +1172,17 @@
         // ============================================
 
         function updateUI() {
-            // レベルとXP
             document.getElementById('levelDisplay').textContent = gameState.level;
             const xpPercent = (gameState.xp / gameState.maxXp) * 100;
             document.getElementById('xpBarFill').style.width = xpPercent + '%';
-
-            // コイン
             document.getElementById('coinDisplay').textContent = gameState.coins;
-
-            // プロフィール
             document.getElementById('displayName').textContent = gameState.userName;
             document.getElementById('userId').textContent = 'ID: ' + gameState.userId;
             document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
             document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
             document.getElementById('newNameInput').value = '';
 
-            // フレンドリスト
             updateFriendsList();
-
-            // タスク
             updateTasksDisplay();
         }
 
@@ -1198,7 +1208,8 @@
                     </div>
                     <button class="friend-delete-btn">削除</button>
                 `;
-                friendEl.querySelector('.friend-delete-btn').addEventListener('click', () => {
+                const deleteBtn = friendEl.querySelector('.friend-delete-btn');
+                deleteBtn.addEventListener('click', function() {
                     gameState.friends = gameState.friends.filter(f => f.code !== friend.code);
                     saveGameState();
                     updateFriendsList();
@@ -1208,7 +1219,6 @@
         }
 
         function updateTasksDisplay() {
-            // 毎日のタスク
             const dailyList = document.getElementById('dailyTasksList');
             dailyList.innerHTML = '';
             gameState.dailyTasks.forEach(task => {
@@ -1226,7 +1236,6 @@
                 dailyList.appendChild(taskEl);
             });
 
-            // 週間のタスク
             const weeklyList = document.getElementById('weeklyTasksList');
             weeklyList.innerHTML = '';
             gameState.weeklyTasks.forEach(task => {
@@ -1289,19 +1298,17 @@
 
             if (panelType === 'profile') {
                 profilePanel.classList.remove('hidden');
-                document.getElementById('panelHeader').innerHTML = '<span>プロフィール</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+                document.getElementById('panelTitle').textContent = 'プロフィール';
             } else if (panelType === 'friend') {
                 friendPanel.classList.remove('hidden');
-                document.getElementById('panelHeader').innerHTML = '<span>フレンド</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+                document.getElementById('panelTitle').textContent = 'フレンド';
             } else if (panelType === 'task') {
                 taskPanel.classList.remove('hidden');
-                document.getElementById('panelHeader').innerHTML = '<span>タスク</span><button class="panel-close" id="panelCloseBtn">✕</button>';
+                document.getElementById('panelTitle').textContent = 'タスク';
             }
 
             overlay.classList.add('active');
             panel.classList.add('active');
-
-            document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
         }
 
         function closePanel() {
@@ -1315,6 +1322,7 @@
 
         let gameTimer = null;
         let currentQuestion = '';
+        let currentRomaji = '';
         let typedInput = '';
 
         function startGame(difficulty) {
@@ -1325,23 +1333,28 @@
             gameState.gameActive = true;
             typedInput = '';
 
+            document.getElementById('scoreDisplay').textContent = '0';
+            document.getElementById('comboDisplay').textContent = '0';
+            document.getElementById('timerDisplay').textContent = '60';
+
             switchScreen('gameScreen');
             nextQuestion();
             startTimer();
 
-            // タスク更新
             gameState.dailyTasks[0].current++;
             gameState.weeklyTasks[0].current++;
             updateTasksDisplay();
+            saveGameState();
         }
 
         function nextQuestion() {
             const qArray = questions[gameState.currentDifficulty];
             currentQuestion = qArray[Math.floor(Math.random() * qArray.length)];
+            currentRomaji = convertToRomaji(currentQuestion).toLowerCase();
             typedInput = '';
             
-            const romaji = convertToRomaji(currentQuestion);
-            document.getElementById('questionDisplay').textContent = romaji.toLowerCase();
+            document.getElementById('questionDisplay').textContent = currentQuestion;
+            document.getElementById('romajiDisplay').textContent = currentRomaji;
         }
 
         function startTimer() {
@@ -1365,7 +1378,6 @@
             gameState.coins += earnedCoins;
             addXP(earnedXP);
 
-            // スコアに応じてタスク更新
             if (gameState.currentScore >= 5000) {
                 gameState.dailyTasks[1].current++;
             }
@@ -1374,14 +1386,12 @@
                 gameState.weeklyTasks[2].current++;
             }
 
-            // 週間タスク更新
             if (gameState.currentScore >= 500) {
                 gameState.weeklyTasks[1].current++;
             }
 
             saveGameState();
 
-            // 結果表示
             document.getElementById('finalScore').textContent = gameState.currentScore;
             document.getElementById('earnedCoins').textContent = earnedCoins;
             document.getElementById('earnedXP').textContent = earnedXP;
@@ -1390,44 +1400,53 @@
         }
 
         // ============================================
-        // イベントリスナー
+        // イベントリスナー設定
         // ============================================
 
-        // メニュー
-        document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
-        document.getElementById('profileBtn').addEventListener('click', () => openPanel('profile'));
+        document.getElementById('playBtn').addEventListener('click', function() {
+            switchScreen('difficultyScreen');
+        });
 
-        // 難易度選択
+        document.getElementById('profileBtn').addEventListener('click', function() {
+            openPanel('profile');
+        });
+
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
-            btn.addEventListener('click', () => startGame(btn.dataset.difficulty));
-        });
-
-        // 結果画面
-        document.getElementById('continueBtn').addEventListener('click', () => {
-            switchScreen('menuScreen');
-        });
-
-        // パネルボタン
-        document.getElementById('friendBtn').addEventListener('click', () => openPanel('friend'));
-        document.getElementById('taskBtn').addEventListener('click', () => openPanel('task'));
-        document.getElementById('overlay').addEventListener('click', closePanel);
-
-        // タブ切り替え
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.dataset.tab;
-                const panel = btn.parentElement.parentElement;
-                
-                panel.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                panel.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                
-                btn.classList.add('active');
-                panel.querySelector('#' + tabName).classList.remove('hidden');
+            btn.addEventListener('click', function() {
+                startGame(this.dataset.difficulty);
             });
         });
 
-        // プロフィール - 名前変更
-        document.getElementById('changeNameBtn').addEventListener('click', () => {
+        document.getElementById('continueBtn').addEventListener('click', function() {
+            switchScreen('menuScreen');
+        });
+
+        document.getElementById('friendBtn').addEventListener('click', function() {
+            openPanel('friend');
+        });
+
+        document.getElementById('taskBtn').addEventListener('click', function() {
+            openPanel('task');
+        });
+
+        document.getElementById('overlay').addEventListener('click', closePanel);
+        document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+
+        // タブ切り替え
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                const tabBar = this.parentElement;
+                
+                tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                tabBar.parentElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                
+                this.classList.add('active');
+                document.getElementById(tabName).classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('changeNameBtn').addEventListener('click', function() {
             const newName = document.getElementById('newNameInput').value.trim();
             if (newName && gameState.nameChangeCount < 3) {
                 gameState.userName = newName;
@@ -1439,8 +1458,7 @@
             }
         });
 
-        // フレンド追加
-        document.getElementById('addFriendBtn').addEventListener('click', () => {
+        document.getElementById('addFriendBtn').addEventListener('click', function() {
             const code = document.getElementById('addFriendCode').value.trim();
             if (code === gameState.friendCode) {
                 alert('自分のフレンドコードは追加できません');
@@ -1463,13 +1481,11 @@
             if (!gameState.gameActive) return;
 
             const key = e.key.toLowerCase();
-            const currentRomaji = convertToRomaji(currentQuestion).toLowerCase();
 
             if (key.match(/[a-z]/)) {
                 typedInput += key;
                 
                 if (typedInput === currentRomaji) {
-                    // 正解
                     gameState.currentCombo++;
                     gameState.currentScore += 5 * gameState.currentCombo;
                     
@@ -1478,7 +1494,6 @@
                     
                     nextQuestion();
                 } else if (!currentRomaji.startsWith(typedInput)) {
-                    // ミス
                     gameState.currentCombo = 0;
                     document.getElementById('comboDisplay').textContent = '0';
                     typedInput = '';
