@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>タイピングゲーム</title>
     <style>
+        /* ===== リセット ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ===== CSS変数定義 ===== */
         :root {
             --primary-dark: #0a0e27;
             --secondary-dark: #1a1f3a;
@@ -22,6 +24,7 @@
             --text-gray: #a0a0a0;
         }
 
+        /* ===== グローバルスタイル ===== */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%);
@@ -161,7 +164,7 @@
             color: var(--accent-green);
         }
 
-        /* ===== メインコンテンツ ===== */
+        /* ===== メインコンテンツエリア ===== */
         .main-content {
             flex: 1;
             display: flex;
@@ -171,6 +174,7 @@
             position: relative;
         }
 
+        /* ===== スクリーン管理 ===== */
         .screen {
             display: none;
             width: 100%;
@@ -238,7 +242,7 @@
             font-size: 32px;
         }
 
-        /* ===== 難易度選択 ===== */
+        /* ===== 難易度選択画面 ===== */
         .difficulty-screen {
             gap: 40px;
         }
@@ -348,22 +352,33 @@
         }
 
         .current-question {
-            font-size: 36px;
+            font-size: 48px;
             font-weight: 600;
             color: var(--accent-blue);
             text-align: center;
             min-height: 60px;
             margin: 20px 0;
             max-width: 600px;
+            font-family: 'Hiragino Maru Gothic', 'Yu Gothic', serif;
         }
 
         .romaji-display {
-            font-size: 28px;
+            font-size: 32px;
             color: var(--accent-green);
             font-family: 'Courier New', monospace;
             text-transform: lowercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             margin-top: 10px;
+            min-height: 45px;
+        }
+
+        .romaji-typed {
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .romaji-remaining {
+            color: var(--text-gray);
         }
 
         .input-guide {
@@ -371,6 +386,98 @@
             color: var(--text-gray);
             text-transform: uppercase;
             letter-spacing: 2px;
+        }
+
+        /* ===== ランキングモード ===== */
+        .ranking-mode-screen {
+            gap: 40px;
+        }
+
+        .ranking-mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .ranking-mode-btn {
+            padding: 25px 40px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ranking-mode-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
+            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .ranking-mode-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== ランキング表示 ===== */
+        .ranking-display-screen {
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .ranking-list {
+            width: 100%;
+            max-width: 600px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .ranking-item.my-rank {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .ranking-rank {
+            font-weight: 700;
+            color: var(--accent-blue);
+            min-width: 40px;
+        }
+
+        .ranking-name {
+            flex: 1;
+            color: var(--text-white);
+        }
+
+        .ranking-score {
+            font-weight: 600;
+            color: var(--accent-green);
+            min-width: 80px;
+            text-align: right;
         }
 
         /* ===== オーバーレイ ===== */
@@ -434,7 +541,6 @@
             transform: rotate(90deg);
         }
 
-        /* ===== プロフィール ===== */
         .profile-section {
             margin-bottom: 30px;
         }
@@ -487,11 +593,6 @@
             background: rgba(0, 212, 255, 0.3);
         }
 
-        .change-name-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         .name-change-count {
             font-size: 12px;
             color: var(--text-gray);
@@ -530,7 +631,6 @@
             transform: scale(1.05);
         }
 
-        /* ===== タブバー ===== */
         .tab-bar {
             display: flex;
             gap: 10px;
@@ -561,7 +661,6 @@
             color: var(--accent-blue);
         }
 
-        /* ===== フレンドリスト ===== */
         .friends-list {
             display: flex;
             flex-direction: column;
@@ -635,7 +734,6 @@
             background: rgba(255, 0, 110, 0.3);
         }
 
-        /* ===== フレンド追加 ===== */
         .add-friend-section {
             margin-bottom: 20px;
         }
@@ -674,61 +772,6 @@
             background: rgba(0, 212, 255, 0.3);
         }
 
-        /* ===== フレンド申請 ===== */
-        .friend-request {
-            background: rgba(255, 165, 0, 0.1);
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 165, 0, 0.3);
-            margin-bottom: 12px;
-        }
-
-        .friend-request-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-white);
-            margin-bottom: 8px;
-        }
-
-        .friend-request-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .friend-request-btn {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid transparent;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-
-        .friend-request-btn.accept {
-            background: rgba(0, 255, 136, 0.2);
-            border-color: rgba(0, 255, 136, 0.5);
-            color: var(--accent-green);
-        }
-
-        .friend-request-btn.accept:hover {
-            background: rgba(0, 255, 136, 0.3);
-        }
-
-        .friend-request-btn.reject {
-            background: rgba(255, 0, 110, 0.2);
-            border-color: rgba(255, 0, 110, 0.5);
-            color: var(--accent-pink);
-        }
-
-        .friend-request-btn.reject:hover {
-            background: rgba(255, 0, 110, 0.3);
-        }
-
-        /* ===== タスク ===== */
         .task-item {
             background: rgba(0, 212, 255, 0.05);
             padding: 15px;
@@ -817,22 +860,7 @@
             pointer-events: none;
         }
 
-        .task-complete-notification {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
-            padding: 20px 40px;
-            border-radius: 10px;
-            font-size: 20px;
-            font-weight: 700;
-            animation: levelUp 3s ease-out forwards;
-            z-index: 2000;
-            pointer-events: none;
-        }
-
-        /* ===== レスポンシブ ===== */
+        /* ===== レスポンシブ対応 ===== */
         @media (max-width: 768px) {
             .menu-buttons {
                 grid-template-columns: 1fr;
@@ -857,6 +885,7 @@
             display: none !important;
         }
 
+        /* ===== スクロールバーカスタマイズ ===== */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -873,11 +902,31 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 212, 255, 0.5);
         }
+
+        /* ===== 戻るボタン ===== */
+        .back-btn {
+            padding: 12px 24px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.05);
+            color: var(--accent-blue);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <!-- ヘッダー -->
+        <!-- ===== ヘッダー ===== -->
         <div class="header">
             <div class="header-left">
                 <div class="game-title">⚡ TYPING</div>
@@ -897,7 +946,7 @@
             </div>
         </div>
 
-        <!-- メインコンテンツ -->
+        <!-- ===== メインコンテンツ ===== -->
         <div class="main-content">
             <!-- メニュー画面 -->
             <div class="screen active menu-screen" id="menuScreen">
@@ -907,9 +956,17 @@
                         <div class="icon">🚀</div>
                         <div>PLAY</div>
                     </button>
+                    <button class="menu-btn" id="rankingBtn">
+                        <div class="icon">🏆</div>
+                        <div>RANKING</div>
+                    </button>
                     <button class="menu-btn" id="profileBtn">
                         <div class="icon">👤</div>
                         <div>PROFILE</div>
+                    </button>
+                    <button class="menu-btn" id="settingsBtn" style="opacity: 0.5; cursor: not-allowed;">
+                        <div class="icon">⚙️</div>
+                        <div>SETTINGS</div>
                     </button>
                 </div>
             </div>
@@ -918,10 +975,29 @@
             <div class="screen difficulty-screen" id="difficultyScreen">
                 <div class="difficulty-title">難易度を選択</div>
                 <div class="difficulty-options">
-                    <button class="difficulty-btn easy" data-difficulty="easy">簡単</button>
+                    <button class="difficulty-btn easy" data-difficulty="easy">初級</button>
                     <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
-                    <button class="difficulty-btn hard" data-difficulty="hard">難しい</button>
+                    <button class="difficulty-btn hard" data-difficulty="hard">上級</button>
                 </div>
+                <button class="back-btn" id="backFromDifficultyBtn">戻る</button>
+            </div>
+
+            <!-- ランキングモード選択 -->
+            <div class="screen ranking-mode-screen" id="rankingModeScreen">
+                <div class="menu-title">ランキングモード</div>
+                <div class="ranking-mode-buttons">
+                    <button class="ranking-mode-btn" id="friendRankingBtn">フレンドランキング</button>
+                    <button class="ranking-mode-btn" id="worldRankingBtn">ワールドランキング</button>
+                    <button class="ranking-mode-btn" id="viewRankingBtn">ランキングを見る</button>
+                </div>
+                <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
+            </div>
+
+            <!-- ランキング表示 -->
+            <div class="screen ranking-display-screen" id="rankingDisplayScreen">
+                <div class="menu-title" id="rankingTitle">ランキング</div>
+                <div class="ranking-list" id="rankingList"></div>
+                <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
             </div>
 
             <!-- ゲーム画面 -->
@@ -961,16 +1037,16 @@
             </div>
         </div>
 
-        <!-- コイン表示 -->
+        <!-- ===== コイン表示 ===== -->
         <div class="coin-display">
             <div class="coin-icon">💰</div>
             <div class="coin-value" id="coinDisplay">0</div>
         </div>
 
-        <!-- オーバーレイ -->
+        <!-- ===== オーバーレイ ===== -->
         <div class="overlay" id="overlay"></div>
 
-        <!-- サイドパネル -->
+        <!-- ===== サイドパネル ===== -->
         <div class="side-panel" id="sidePanel">
             <div class="panel-header">
                 <span id="panelTitle">パネル</span>
@@ -998,7 +1074,6 @@
             <div id="friendPanel" class="hidden">
                 <div class="tab-bar">
                     <button class="tab-btn active" data-tab="friend-list">フレンド</button>
-                    <button class="tab-btn" data-tab="friend-request">申請</button>
                 </div>
 
                 <!-- フレンドリスト -->
@@ -1008,11 +1083,6 @@
                         <button class="add-friend-btn" id="addFriendBtn">追加する</button>
                     </div>
                     <div id="friendsList" class="friends-list"></div>
-                </div>
-
-                <!-- フレンド申請 -->
-                <div id="friend-request" class="tab-content hidden">
-                    <div id="friendRequestsList"></div>
                 </div>
             </div>
 
@@ -1037,10 +1107,14 @@
     </div>
 
     <script>
-        // ============================================
-        // グローバル状態管理
-        // ============================================
+        /* ========================================
+           グローバル状態管理
+           ========================================
+           ゲーム全体の状態を保持するオブジェクト
+           localStorage に保存して永続化される
+        */
         const gameState = {
+            // プレイヤー情報
             userId: null,
             userName: 'User',
             friendCode: '',
@@ -1048,15 +1122,22 @@
             level: 1,
             xp: 0,
             maxXp: 100,
+            
+            // 日次リセット関連
             nameChangeCount: 0,
             lastNameChangeReset: new Date().toDateString(),
+            
+            // フレンド・ゲーム進行
             friends: [],
-            friendRequests: [],
             currentScore: 0,
             currentCombo: 0,
             gameActive: false,
             gameTime: 60,
             currentDifficulty: null,
+            currentRankingMode: null,
+            lastRankingRewardDate: new Date().toDateString(),
+            
+            // タスク
             dailyTasks: [
                 { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
                 { id: 'score5k', title: 'スコア5000～50000を叩き出す', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
@@ -1069,35 +1150,43 @@
             ]
         };
 
-        // ============================================
-        // 問題データベース
-        // ============================================
+        /* ========================================
+           問題データベース
+           ========================================
+           初級・中級・上級の各20問
+        */
         const questions = {
             easy: [
-                'りんご', 'いぬ', 'ねこ', 'たべる', 'のむ', 'すうがく',
-                'えいご', 'ほん', 'かみ', 'ペン', 'そら', 'ひ', 'つき', 'ほし', 'かぜ', 'あめ'
+                'そら', 'うみ', 'えがお', 'へいわ', 'きずな', 'きぼう', 'ひかり', 'かぜ', 'みらい', 'じゆう',
+                'ゆうき', 'かんしゃ', 'とけい', 'たいよう', 'けしき', 'まほう', 'こきゅう', 'ほうせき', 'きおく', 'ぼうけん'
             ],
             normal: [
-                'コンピューター', 'インターネット', 'プログラミング', 'キーボード', 'マウス',
-                'ディスプレイ', 'ソフトウェア', 'ハードウェア', 'アルゴリズム', 'データベース',
-                'セキュリティ', 'ネットワーク', 'クラウド', 'サーバー', 'クライアント'
+                'いっしょうけんめい', 'しこうさくご', 'せっさたくま', 'おんこちしん', 'いちごいちえ',
+                'しんきいってん', 'りんきおうへん', 'としょかん', 'しんかんせん', 'すいへいせん',
+                'てんたいかんそく', 'しんりんよく', 'りょうりきょうしつ', 'しょくぶつえん', 'はくぶつかん',
+                'うちゅうひこうし', 'つうしんきょういく', 'ちきゅうおんだんか', 'じこしょうかい', 'こうきょうしせつ'
             ],
             hard: [
-                'アーキテクチャー', 'パフォーマンス', 'エンジニアリング', 'カスタマイズ',
-                'ビジュアライゼーション', 'オプティマイゼーション', 'ノーマライゼーション',
-                'フラグメンテーション', 'デバッグ', 'リファクタリング', 'デプロイメント',
-                'シミュレーション', 'ドキュメンテーション', 'スケーラビリティ', 'コンプライアンス'
+                'ごんごどうだん', 'こうとうむけい', 'いしんでんしん', 'ひゃっかりょうらん', 'しめんそか',
+                'がしんしょうたん', 'ゆうずうむげ', 'せいれんけっぱく', 'あんちゅうもさく', 'でんぱぼうえんきょう',
+                'さんぎょうかくめい', 'しゅうぎいんぎいん', 'こくりつきょうぎじょう', 'せいしんほけんしてい', 'じんこうちのうかいはつ',
+                'ふろうふし', 'せいぶつたようせい', 'じぞくかのうせい', 'ひはかいけんさ', 'ぎむきょういくしょがっこう',
+                'しんらばんしょう'
             ]
         };
 
-        // ローマ字マッピング
+        /* ========================================
+           ローマ字マッピング
+           ========================================
+           ひらがなをローマ字に変換するための辞書
+        */
         const romajiMap = {
             'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
             'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
             'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
-            'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
-            'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
-            'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+            'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so',
+            'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+            'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to',
             'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do',
             'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
             'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
@@ -1106,57 +1195,129 @@
             'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
             'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
             'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
-            'わ': 'wa', 'を': 'wo', 'ん': 'n',
-            'ァ': 'a', 'ィ': 'i', 'ゥ': 'u', 'ェ': 'e', 'ォ': 'o',
-            'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
-            'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
-            'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
-            'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
-            'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
-            'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
-            'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
-            'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
-            'ワ': 'wa', 'ヲ': 'wo', 'ン': 'n'
+            'わ': 'wa', 'を': 'wo', 'ん': 'nn',
+            'ぁ': 'la', 'ぃ': 'li', 'ぅ': 'lu', 'ぇ': 'le', 'ぉ': 'lo',
+            'っ': 'xtu'
         };
 
-        // ============================================
-        // ユーティリティ関数
-        // ============================================
+        /* ========================================
+           拗音マッピング
+           ========================================
+           複合音（きゃ、しゅ など）の変換
+        */
+        const youonMap = {
+            'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo',
+            'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo',
+            'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo',
+            'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo',
+            'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo',
+            'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo',
+            'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo',
+            'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo',
+            'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo',
+            'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo',
+            'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'
+        };
 
+        /* ========================================
+           ユーティリティ関数
+           ========================================
+        */
+
+        // ランダムID生成（ユーザーID用）
         function generateRandomId() {
             return Math.random().toString(36).substr(2, 12).toUpperCase();
         }
 
+        // フレンドコード生成（数字6桁+大文字3字）
         function generateFriendCode() {
             const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
             const letters = Math.random().toString(36).substr(2, 3).toUpperCase();
             return numbers + letters;
         }
 
+        /* ========================================
+           ローマ字変換関数（最重要）
+           ========================================
+           ひらがなテキストをローマ字に変換する
+           促音（っ）の処理：
+             例）「がっこう」→ が(ga) + っこ(kko) + う(u) = gakkou
+             つまり促音の次の文字の子音を2回出力
+        */
         function convertToRomaji(text) {
             let result = '';
-            for (let i = 0; i < text.length; i++) {
+            let i = 0;
+            
+            while (i < text.length) {
+                // 促音（っ）の処理
+                if (text[i] === 'っ' && i + 1 < text.length) {
+                    const nextChar = text[i + 1];
+                    let nextRomaji = '';
+                    
+                    // 2文字の拗音をチェック（例：きゃ、しゅ など）
+                    if (i + 2 < text.length) {
+                        const twoChar = text.substring(i + 1, i + 3);
+                        if (youonMap[twoChar]) {
+                            nextRomaji = youonMap[twoChar];
+                        }
+                    }
+                    
+                    // 1文字の場合
+                    if (!nextRomaji) {
+                        nextRomaji = romajiMap[nextChar] || nextChar;
+                    }
+                    
+                    // 子音を2回 + その文字のロマ字全体を出す
+                    // 例：ko → kko
+                    if (nextRomaji) {
+                        result += nextRomaji[0] + nextRomaji[0] + nextRomaji.substring(1);
+                    }
+                    
+                    // 促音と次の文字をスキップ
+                    i += 2;
+                    continue;
+                }
+                
+                // 2文字の拗音をチェック
+                if (i + 1 < text.length) {
+                    const twoChar = text.substring(i, i + 2);
+                    if (youonMap[twoChar]) {
+                        result += youonMap[twoChar];
+                        i += 2;
+                        continue;
+                    }
+                }
+                
+                // 1文字をチェック
                 const char = text[i];
                 result += romajiMap[char] || char;
+                i++;
             }
+            
             return result;
         }
 
+        // ゲーム状態を localStorage に保存
         function saveGameState() {
             localStorage.setItem('gameState', JSON.stringify(gameState));
+            saveRankingData();
         }
 
+        // localStorage からゲーム状態を読み込み
         function loadGameState() {
             const saved = localStorage.getItem('gameState');
             if (saved) {
                 Object.assign(gameState, JSON.parse(saved));
             } else {
+                // 初回プレイ時
                 gameState.userId = generateRandomId();
                 gameState.friendCode = generateFriendCode();
                 saveGameState();
             }
+            checkDailyReward();
         }
 
+        // 日次リセット（名前変更回数とタスク）
         function checkAndResetDaily() {
             const today = new Date().toDateString();
             if (gameState.lastNameChangeReset !== today) {
@@ -1167,9 +1328,112 @@
             }
         }
 
-        // ============================================
-        // UI更新関数
-        // ============================================
+        /* ========================================
+           ランキングデータ管理
+           ========================================
+        */
+
+        function getRankingKey(mode) {
+            return `ranking_${mode}`;
+        }
+
+        function saveRankingData() {
+            const friendRanking = JSON.parse(localStorage.getItem(getRankingKey('friend')) || '[]');
+            const worldRanking = JSON.parse(localStorage.getItem(getRankingKey('world')) || '[]');
+            localStorage.setItem(getRankingKey('friend'), JSON.stringify(friendRanking));
+            localStorage.setItem(getRankingKey('world'), JSON.stringify(worldRanking));
+        }
+
+        // スコアをランキングに追加
+        function addScoreToRanking(mode, score) {
+            const key = getRankingKey(mode);
+            let ranking = JSON.parse(localStorage.getItem(key) || '[]');
+            
+            ranking.push({
+                name: gameState.userName,
+                score: score,
+                userId: gameState.userId,
+                date: new Date().toISOString()
+            });
+            
+            // スコア降順でソート
+            ranking.sort((a, b) => b.score - a.score);
+            
+            // 上位100位のみ保持
+            ranking = ranking.slice(0, 100);
+            
+            localStorage.setItem(key, JSON.stringify(ranking));
+        }
+
+        function getRanking(mode) {
+            const key = getRankingKey(mode);
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        }
+
+        function getWorldRankingParticipantCount() {
+            return getRanking('world').length;
+        }
+
+        // 毎日朝7時の報酬配付をチェック
+        function checkDailyReward() {
+            const today = new Date();
+            const sevenAM = new Date();
+            sevenAM.setHours(7, 0, 0, 0);
+            
+            const lastRewardDate = new Date(gameState.lastRankingRewardDate);
+            const lastRewardDay = lastRewardDate.toDateString();
+            const todayString = today.toDateString();
+            
+            // 新しい日で朝7時以降なら報酬を配付
+            if (todayString !== lastRewardDay && today >= sevenAM) {
+                giveRankingRewards();
+                gameState.lastRankingRewardDate = todayString;
+                saveGameState();
+            }
+        }
+
+        // ランキング報酬配付（朝7時）
+        function giveRankingRewards() {
+            const friendRanking = getRanking('friend');
+            const worldRanking = getRanking('world');
+            const participantCount = getWorldRankingParticipantCount();
+            
+            // フレンドランキングの報酬
+            friendRanking.forEach((entry, index) => {
+                if (entry.userId === gameState.userId) {
+                    if (index === 0) {
+                        gameState.xp += 50;
+                        gameState.coins += 1500;
+                    } else if (index >= 1 && index <= 2) {
+                        gameState.xp += 25;
+                        gameState.coins += 500;
+                    }
+                }
+            });
+            
+            // ワールドランキングの報酬
+            worldRanking.forEach((entry, index) => {
+                if (entry.userId === gameState.userId) {
+                    if (index === 0) {
+                        gameState.xp += 50 * participantCount;
+                        gameState.coins += 700 * participantCount;
+                    } else if (index >= 1 && index <= 2) {
+                        gameState.xp += 25 * participantCount;
+                        gameState.coins += 500 * participantCount;
+                    } else if (index >= 3 && index <= 4) {
+                        gameState.xp += 10 * participantCount;
+                        gameState.coins += 300 * participantCount;
+                    }
+                }
+            });
+            
+            saveGameState();
+        }
+
+        /* ========================================
+           UI更新関数
+           ========================================
+        */
 
         function updateUI() {
             document.getElementById('levelDisplay').textContent = gameState.level;
@@ -1184,6 +1448,16 @@
 
             updateFriendsList();
             updateTasksDisplay();
+            
+            // フレンドランキングボタンの有効/無効制御
+            const friendRankingBtn = document.getElementById('friendRankingBtn');
+            if (gameState.friends.length < 2) {
+                friendRankingBtn.disabled = true;
+                friendRankingBtn.title = 'フレンドが2人以上必要です';
+            } else {
+                friendRankingBtn.disabled = false;
+                friendRankingBtn.title = '';
+            }
         }
 
         function updateFriendsList() {
@@ -1213,6 +1487,7 @@
                     gameState.friends = gameState.friends.filter(f => f.code !== friend.code);
                     saveGameState();
                     updateFriendsList();
+                    updateUI();
                 });
                 friendsList.appendChild(friendEl);
             });
@@ -1254,11 +1529,13 @@
             });
         }
 
+        // 画面切り替え
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
+        // 通知表示
         function showNotification(message, type = 'level-up') {
             const notification = document.createElement('div');
             notification.className = `${type}-notification`;
@@ -1267,6 +1544,7 @@
             setTimeout(() => notification.remove(), 3000);
         }
 
+        // XP加算＆レベルアップ処理
         function addXP(amount) {
             gameState.xp += amount;
             
@@ -1281,9 +1559,10 @@
             updateUI();
         }
 
-        // ============================================
-        // パネル制御
-        // ============================================
+        /* ========================================
+           パネル制御
+           ========================================
+        */
 
         function openPanel(panelType) {
             const overlay = document.getElementById('overlay');
@@ -1316,17 +1595,26 @@
             document.getElementById('sidePanel').classList.remove('active');
         }
 
-        // ============================================
-        // ゲーム制御
-        // ============================================
+        /* ========================================
+           ゲーム制御
+           ========================================
+           ゲームの開始・進行・終了を管理
+        */
 
         let gameTimer = null;
         let currentQuestion = '';
         let currentRomaji = '';
         let typedInput = '';
 
-        function startGame(difficulty) {
+        // ゲーム開始
+        function startGame(difficulty, isRankingMode = false) {
             gameState.currentDifficulty = difficulty;
+            
+            // ランキングモードの場合、難易度をランダムに選択
+            if (isRankingMode) {
+                gameState.currentDifficulty = ['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)];
+            }
+            
             gameState.currentScore = 0;
             gameState.currentCombo = 0;
             gameState.gameTime = 60;
@@ -1341,12 +1629,14 @@
             nextQuestion();
             startTimer();
 
+            // タスクを更新
             gameState.dailyTasks[0].current++;
             gameState.weeklyTasks[0].current++;
             updateTasksDisplay();
             saveGameState();
         }
 
+        // 次の問題を出題
         function nextQuestion() {
             const qArray = questions[gameState.currentDifficulty];
             currentQuestion = qArray[Math.floor(Math.random() * qArray.length)];
@@ -1354,9 +1644,18 @@
             typedInput = '';
             
             document.getElementById('questionDisplay').textContent = currentQuestion;
-            document.getElementById('romajiDisplay').textContent = currentRomaji;
+            updateRomajiDisplay();
         }
 
+        // ローマ字表示を更新（入力済み部分と残り部分）
+        function updateRomajiDisplay() {
+            const romajiEl = document.getElementById('romajiDisplay');
+            const typed = `<span class="romaji-typed">${typedInput}</span>`;
+            const remaining = `<span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`;
+            romajiEl.innerHTML = typed + remaining;
+        }
+
+        // タイマー開始
         function startTimer() {
             gameTimer = setInterval(() => {
                 gameState.gameTime--;
@@ -1368,6 +1667,7 @@
             }, 1000);
         }
 
+        // ゲーム終了
         function endGame() {
             gameState.gameActive = false;
             clearInterval(gameTimer);
@@ -1378,6 +1678,7 @@
             gameState.coins += earnedCoins;
             addXP(earnedXP);
 
+            // タスク進捗を更新
             if (gameState.currentScore >= 5000) {
                 gameState.dailyTasks[1].current++;
             }
@@ -1396,31 +1697,99 @@
             document.getElementById('earnedCoins').textContent = earnedCoins;
             document.getElementById('earnedXP').textContent = earnedXP;
             
+            // ランキングモードの場合、スコアをランキングに登録
+            if (gameState.currentRankingMode) {
+                addScoreToRanking(gameState.currentRankingMode, gameState.currentScore);
+                gameState.currentRankingMode = null;
+            }
+            
             switchScreen('resultScreen');
         }
 
-        // ============================================
-        // イベントリスナー設定
-        // ============================================
+        // ランキング表示
+        function displayRanking(mode, title) {
+            let ranking;
+            if (mode === 'friend') {
+                // フレンドランキングはフレンドか自分のスコアのみ
+                ranking = getRanking('friend').filter(entry => 
+                    gameState.friends.some(f => f.name === entry.name) || entry.userId === gameState.userId
+                );
+            } else {
+                ranking = getRanking('world');
+            }
+            
+            const rankingList = document.getElementById('rankingList');
+            rankingList.innerHTML = '';
+            
+            document.getElementById('rankingTitle').textContent = title;
+            
+            if (ranking.length === 0) {
+                rankingList.innerHTML = '<div style="text-align: center; color: var(--text-gray); padding: 20px;">ランキングデータがありません</div>';
+                return;
+            }
+            
+            ranking.forEach((entry, index) => {
+                const rankItem = document.createElement('div');
+                const isMyRank = entry.userId === gameState.userId;
+                rankItem.className = `ranking-item ${isMyRank ? 'my-rank' : ''}`;
+                rankItem.innerHTML = `
+                    <span class="ranking-rank">#${index + 1}</span>
+                    <span class="ranking-name">${entry.name}</span>
+                    <span class="ranking-score">${entry.score.toLocaleString()}</span>
+                `;
+                rankingList.appendChild(rankItem);
+            });
+        }
 
+        /* ========================================
+           イベントリスナー設定
+           ========================================
+        */
+
+        // メニューボタン
         document.getElementById('playBtn').addEventListener('click', function() {
             switchScreen('difficultyScreen');
+        });
+
+        document.getElementById('rankingBtn').addEventListener('click', function() {
+            switchScreen('rankingModeScreen');
         });
 
         document.getElementById('profileBtn').addEventListener('click', function() {
             openPanel('profile');
         });
 
+        // ランキングモード
+        document.getElementById('friendRankingBtn').addEventListener('click', function() {
+            if (gameState.friends.length >= 2) {
+                gameState.currentRankingMode = 'friend';
+                startGame(null, true);
+            }
+        });
+
+        document.getElementById('worldRankingBtn').addEventListener('click', function() {
+            gameState.currentRankingMode = 'world';
+            startGame(null, true);
+        });
+
+        document.getElementById('viewRankingBtn').addEventListener('click', function() {
+            switchScreen('rankingDisplayScreen');
+            displayRanking('world', 'ワールドランキング');
+        });
+
+        // 難易度選択
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                startGame(this.dataset.difficulty);
+                startGame(this.dataset.difficulty, false);
             });
         });
 
+        // ゲーム結果
         document.getElementById('continueBtn').addEventListener('click', function() {
             switchScreen('menuScreen');
         });
 
+        // パネル
         document.getElementById('friendBtn').addEventListener('click', function() {
             openPanel('friend');
         });
@@ -1429,6 +1798,20 @@
             openPanel('task');
         });
 
+        // 戻るボタン
+        document.getElementById('backFromDifficultyBtn').addEventListener('click', function() {
+            switchScreen('menuScreen');
+        });
+
+        document.getElementById('backFromRankingModeBtn').addEventListener('click', function() {
+            switchScreen('menuScreen');
+        });
+
+        document.getElementById('backFromRankingViewBtn').addEventListener('click', function() {
+            switchScreen('rankingModeScreen');
+        });
+
+        // オーバーレイ＆パネル
         document.getElementById('overlay').addEventListener('click', closePanel);
         document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
 
@@ -1446,6 +1829,7 @@
             });
         });
 
+        // 名前変更
         document.getElementById('changeNameBtn').addEventListener('click', function() {
             const newName = document.getElementById('newNameInput').value.trim();
             if (newName && gameState.nameChangeCount < 3) {
@@ -1458,6 +1842,7 @@
             }
         });
 
+        // フレンド追加
         document.getElementById('addFriendBtn').addEventListener('click', function() {
             const code = document.getElementById('addFriendCode').value.trim();
             if (code === gameState.friendCode) {
@@ -1467,41 +1852,63 @@
             if (code && !gameState.friends.find(f => f.code === code)) {
                 gameState.friends.push({
                     code: code,
-                    name: '新しいフレンド',
+                    name: `Friend${gameState.friends.length + 1}`,
                     online: Math.random() > 0.5
                 });
                 document.getElementById('addFriendCode').value = '';
                 saveGameState();
                 updateFriendsList();
+                updateUI();
             }
         });
 
-        // ゲーム中のキーボード入力
+        /* ========================================
+           キーボード入力処理（最重要）
+           ========================================
+           ミス時の処理：
+           - コンボをリセット
+           - typedInputをリセットしない（重要！）
+           - つまり同じ位置で正しい文字を入力するまで進まない
+        */
         document.addEventListener('keydown', (e) => {
             if (!gameState.gameActive) return;
 
             const key = e.key.toLowerCase();
 
+            // アルファベットのみを受け付ける
             if (key.match(/[a-z]/)) {
-                typedInput += key;
+                // 次に入力すべき文字を確認
+                const expectedChar = currentRomaji[typedInput.length];
                 
-                if (typedInput === currentRomaji) {
+                if (key === expectedChar) {
+                    // 正解：一文字入力
+                    typedInput += key;
                     gameState.currentCombo++;
                     gameState.currentScore += 5 * gameState.currentCombo;
                     
                     document.getElementById('scoreDisplay').textContent = gameState.currentScore;
                     document.getElementById('comboDisplay').textContent = gameState.currentCombo;
+                    updateRomajiDisplay();
                     
-                    nextQuestion();
-                } else if (!currentRomaji.startsWith(typedInput)) {
+                    // 単語完成判定
+                    if (typedInput === currentRomaji) {
+                        nextQuestion();
+                    }
+                } else {
+                    // ミス：コンボリセット、入力済み文字はそのまま
+                    // 次に正しい文字を入力するまでtypedInputは進まない
                     gameState.currentCombo = 0;
                     document.getElementById('comboDisplay').textContent = '0';
-                    typedInput = '';
+                    // ★ 重要：typedInputはリセットしない
+                    updateRomajiDisplay();
                 }
             }
         });
 
-        // 初期化
+        /* ========================================
+           初期化処理
+           ========================================
+        */
         loadGameState();
         checkAndResetDaily();
         updateUI();
