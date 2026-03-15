@@ -405,17 +405,81 @@
         function updateFriendsList() {
             const friendsList = document.getElementById('friendsList');
             friendsList.innerHTML = '';
-            if (gameState.friends.length === 0) { friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>'; return; }
+            
+            if (gameState.friends.length === 0) { 
+                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>'; 
+                return; 
+            }
+            
             gameState.friends.forEach(friend => {
+                // ★ Firebaseからリアルタイムで名前を取得
+                if (db) {
+                    db.ref(`users/${friend.code}/name`).on('value', (snap) => {
+                        const latestName = snap.val() || friend.name || `Friend(${friend.code.slice(0, 6)})`;
+                        
+                        // ローカルの名前も更新
+                        const friendObj = gameState.friends.find(f => f.code === friend.code);
+                        if (friendObj) {
+                            friendObj.name = latestName;
+                        }
+                        
+                        // UI再描画
+                        const friendEl = document.getElementById(`friend-item-${friend.code}`);
+                        if (friendEl) {
+                            const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
+                            friendEl.innerHTML = `
+                                <div class="friend-info">
+                                    <div class="friend-status ${isOnline ? '' : 'offline'}"></div>
+                                    <div class="friend-details">
+                                        <div class="friend-name">${latestName}</div>
+                                        <div class="friend-code-small">${friend.code}</div>
+                                        <div class="friend-status-text ${isOnline ? '' : 'offline'}">
+                                            ${isOnline ? 'オンライン' : 'オフライン'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="friend-actions">
+                                    <button class="friend-btn delete" onclick="window.deleteFriendHandler('${friend.code}')">削除</button>
+                                    <button class="friend-btn block" onclick="window.blockFriendHandler('${friend.code}')">ブロック</button>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+                
                 const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
                 const friendEl = document.createElement('div');
                 friendEl.className = 'friend-item';
-                friendEl.innerHTML = `<div class="friend-info"><div class="friend-status ${isOnline ? '' : 'offline'}"></div><div class="friend-details"><div class="friend-name">${friend.name}</div><div class="friend-code-small">${friend.code}</div><div class="friend-status-text ${isOnline ? '' : 'offline'}">${isOnline ? 'オンライン' : 'オフライン'}</div></div></div><div class="friend-actions"><button class="friend-btn delete">削除</button><button class="friend-btn block">ブロック</button></div>`;
-                friendEl.querySelector('.delete').addEventListener('click', () => showDeleteConfirmation(friend.code));
-                friendEl.querySelector('.block').addEventListener('click', () => { blockConfirmState = { targetCode: null, stage: 0 }; showBlockConfirmation(friend.code); });
+                friendEl.id = `friend-item-${friend.code}`;
+                friendEl.innerHTML = `
+                    <div class="friend-info">
+                        <div class="friend-status ${isOnline ? '' : 'offline'}"></div>
+                        <div class="friend-details">
+                            <div class="friend-name">${friend.name}</div>
+                            <div class="friend-code-small">${friend.code}</div>
+                            <div class="friend-status-text ${isOnline ? '' : 'offline'}">
+                                ${isOnline ? 'オンライン' : 'オフライン'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="friend-actions">
+                        <button class="friend-btn delete" onclick="window.deleteFriendHandler('${friend.code}')">削除</button>
+                        <button class="friend-btn block" onclick="window.blockFriendHandler('${friend.code}')">ブロック</button>
+                    </div>
+                `;
                 friendsList.appendChild(friendEl);
             });
         }
+        
+        // ★ グローバルハンドラー関数
+        window.deleteFriendHandler = (code) => {
+            showDeleteConfirmation(code);
+        };
+        
+        window.blockFriendHandler = (code) => {
+            blockConfirmState = { targetCode: null, stage: 0 };
+            showBlockConfirmation(code);
+        };
 
         function showDeleteConfirmation(code) { blockConfirmState.targetCode = code; blockConfirmState.stage = 'delete'; showDialog('フレンドを削除', `${code}\nこのフレンドを削除しますか？`, '', false, '削除'); }
         function showBlockConfirmation(code) { blockConfirmState.targetCode = code; blockConfirmState.stage = 1; showDialog('ブロック確認', `${code}\nこのフレンドを1ヶ月間ブロックしますか？`, '⚠️ 相手はあなたをフレンド招待できなくなります', true, '確認済み - 次へ'); }
@@ -431,29 +495,94 @@
         function closeConfirmationDialog() { document.getElementById('confirmationDialog').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); blockConfirmState = { targetCode: null, stage: 0 }; }
 
         async function addFriend(code) {
-            if (code === gameState.friendCode) { alert('自分のコードは追加できません'); return; }
-            if (gameState.friends.find(f => f.code === code)) { alert('既にフレンドです'); return; }
-            
-            const friendName = await getFriendName(code);
-            gameState.friends.push({ code, name: friendName, lastActive: Date.now() });
-            
-            // ★ 双方向フレンド確定
-            if (db) {
-                try {
-                    await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true);
-                    await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true);
-                    await db.ref(`friends/${gameState.friendCode}/${code}`).set({ name: friendName, addedAt: Date.now() });
-                    await db.ref(`friends/${code}/${gameState.friendCode}`).set({ name: gameState.userName, addedAt: Date.now() });
-                } catch (e) {}
+            if (code === gameState.friendCode) { 
+                alert('自分のコードは追加できません'); 
+                return; 
+            }
+            if (gameState.friends.find(f => f.code === code)) { 
+                alert('既にフレンドです'); 
+                return; 
             }
             
-            document.getElementById('addFriendCode').value = '';
-            saveGameState();
-            updateFriendsList();
-            alert(`${friendName} をフレンドに追加しました！`);
+            if (!db) {
+                alert('Firebase が初期化されていません');
+                return;
+            }
+            
+            try {
+                // 相手が存在するか確認
+                const targetSnap = await db.ref(`users/${code}`).once('value');
+                if (!targetSnap.exists()) {
+                    alert('そのフレンドコードは存在しません');
+                    return;
+                }
+                
+                const targetData = targetSnap.val();
+                const friendName = targetData.name || `Friend(${code.slice(0, 6)})`;
+                
+                // 自分のフレンドリストに追加
+                await db.ref(`friends/${gameState.friendCode}/${code}`).set({
+                    name: friendName,
+                    addedAt: Date.now()
+                });
+                
+                // 相手のフレンドリストにも追加（双方向）
+                await db.ref(`friends/${code}/${gameState.friendCode}`).set({
+                    name: gameState.userName,
+                    addedAt: Date.now()
+                });
+                
+                // 双方向フレンドシップを記録
+                await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true);
+                await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true);
+                
+                // ローカルに追加
+                gameState.friends.push({ code, name: friendName, lastActive: Date.now() });
+                saveGameState();
+                updateFriendsList();
+                
+                document.getElementById('addFriendCode').value = '';
+                alert(`${friendName} をフレンドに追加しました！（両者でフレンドになります）`);
+                
+            } catch (e) {
+                console.error('フレンド追加エラー:', e);
+                alert('フレンド追加に失敗しました: ' + e.message);
+            }
         }
 
-        function deleteFriend(code) { gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); }
+        async function deleteFriend(code) { 
+            if (!db) {
+                gameState.friends = gameState.friends.filter(f => f.code !== code);
+                saveGameState();
+                updateFriendsList();
+                closeConfirmationDialog();
+                return;
+            }
+            
+            try {
+                // 自分のフレンドリストから削除
+                await db.ref(`friends/${gameState.friendCode}/${code}`).remove();
+                
+                // 相手のフレンドリストからも削除（双方向）
+                await db.ref(`friends/${code}/${gameState.friendCode}`).remove();
+                
+                // 双方向フレンドシップを削除
+                await db.ref(`friendships/${gameState.friendCode}/${code}`).remove();
+                await db.ref(`friendships/${code}/${gameState.friendCode}`).remove();
+                
+                // ローカルから削除
+                gameState.friends = gameState.friends.filter(f => f.code !== code);
+                saveGameState();
+                updateFriendsList();
+                closeConfirmationDialog();
+                
+                console.log(`フレンド ${code} を削除しました（両者から削除されました）`);
+                
+            } catch (e) {
+                console.error('フレンド削除エラー:', e);
+                alert('フレンド削除に失敗しました: ' + e.message);
+            }
+        }
         function blockFriend(code) {
             if (blockConfirmState.stage === 1) { blockConfirmState.stage = 2; showDialog('ブロック最終確認', `${code}\n本当にブロックしますか？`, '⚠️ ⚠️ これは取り返しがつきません', true, 'ブロック実行'); return; }
             if (blockConfirmState.stage === 2) { gameState.blockedUsers.push({ code, blockTime: new Date().toISOString() }); gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); alert('フレンドをブロックしました（1ヶ月間）'); }
@@ -576,15 +705,26 @@
             if (blockConfirmState.stage === 'delete') deleteFriend(blockConfirmState.targetCode);
             else if (blockConfirmState.stage === 1 || blockConfirmState.stage === 2) blockFriend(blockConfirmState.targetCode);
         });
-        document.getElementById('changeNameBtn').addEventListener('click', () => {
+        document.getElementById('changeNameBtn').addEventListener('click', async () => {
             const newName = document.getElementById('newNameInput').value.trim();
             if (newName && gameState.nameChangeCount < 3) {
                 gameState.userName = newName;
                 gameState.nameChangeCount++;
-                saveFriendDatabase();
+                
+                // ★ Firebaseに即座に保存
+                if (db) {
+                    try {
+                        await db.ref(`users/${gameState.friendCode}/name`).set(newName);
+                        console.log(`✅ Firebase に名前を保存しました: ${newName}`);
+                    } catch (e) {
+                        console.error('Firebase 名前保存エラー:', e);
+                    }
+                }
+                
                 saveGameState();
                 updateUI();
                 document.getElementById('newNameInput').value = '';
+                alert(`✅ 名前を「${newName}」に変更しました！`);
             } else if (gameState.nameChangeCount >= 3) {
                 alert('本日の変更回数に達しました。明日00:00に更新されます。');
             }
