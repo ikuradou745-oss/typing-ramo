@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ タイピングゲーム - Firebase版</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+    <!-- Firebase 9.23.0 CDN - 完全互換版 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -125,6 +126,10 @@
         .hidden { display: none !important; }
         @keyframes levelUp { 0% { opacity: 0; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px); } }
         .level-up-notification { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); padding: 20px 40px; border-radius: 10px; font-size: 24px; font-weight: 700; animation: levelUp 3s ease-out forwards; z-index: 2000; pointer-events: none; }
+        .firebase-status { position: fixed; bottom: 10px; right: 10px; padding: 10px 16px; font-size: 12px; border-radius: 6px; z-index: 999; font-weight: 600; transition: all 0.3s; }
+        .firebase-status.connected { background: rgba(0, 255, 136, 0.25); color: var(--accent-green); border: 1px solid rgba(0, 255, 136, 0.6); }
+        .firebase-status.disconnected { background: rgba(255, 100, 100, 0.25); color: #ff6464; border: 1px solid rgba(255, 100, 100, 0.6); }
+        .firebase-status.loading { background: rgba(0, 212, 255, 0.25); color: var(--accent-blue); border: 1px solid rgba(0, 212, 255, 0.6); }
     </style>
 </head>
 <body>
@@ -271,12 +276,141 @@
                 <div id="weeklyTasksList" class="hidden"></div>
             </div>
         </div>
+
+        <div class="firebase-status loading" id="firebaseStatus">⚡ Firebase 初期化中...</div>
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com", databaseURL: "https://YOUR_PROJECT.firebaseio.com", projectId: "YOUR_PROJECT" };
+        // ===== Firebase 初期化（改良版） =====
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+            projectId: "YOUR_PROJECT"
+        };
+
         let db = null;
-        try { firebase.initializeApp(firebaseConfig); db = firebase.database(); } catch (e) { console.log('Firebase未初期化'); }
+        let firebaseReady = false;
+
+        function updateFirebaseStatus(connected, text) {
+            const statusEl = document.getElementById('firebaseStatus');
+            if (statusEl) {
+                statusEl.textContent = text;
+                if (connected === null) {
+                    statusEl.className = 'firebase-status loading';
+                } else {
+                    statusEl.className = connected ? 'firebase-status connected' : 'firebase-status disconnected';
+                }
+            }
+        }
+
+        // Firebase SDK の読み込みを待つ（改良版）
+        function waitForFirebaseSDK() {
+            return new Promise((resolve) => {
+                // SDK が既に読み込まれている場合
+                if (typeof window.firebase !== 'undefined' && 
+                    typeof window.firebase.initializeApp === 'function' &&
+                    typeof window.firebase.database === 'function') {
+                    console.log('✅ Firebase SDK は既に読み込まれています');
+                    resolve(true);
+                    return;
+                }
+
+                let attempts = 0;
+                const maxAttempts = 200; // 最大20秒間待機
+
+                const checkFirebase = setInterval(() => {
+                    attempts++;
+                    
+                    // window グローバルオブジェクト経由で確認
+                    if (typeof window.firebase !== 'undefined' && 
+                        typeof window.firebase.initializeApp === 'function' &&
+                        typeof window.firebase.database === 'function') {
+                        clearInterval(checkFirebase);
+                        console.log('✅ Firebase SDK が読み込まれました');
+                        resolve(true);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkFirebase);
+                        console.error('❌ Firebase SDK の読み込みタイムアウト');
+                        console.log('window.firebase:', typeof window.firebase);
+                        updateFirebaseStatus(false, '❌ SDK読み込み失敗');
+                        resolve(false);
+                    }
+                }, 100); // 100ms ごとにチェック
+            });
+        }
+
+        // Firebase の初期化
+        async function initializeFirebase() {
+            try {
+                console.log('🔄 Firebase 初期化開始...');
+                updateFirebaseStatus(null, '🔄 Firebase 初期化中...');
+
+                // Firebase SDK が利用可能か確認
+                const sdkReady = await waitForFirebaseSDK();
+                
+                if (!sdkReady) {
+                    console.error('❌ Firebase SDK が利用できません');
+                    console.error('グローバル firebase オブジェクト:', window.firebase);
+                    updateFirebaseStatus(false, '❌ SDK読み込み失敗');
+                    return;
+                }
+
+                // window.firebase 経由でアクセス
+                const firebaseModule = window.firebase;
+
+                // 既に初期化されているか確認
+                if (firebaseModule.apps && firebaseModule.apps.length > 0) {
+                    db = firebaseModule.database();
+                    firebaseReady = true;
+                    console.log('✅ Firebase は既に初期化されています');
+                    updateFirebaseStatus(true, '✅ Firebase 接続済み');
+                    return;
+                }
+
+                // 初期化実行
+                console.log('📦 Firebase を初期化しています...');
+                firebaseModule.initializeApp(firebaseConfig);
+                db = firebaseModule.database();
+                firebaseReady = true;
+
+                console.log('✅ Firebase 初期化完了');
+                updateFirebaseStatus(true, '✅ Firebase 接続済み');
+
+            } catch (error) {
+                console.error('❌ Firebase 初期化エラー:', error.message);
+                console.error('詳細:', error);
+                console.error('スタック:', error.stack);
+                updateFirebaseStatus(false, `❌ エラー`);
+                db = null;
+                firebaseReady = false;
+            }
+        }
+
+        // スクリプト読み込み完了のログ
+        console.log('🔍 Firebase SDK チェック: window.firebase =', typeof window.firebase);
+        console.log('スクリプト読み込み完了。Firebase 初期化待機中...');
+
+        // 非同期で初期化を開始（複数の遅延トリガー）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('📄 DOMContentLoaded イベント発火');
+                setTimeout(() => initializeFirebase(), 500);
+            });
+        } else {
+            console.log('📄 DOM 既に読み込み完了');
+            setTimeout(() => initializeFirebase(), 500);
+        }
+
+        // バックアップ: load イベント
+        window.addEventListener('load', () => {
+            if (!firebaseReady) {
+                console.log('⚠️ load イベント発火 - Firebase 再初期化');
+                setTimeout(() => initializeFirebase(), 1000);
+            }
+        });
+
+        // ===== ゲームロジック =====
 
         const gameState = {
             userId: null, userName: 'User', friendCode: '', coins: 0, level: 1, xp: 0, maxXp: 100,
@@ -310,13 +444,28 @@
         function generateFriendCode() { const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); const letters = Math.random().toString(36).substr(2, 3).toUpperCase(); return numbers + letters; }
 
         async function getFriendName(code) {
-            if (!db) return `Friend(${code.slice(0, 6)})`;
-            try { const snap = await db.ref(`users/${code}/name`).once('value'); const name = snap.val(); return name && name.trim() ? name : `Friend(${code.slice(0, 6)})`; } catch (e) { return `Friend(${code.slice(0, 6)})`; }
+            if (!firebaseReady || !db) return `Friend(${code.slice(0, 6)})`;
+            try {
+                const snap = await db.ref(`users/${code}/name`).once('value');
+                const name = snap.val();
+                return name && name.trim() ? name : `Friend(${code.slice(0, 6)})`;
+            } catch (e) {
+                console.warn(`フレンド名取得エラー (${code}):`, e.message);
+                return `Friend(${code.slice(0, 6)})`;
+            }
         }
 
         async function saveFriendDatabase() {
-            if (!db) return;
-            try { await db.ref(`users/${gameState.friendCode}`).set({ name: gameState.userName, lastActive: Date.now(), score: gameState.currentScore }); } catch (e) {}
+            if (!firebaseReady || !db) return;
+            try {
+                await db.ref(`users/${gameState.friendCode}`).set({
+                    name: gameState.userName,
+                    lastActive: Date.now(),
+                    score: gameState.currentScore
+                });
+            } catch (e) {
+                console.warn('Firebase 保存エラー:', e.message);
+            }
         }
 
         function convertToRomaji(text) {
@@ -364,9 +513,31 @@
             return result;
         }
 
-        function saveGameState() { localStorage.setItem('gameState', JSON.stringify(gameState)); saveFriendDatabase(); }
-        function loadGameState() { const saved = localStorage.getItem('gameState'); if (saved) Object.assign(gameState, JSON.parse(saved)); else { gameState.userId = generateRandomId(); gameState.friendCode = generateFriendCode(); saveGameState(); } }
-        function checkAndResetDaily() { const today = new Date().toDateString(); if (gameState.lastNameChangeReset !== today) { gameState.lastNameChangeReset = today; gameState.nameChangeCount = 0; gameState.dailyTasks.forEach(task => task.completed = false); saveGameState(); } }
+        function saveGameState() {
+            localStorage.setItem('gameState', JSON.stringify(gameState));
+            saveFriendDatabase();
+        }
+
+        function loadGameState() {
+            const saved = localStorage.getItem('gameState');
+            if (saved) {
+                Object.assign(gameState, JSON.parse(saved));
+            } else {
+                gameState.userId = generateRandomId();
+                gameState.friendCode = generateFriendCode();
+                saveGameState();
+            }
+        }
+
+        function checkAndResetDaily() {
+            const today = new Date().toDateString();
+            if (gameState.lastNameChangeReset !== today) {
+                gameState.lastNameChangeReset = today;
+                gameState.nameChangeCount = 0;
+                gameState.dailyTasks.forEach(task => task.completed = false);
+                saveGameState();
+            }
+        }
 
         function updateUI() {
             document.getElementById('levelDisplay').textContent = gameState.level;
@@ -412,37 +583,16 @@
             }
             
             gameState.friends.forEach(friend => {
-                // ★ Firebaseからリアルタイムで名前を取得
-                if (db) {
+                if (firebaseReady && db) {
                     db.ref(`users/${friend.code}/name`).on('value', (snap) => {
                         const latestName = snap.val() || friend.name || `Friend(${friend.code.slice(0, 6)})`;
-                        
-                        // ローカルの名前も更新
                         const friendObj = gameState.friends.find(f => f.code === friend.code);
-                        if (friendObj) {
-                            friendObj.name = latestName;
-                        }
+                        if (friendObj) friendObj.name = latestName;
                         
-                        // UI再描画
                         const friendEl = document.getElementById(`friend-item-${friend.code}`);
                         if (friendEl) {
                             const isOnline = (Date.now() - (friend.lastActive || Date.now())) < 5 * 60 * 1000;
-                            friendEl.innerHTML = `
-                                <div class="friend-info">
-                                    <div class="friend-status ${isOnline ? '' : 'offline'}"></div>
-                                    <div class="friend-details">
-                                        <div class="friend-name">${latestName}</div>
-                                        <div class="friend-code-small">${friend.code}</div>
-                                        <div class="friend-status-text ${isOnline ? '' : 'offline'}">
-                                            ${isOnline ? 'オンライン' : 'オフライン'}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="friend-actions">
-                                    <button class="friend-btn delete" onclick="window.deleteFriendHandler('${friend.code}')">削除</button>
-                                    <button class="friend-btn block" onclick="window.blockFriendHandler('${friend.code}')">ブロック</button>
-                                </div>
-                            `;
+                            friendEl.querySelector('.friend-name').textContent = latestName;
                         }
                     });
                 }
@@ -471,7 +621,6 @@
             });
         }
         
-        // ★ グローバルハンドラー関数
         window.deleteFriendHandler = (code) => {
             showDeleteConfirmation(code);
         };
@@ -504,13 +653,13 @@
                 return; 
             }
             
-            if (!db) {
-                alert('Firebase が初期化されていません');
+            if (!firebaseReady || !db) {
+                alert('⚠️ Firebase がまだ初期化されていません。\n右下のステータスを確認してください。');
+                console.warn('Firebase が準備できていません');
                 return;
             }
             
             try {
-                // 相手が存在するか確認
                 const targetSnap = await db.ref(`users/${code}`).once('value');
                 if (!targetSnap.exists()) {
                     alert('そのフレンドコードは存在しません');
@@ -520,38 +669,34 @@
                 const targetData = targetSnap.val();
                 const friendName = targetData.name || `Friend(${code.slice(0, 6)})`;
                 
-                // 自分のフレンドリストに追加
                 await db.ref(`friends/${gameState.friendCode}/${code}`).set({
                     name: friendName,
                     addedAt: Date.now()
                 });
                 
-                // 相手のフレンドリストにも追加（双方向）
                 await db.ref(`friends/${code}/${gameState.friendCode}`).set({
                     name: gameState.userName,
                     addedAt: Date.now()
                 });
                 
-                // 双方向フレンドシップを記録
                 await db.ref(`friendships/${gameState.friendCode}/${code}`).set(true);
                 await db.ref(`friendships/${code}/${gameState.friendCode}`).set(true);
                 
-                // ローカルに追加
                 gameState.friends.push({ code, name: friendName, lastActive: Date.now() });
                 saveGameState();
                 updateFriendsList();
                 
                 document.getElementById('addFriendCode').value = '';
-                alert(`${friendName} をフレンドに追加しました！（両者でフレンドになります）`);
+                alert(`✅ ${friendName} をフレンドに追加しました！`);
                 
             } catch (e) {
-                console.error('フレンド追加エラー:', e);
-                alert('フレンド追加に失敗しました: ' + e.message);
+                console.error('❌ フレンド追加エラー:', e.message);
+                alert('フレンド追加に失敗しました:\n' + e.message);
             }
         }
 
         async function deleteFriend(code) { 
-            if (!db) {
+            if (!firebaseReady || !db) {
                 gameState.friends = gameState.friends.filter(f => f.code !== code);
                 saveGameState();
                 updateFriendsList();
@@ -560,32 +705,27 @@
             }
             
             try {
-                // 自分のフレンドリストから削除
                 await db.ref(`friends/${gameState.friendCode}/${code}`).remove();
-                
-                // 相手のフレンドリストからも削除（双方向）
                 await db.ref(`friends/${code}/${gameState.friendCode}`).remove();
-                
-                // 双方向フレンドシップを削除
                 await db.ref(`friendships/${gameState.friendCode}/${code}`).remove();
                 await db.ref(`friendships/${code}/${gameState.friendCode}`).remove();
                 
-                // ローカルから削除
                 gameState.friends = gameState.friends.filter(f => f.code !== code);
                 saveGameState();
                 updateFriendsList();
                 closeConfirmationDialog();
                 
-                console.log(`フレンド ${code} を削除しました（両者から削除されました）`);
+                console.log(`✅ フレンド ${code} を削除しました`);
                 
             } catch (e) {
-                console.error('フレンド削除エラー:', e);
-                alert('フレンド削除に失敗しました: ' + e.message);
+                console.error('❌ フレンド削除エラー:', e.message);
+                alert('フレンド削除に失敗しました:\n' + e.message);
             }
         }
+
         function blockFriend(code) {
             if (blockConfirmState.stage === 1) { blockConfirmState.stage = 2; showDialog('ブロック最終確認', `${code}\n本当にブロックしますか？`, '⚠️ ⚠️ これは取り返しがつきません', true, 'ブロック実行'); return; }
-            if (blockConfirmState.stage === 2) { gameState.blockedUsers.push({ code, blockTime: new Date().toISOString() }); gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); alert('フレンドをブロックしました（1ヶ月間）'); }
+            if (blockConfirmState.stage === 2) { gameState.blockedUsers.push({ code, blockTime: new Date().toISOString() }); gameState.friends = gameState.friends.filter(f => f.code !== code); saveGameState(); updateFriendsList(); closeConfirmationDialog(); alert('✅ フレンドをブロックしました（1ヶ月間）'); }
         }
 
         function switchScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screenId).classList.add('active'); }
@@ -604,14 +744,16 @@
                     rankings.push({ name: friend.name, score: Math.floor(Math.random() * 50000) });
                 });
             } else {
-                if (db) {
+                if (firebaseReady && db) {
                     try {
                         const snap = await db.ref('users').once('value');
                         const users = snap.val() || {};
                         Object.values(users).forEach(user => {
                             if (user.name) rankings.push({ name: user.name, score: user.score || Math.floor(Math.random() * 50000) });
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn('ランキング読み込みエラー:', e.message);
+                    }
                 }
             }
 
@@ -711,13 +853,12 @@
                 gameState.userName = newName;
                 gameState.nameChangeCount++;
                 
-                // ★ Firebaseに即座に保存
-                if (db) {
+                if (firebaseReady && db) {
                     try {
                         await db.ref(`users/${gameState.friendCode}/name`).set(newName);
                         console.log(`✅ Firebase に名前を保存しました: ${newName}`);
                     } catch (e) {
-                        console.error('Firebase 名前保存エラー:', e);
+                        console.error('❌ Firebase 名前保存エラー:', e.message);
                     }
                 }
                 
