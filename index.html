@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・タスク復活版</title>
+    <title>⚡ タイピングストーリー・ランキング修正版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -126,7 +126,7 @@
 <body>
 <div class="game-container">
     <div class="header">
-        <div class="game-title">⚡ TYPING・タスク</div>
+        <div class="game-title">⚡ TYPING・ランキング修正</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -135,7 +135,7 @@
             </div>
             <div class="top-buttons">
                 <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">0</span></button>
-                <button class="icon-btn" id="taskBtn">📋</button>  <!-- タスクボタン復活 -->
+                <button class="icon-btn" id="taskBtn">📋</button>
                 <button class="icon-btn" id="inventoryBtn">🎒</button>
                 <button class="icon-btn" id="shopBtn">🏪</button>
                 <button class="icon-btn" id="profileBtn">👤</button>
@@ -163,7 +163,7 @@
             </div>
             <button class="back-btn" id="backBtn">戻る</button>
         </div>
-        <!-- ストーリーマップ -->
+        <!-- ストーリーマップ (レベル10から解放) -->
         <div class="screen" id="storyMapScreen">
             <div class="menu-title">📖 ストーリーマップ</div>
             <div class="story-info">ステージ <span id="currentStoryStage">1</span>/100</div>
@@ -245,7 +245,7 @@
             <div id="itemsList" class="item-grid hidden"></div>
         </div>
 
-        <!-- タスクパネル (新設・復活) -->
+        <!-- タスクパネル -->
         <div id="taskPanel" class="hidden">
             <div class="tab-bar" id="taskTabs">
                 <button class="tab-btn active" data-tab="daily">毎日</button>
@@ -298,12 +298,12 @@
     const db = getDatabase(app);
     const statusEl = document.getElementById('firebaseStatus');
 
-    // ========== ゲーム状態（タスク完全版） ==========
+    // ========== ゲーム状態 ==========
     const gameState = {
         userId: 'user_' + Math.random().toString(36).substr(2,8),
         userName: '冒険者',
         coins: 5000000,          // デバッグ用
-        level: 15,
+        level: 10,                // レベル10からストーリー解放 (変更)
         xp: 0,
         maxXp: 100,
         nameChangeCount: 0,
@@ -313,8 +313,8 @@
         shards: 0,
         ownedSkills: [],
         equippedSkills: [],
-        claimedRankings: { world: null },
-        // タスク関連 (毎日・毎週)
+        claimedRankings: { world: null }, // 最後に報酬を受け取った日付 (YYYY-MM-DD)
+        // タスク関連
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -326,7 +326,8 @@
             { id: 'weekly3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' }
         ],
         lastDailyReset: '',
-        lastWeeklyReset: ''
+        lastWeeklyReset: '',
+        lastRankingDate: ''        // 最後にランキングを確認した日付 (内部用)
     };
 
     // 問題・変換
@@ -351,7 +352,7 @@
         if(!gameState.equippedSkills) gameState.equippedSkills=[]; 
         if(!gameState.shards) gameState.shards=0; 
         if(!gameState.claimedRankings) gameState.claimedRankings={world:null};
-        if(!gameState.dailyTasks) { // 初回タスク初期化
+        if(!gameState.dailyTasks) { 
             gameState.dailyTasks = [ { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } ];
             gameState.weeklyTasks = [ { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } ];
         }
@@ -364,9 +365,9 @@
         const now = new Date();
         const today7 = new Date(); today7.setHours(7,0,0,0);
         if(now > today7) today7.setDate(today7.getDate()+1);
-        const dayOfWeek = now.getDay(); // 0日 1月 2火...
+        const dayOfWeek = now.getDay();
         const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1)); lastMon.setHours(7,0,0,0);
-        if(dayOfWeek===1 && now < lastMon) lastMon.setDate(lastMon.getDate()-7); // 月曜7時前なら先週
+        if(dayOfWeek===1 && now < lastMon) lastMon.setDate(lastMon.getDate()-7);
 
         const todayStr = today7.toDateString();
         const weekStr = lastMon.toDateString();
@@ -390,8 +391,8 @@
         let left = Math.max(0,3-gameState.nameChangeCount);
         document.getElementById('nameChangeLeft').textContent=left;
         document.getElementById('nameChangeCount').textContent=`本日:${gameState.nameChangeCount}/3`;
-        checkRankingRewards();
-        updateTasksDisplay(); // タスク表示更新
+        checkRankingRewards(); // ギフトバッジ更新
+        updateTasksDisplay();
     }
 
     // タスク表示
@@ -416,27 +417,20 @@
         }
     }
 
-    // タスク進捗更新関数 (ゲーム終了時に呼ぶ)
+    // タスク進捗更新
     function updateTaskProgress(score, combo, isRankingPlay){
-        // 毎日: プレイ回数 (daily1) は startGame で増やす方が良いが、ここでもカウントできる
-        // 簡略化のため endGame 内で呼ぶ
         let daily = gameState.dailyTasks;
         let weekly = gameState.weeklyTasks;
 
-        // プレイ回数 (1回増加) -> startGameで行うが確実に
         if(!daily[0].completed) { daily[0].current = Math.min(daily[0].current+1, daily[0].target); }
         if(!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current+1, weekly[0].target); }
 
-        // スコア達成 daily2: 5000以上で+1 (1回のみ)
         if(score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current+1, daily[1].target); }
-        // weekly2: 5000以上を10回達成 (1回につき+1)
         if(score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current+1, weekly[1].target); }
 
-        // コンボ達成 daily3, weekly3
         if(combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current+1, daily[2].target); }
         if(combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current+1, weekly[2].target); }
 
-        // 各タスク完了チェックと報酬付与
         [daily, weekly].forEach(tasks=>{
             tasks.forEach(t=>{
                 if(!t.completed && t.current >= t.target){
@@ -459,7 +453,7 @@
         setTimeout(()=> noti.classList.add('hidden'), 3000);
     }
 
-    // ========== ランキング関連 ==========
+    // ========== ランキング関連 (毎日7時にリセット＆報酬) ==========
     function getTodayString(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
     function getTimeUntil7AM(){ let n=new Date(); let n7=new Date(); n7.setHours(7,0,0,0); if(n>n7) n7.setDate(n7.getDate()+1); let d=n7-n; let h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
     setInterval(()=>{ let t=document.getElementById('rankingUpdateTimer'); if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; },1000);
@@ -485,20 +479,23 @@
             d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
             container.appendChild(d);
         });
+        // ランキング表示時に報酬チェック (毎日7時にリセットされているので、ここでバッジ更新)
         checkRankingRewards();
     }
 
+    // バッジ表示：前回の受け取り日と今日が異なり、かつ自分が10位以内ならギフトマーク
     function checkRankingRewards(){
         const today = getTodayString();
         const claimed = gameState.claimedRankings.world;
         const myEntry = worldRankings.find(r=>r.id===gameState.userId);
         let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
-        const hasReward = (claimed !== today && inRank);
+        const hasReward = (claimed !== today && inRank);   // 今日まだ受け取っておらず、10位以内
         document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
         document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
         return hasReward;
     }
 
+    // ギフトダイアログ表示 (報酬受け取り)
     function showGiftDialog(){
         const today = getTodayString();
         if(gameState.claimedRankings.world === today){ alert('本日分は受取済みです'); return; }
@@ -512,10 +509,10 @@
         document.getElementById('claimRewardBtn').onclick = ()=>{
             gameState.xp += reward.xp; gameState.coins += reward.coins;
             while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
-            gameState.claimedRankings.world = today;
+            gameState.claimedRankings.world = today;   // 受け取り済みにする
             saveGameState(); updateUI();
             document.getElementById('giftDialog').classList.remove('active'); overlay(false);
-            checkRankingRewards();
+            checkRankingRewards();  // バッジ消去
         };
     }
 
@@ -658,7 +655,7 @@
     // イベントリスナー
     document.getElementById('playBtn').addEventListener('click',()=>switchScreen('difficultyScreen'));
     document.getElementById('storyBtn').addEventListener('click',()=>{
-        if(gameState.level < 15){ alert('ストーリーはレベル15から解放'); return; }
+        if(gameState.level < 10){ alert('ストーリーはレベル10から解放'); return; } // レベル10に変更
         renderStoryMap(); switchScreen('storyMapScreen');
     });
     document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
@@ -681,7 +678,7 @@
         overlay(false);
     });
 
-    // タスクボタン (新設)
+    // タスクボタン
     document.getElementById('taskBtn').addEventListener('click',()=>{
         document.getElementById('panelTitle').textContent='タスク';
         document.getElementById('profilePanel').classList.add('hidden');
@@ -722,13 +719,12 @@
         } else if(gameState.nameChangeCount>=3) alert('変更回数上限');
     });
 
-    // タブ切り替え (持ち物)
+    // タブ切り替え
     document.querySelectorAll('#invTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
         document.querySelectorAll('#invTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
         if(this.dataset.inv==='skills'){ document.getElementById('skillsList').classList.remove('hidden'); document.getElementById('itemsList').classList.add('hidden'); }
         else { document.getElementById('skillsList').classList.add('hidden'); document.getElementById('itemsList').classList.remove('hidden'); }
     }));
-    // タブ切り替え (タスク)
     document.querySelectorAll('#taskTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
         document.querySelectorAll('#taskTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
         if(this.dataset.tab==='daily'){ document.getElementById('dailyTasksList').classList.remove('hidden'); document.getElementById('weeklyTasksList').classList.add('hidden'); }
@@ -750,6 +746,7 @@
         }
     });
 
+    // ランキング定期チェック (バッジ更新)
     setInterval(()=>checkRankingRewards(), 20000);
     updateUI();
     fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
