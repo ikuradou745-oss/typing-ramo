@@ -3,58 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングゲーム - フレンド・ランキング機能付き</title>
-    <!-- Firebase 10.8.0 - ES Modules -->
+    <title>⚡ タイピングストーリー・タスク復活版</title>
+    <!-- Firebase 10.8.0 -->
     <script type="importmap">
-        {
-            "imports": {
-                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
-            }
-        }
+        { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary-dark: #0a0e27;
-            --accent-blue: #00d4ff;
-            --accent-green: #00ff88;
-            --accent-pink: #ff006e;
-            --accent-purple: #7c3aed;
-            --accent-gold: #ffd700;
-            --text-white: #f0f0f0;
-            --text-gray: #a0a0a0;
+            --primary-dark: #0a0e27; --accent-blue: #00d4ff; --accent-green: #00ff88;
+            --accent-pink: #ff006e; --accent-purple: #7c3aed; --accent-gold: #ffd700;
+            --text-white: #f0f0f0; --text-gray: #a0a0a0;
         }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%);
-            color: var(--text-white);
-            height: 100vh;
-            overflow: hidden;
-        }
-        .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%); }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); background: rgba(10, 14, 39, 0.95); }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; }
+        .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); }
         .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
         .header-right { display: flex; align-items: center; gap: 20px; }
-        .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0, 212, 255, 0.1); padding: 12px 20px; border-radius: 8px; }
+        .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0,212,255,0.1); padding: 12px 20px; border-radius: 8px; }
         .level-value { font-size: 20px; font-weight: 700; color: var(--accent-blue); }
-        .xp-bar { width: 150px; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+        .xp-bar { width: 150px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
         .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
         .top-buttons { display: flex; gap: 10px; position: relative; }
-        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; }
-        .icon-btn:hover { background: rgba(0, 212, 255, 0.15); transform: scale(1.05); }
+        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; }
+        .icon-btn:hover { background: rgba(0,212,255,0.15); transform: scale(1.05); }
         .gift-badge { position: absolute; top: -5px; right: -5px; background: var(--accent-pink); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--primary-dark); }
-        .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 136, 0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; }
+        .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,136,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; z-index: 10; }
         .coin-value { color: var(--accent-green); }
         .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; overflow-y: auto; }
         .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: flex-start; gap: 30px; padding: 20px 0; }
         .screen.active { display: flex; }
         .menu-title { font-size: 48px; font-weight: 800; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
         .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; }
-        .menu-btn { padding: 30px; border: 2px solid rgba(0, 212, 255, 0.3); background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
-        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
+        .menu-btn { padding: 30px; border: 2px solid rgba(0,212,255,0.3); background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
+        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
         .menu-btn .icon { font-size: 32px; }
-        .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26, 31, 58, 0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
+        .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26,31,58,0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
         .difficulty-btn.easy { border-color: var(--accent-green); color: var(--accent-green); }
         .difficulty-btn.normal { border-color: var(--accent-blue); color: var(--accent-blue); }
         .difficulty-btn.hard { border-color: var(--accent-pink); color: var(--accent-pink); }
@@ -67,1311 +51,708 @@
         .romaji-display { font-size: 32px; color: var(--accent-green); font-family: 'Courier New', monospace; text-transform: lowercase; letter-spacing: 3px; }
         .romaji-typed { color: var(--accent-blue); font-weight: bold; }
         .romaji-remaining { color: var(--text-gray); }
-        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; z-index: 999; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; z-index: 999; }
         .overlay.active { display: block; }
-        .confirmation-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%); border: 1px solid rgba(0, 212, 255, 0.3); padding: 40px; max-width: 400px; border-radius: 12px; z-index: 2000; display: none; flex-direction: column; gap: 20px; }
-        .confirmation-dialog.active { display: flex; }
-        .dialog-title { font-size: 24px; font-weight: 700; color: var(--accent-blue); text-align: center; }
-        .dialog-message { font-size: 14px; color: var(--text-white); text-align: center; line-height: 1.6; }
-        .dialog-warning { font-size: 12px; color: var(--accent-pink); background: rgba(255, 0, 110, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(255, 0, 110, 0.3); display: none; }
-        .dialog-buttons { display: flex; gap: 10px; justify-content: center; }
-        .dialog-btn { padding: 10px 20px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); cursor: pointer; border-radius: 6px; font-weight: 600; text-transform: uppercase; font-size: 12px; transition: all 0.3s; }
-        .dialog-btn:hover { background: rgba(0, 212, 255, 0.2); }
-        .dialog-btn.danger { background: rgba(255, 0, 110, 0.2); border-color: rgba(255, 0, 110, 0.5); color: var(--accent-pink); }
-        .dialog-btn.danger:hover { background: rgba(255, 0, 110, 0.3); }
-        .side-panel { position: fixed; top: 0; right: -400px; width: 400px; height: 100%; background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%); border-left: 1px solid rgba(0, 212, 255, 0.3); overflow-y: auto; transition: right 0.4s; z-index: 1000; padding: 30px 20px; }
+        .side-panel { position: fixed; top: 0; right: -500px; width: 500px; height: 100%; background: linear-gradient(135deg, rgba(26,31,58,0.98) 0%, rgba(10,14,39,0.98) 100%); border-left: 1px solid rgba(0,212,255,0.3); overflow-y: auto; transition: right 0.4s ease; z-index: 1000; padding: 30px 20px; box-shadow: -5px 0 30px rgba(0,0,0,0.5); }
         .side-panel.active { right: 0; }
-        .panel-header { font-size: 20px; font-weight: 700; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(0, 212, 255, 0.3); display: flex; justify-content: space-between; align-items: center; }
+        .panel-header { font-size: 20px; font-weight: 700; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(0,212,255,0.3); display: flex; justify-content: space-between; align-items: center; }
         .panel-close { background: none; border: none; color: var(--accent-blue); font-size: 24px; cursor: pointer; }
-        .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); }
-        .tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-gray); cursor: pointer; font-size: 14px; font-weight: 600; text-transform: uppercase; transition: all 0.3s; }
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,212,255,0.2); }
+        .tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-gray); cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
         .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
         .profile-section { margin-bottom: 30px; }
         .user-name { font-size: 24px; font-weight: 700; color: var(--accent-blue); margin-bottom: 5px; }
         .user-id { font-size: 12px; color: var(--text-gray); margin-bottom: 20px; }
-        .change-name-input { width: 100%; padding: 10px 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; }
-        .change-name-btn { width: 100%; padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; margin-bottom: 15px; text-transform: uppercase; font-size: 12px; }
+        .change-name-input { width: 100%; padding: 10px 12px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; }
+        .change-name-btn { width: 100%; padding: 10px; background: rgba(0,212,255,0.2); border: 1px solid rgba(0,212,255,0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; margin-bottom: 15px; }
         .name-change-count { font-size: 12px; color: var(--text-gray); margin-bottom: 15px; }
-        .friend-code { background: rgba(124, 58, 237, 0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(124, 58, 237, 0.5); margin-top: 15px; }
-        .friend-code-label { font-size: 12px; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; }
-        .friend-code-value { font-size: 18px; font-weight: 700; color: var(--accent-purple); font-family: 'Courier New', monospace; letter-spacing: 2px; text-align: center; }
-        .friends-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
-        .friend-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); display: flex; flex-direction: column; gap: 12px; }
-        .friend-info { display: flex; align-items: flex-start; gap: 12px; }
-        .friend-status { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-green); margin-top: 6px; flex-shrink: 0; }
-        .friend-status.offline { background: #ff4444; }
-        .friend-details { flex: 1; }
-        .friend-name { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
-        .friend-code-small { font-size: 11px; color: var(--text-gray); font-family: 'Courier New', monospace; margin-bottom: 5px; }
-        .friend-status-text { font-size: 11px; color: var(--accent-green); font-weight: 600; }
-        .friend-status-text.offline { color: #ff4444; }
-        .friend-actions { display: flex; gap: 6px; }
-        .friend-btn { padding: 6px 10px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 600; flex: 1; text-transform: uppercase; transition: all 0.3s; }
-        .friend-btn:hover { background: rgba(0, 212, 255, 0.2); }
-        .friend-btn.delete { border-color: rgba(255, 0, 110, 0.5); color: var(--accent-pink); background: rgba(255, 0, 110, 0.1); }
-        .friend-btn.delete:hover { background: rgba(255, 0, 110, 0.2); }
-        .friend-btn.block { border-color: rgba(255, 100, 100, 0.5); color: #ff6464; background: rgba(255, 100, 100, 0.1); }
-        .friend-btn.block:hover { background: rgba(255, 100, 100, 0.2); }
-        .add-friend-section { margin-bottom: 20px; }
-        .add-friend-input { width: 100%; padding: 10px 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; font-family: 'Courier New', monospace; }
-        .add-friend-btn { width: 100%; padding: 10px; background: rgba(0, 212, 255, 0.2); border: 1px solid rgba(0, 212, 255, 0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; text-transform: uppercase; }
-        .task-item { background: rgba(0, 212, 255, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 12px; }
-        .task-item.completed { background: rgba(0, 255, 136, 0.05); border-color: rgba(0, 255, 136, 0.3); }
-        .task-title { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
-        .task-progress { font-size: 12px; color: var(--text-gray); margin-bottom: 8px; }
-        .task-progress-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
-        .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
-        .task-reward { margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600; }
-        .back-btn { padding: 12px 24px; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-weight: 600; text-transform: uppercase; }
-        .ranking-mode-btn { padding: 25px 40px; border: 2px solid rgba(0, 212, 255, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); color: var(--text-white); font-size: 16px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.3s; }
-        .ranking-mode-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2); }
-        .ranking-mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .ranking-list { width: 100%; max-width: 600px; max-height: 400px; overflow-y: auto; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 20px; }
-        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); font-size: 14px; }
-        .ranking-item:last-child { border-bottom: none; }
+        .back-btn { padding: 12px 24px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-weight: 600; }
+        .ranking-mode-btn { padding: 25px 40px; border: 2px solid rgba(0,212,255,0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 300px; }
+        .ranking-list { width: 100%; max-width: 600px; max-height: 400px; overflow-y: auto; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 20px; }
+        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,212,255,0.1); }
         .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
         .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ranking-score { font-weight: 600; color: var(--accent-green); text-align: right; }
-        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #2a1e3a, #1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }
+        .ranking-score { font-weight: 600; color: var(--accent-green); }
+        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg,#2a1e3a,#1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; }
         .gift-dialog.active { display: flex; }
-        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold); text-align: center; }
-        .gift-content { font-size: 18px; color: var(--text-white); text-align: center; line-height: 1.8; }
-        .gift-reward { font-size: 24px; font-weight: 700; color: var(--accent-green); }
-        .gift-button { padding: 15px 40px; background: linear-gradient(90deg, #ffd700, #ffa500); border: none; border-radius: 10px; color: var(--primary-dark); font-size: 20px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
-        .gift-button:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
+        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold); }
+        .gift-button { padding: 15px 40px; background: linear-gradient(90deg,#ffd700,#ffa500); border: none; border-radius: 10px; color: var(--primary-dark); font-size: 20px; font-weight: 700; cursor: pointer; }
         .gift-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-gray); font-size: 24px; cursor: pointer; }
-        .ranking-update-timer { font-size: 12px; color: var(--accent-green); text-align: center; margin-top: 10px; padding: 5px; background: rgba(0, 255, 136, 0.1); border-radius: 5px; }
+        .ranking-update-timer { font-size: 14px; color: var(--accent-green); background: rgba(0,255,136,0.1); padding: 8px 20px; border-radius: 40px; }
         .hidden { display: none !important; }
-        @keyframes levelUp { 0% { opacity: 0; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px); } }
-        .level-up-notification { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); padding: 20px 40px; border-radius: 10px; font-size: 24px; font-weight: 700; animation: levelUp 3s ease-out forwards; z-index: 2000; pointer-events: none; }
-        .firebase-status { position: fixed; bottom: 10px; right: 10px; padding: 10px 16px; font-size: 12px; border-radius: 6px; z-index: 999; font-weight: 600; transition: all 0.3s; }
-        .firebase-status.connected { background: rgba(0, 255, 136, 0.25); color: var(--accent-green); border: 1px solid rgba(0, 255, 136, 0.6); }
-        .firebase-status.disconnected { background: rgba(255, 100, 100, 0.25); color: #ff6464; border: 1px solid rgba(255, 100, 100, 0.6); }
-        .firebase-status.loading { background: rgba(0, 212, 255, 0.25); color: var(--accent-blue); border: 1px solid rgba(0, 212, 255, 0.6); }
+        /* ストーリーマップ */
+        .story-map { display: grid; grid-template-columns: repeat(10,1fr); gap: 8px; max-width: 900px; max-height: 500px; overflow-y: auto; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 20px; }
+        .story-node { aspect-ratio: 1/1; background: rgba(0,212,255,0.1); border: 2px solid var(--accent-blue); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; transition: 0.2s; }
+        .story-node.clear { background: rgba(0,255,136,0.2); border-color: var(--accent-green); }
+        .story-node.current { border-color: var(--accent-gold); transform: scale(1.05); box-shadow: 0 0 20px gold; }
+        .story-node.locked { opacity: 0.3; border-color: gray; cursor: not-allowed; }
+        .story-info { background: rgba(0,0,0,0.5); padding: 10px 30px; border-radius: 40px; font-size: 20px; }
+        /* デバフ演出 */
+        .darkness-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: black; opacity:0; pointer-events: none; transition: opacity 0.5s; z-index: 10000; }
+        .darkness-overlay.active { opacity:1; }
+        .screen-crack { position: fixed; top:0; left:0; width:100%; height:100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.7"><path d="M20 20 L40 80 L70 30 L90 70" stroke="%23ff4444" stroke-width="8" fill="none"/><path d="M10 90 L50 10 L80 90" stroke="%23ffaa00" stroke-width="10" fill="none"/></svg>') center/cover; opacity:0; pointer-events: none; transition: opacity 1s; z-index: 10001; }
+        .screen-crack.active { opacity:1; }
+        /* アイテムグリッド */
+        .item-grid { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
+        .item-card { background: rgba(0,212,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: space-between; }
+        .item-card.skill { border-color: var(--accent-purple); }
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .item-name { font-weight: 600; color: var(--accent-blue); }
+        .item-desc { font-size: 12px; color: var(--text-gray); }
+        .item-count { color: var(--accent-green); font-weight: 600; }
+        .equip-btn { padding: 6px 12px; background: rgba(0,212,255,0.2); border: none; border-radius: 4px; color: var(--accent-blue); cursor: pointer; font-size: 12px; }
+        .shop-item { background: rgba(124,58,237,0.1); border: 1px solid var(--accent-purple); padding: 20px; border-radius: 8px; }
+        .shop-price { color: var(--accent-gold); font-weight: 700; }
+        .firebase-status { position: fixed; bottom: 10px; right: 10px; padding: 10px 16px; font-size: 12px; border-radius: 6px; z-index: 999; }
+        .firebase-status.connected { background: rgba(0,255,136,0.25); color: var(--accent-green); }
+        /* バーゲーム用 */
+        .bar-game { width: 300px; height: 40px; background: #333; border-radius: 20px; margin: 20px 0; position: relative; cursor: pointer; }
+        .bar-fill { height: 100%; width: 10%; background: linear-gradient(90deg, cyan, blue); border-radius: 20px; }
+        .bar-marker { position: absolute; top: -10px; width: 4px; height: 60px; background: red; left: 0; }
+        @keyframes skillPop { 0% { scale:0; opacity:0; } 100% { scale:1; opacity:1; } }
+        .skill-animation { position: fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(124,58,237,0.9); padding:30px 60px; border-radius:60px; font-size:48px; color:white; z-index:20000; animation: skillPop 0.5s forwards; }
+        /* タスクUI */
+        .task-item { background: rgba(0,212,255,0.07); border-left: 4px solid var(--accent-blue); padding: 18px; border-radius: 12px; margin-bottom: 15px; }
+        .task-item.completed { opacity: 0.7; border-left-color: var(--accent-green); background: rgba(0,255,136,0.05); }
+        .task-title { font-size: 16px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
+        .task-progress { font-size: 14px; color: var(--text-gray); margin-bottom: 8px; }
+        .task-progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+        .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
+        .task-reward { margin-top: 10px; font-size: 14px; color: var(--accent-gold); font-weight: 600; }
+        .task-notify { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, gold, orange); color: black; padding: 16px 32px; border-radius: 60px; font-weight: 700; z-index: 3000; animation: fadeInOut 3s forwards; pointer-events: none; }
+        @keyframes fadeInOut { 0% { opacity:0; top:0; } 15% { opacity:1; top:20px; } 85% { opacity:1; top:20px; } 100% { opacity:0; top:0; } }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="header">
-            <div style="display: flex; align-items: center; gap: 30px;">
-                <div class="game-title">⚡ TYPING</div>
+<div class="game-container">
+    <div class="header">
+        <div class="game-title">⚡ TYPING・タスク</div>
+        <div class="header-right">
+            <div class="level-display">
+                <div style="font-size:12px;">Lv</div>
+                <div class="level-value" id="levelDisplay">1</div>
+                <div class="xp-bar"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
             </div>
-            <div class="header-right">
-                <div class="level-display">
-                    <div style="font-size: 12px; color: var(--text-gray); text-transform: uppercase;">Level</div>
-                    <div class="level-value" id="levelDisplay">1</div>
-                    <div class="xp-bar">
-                        <div class="xp-bar-fill" id="xpBarFill" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="top-buttons">
-                    <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">1</span></button>
-                    <button class="icon-btn" id="taskBtn">📋</button>
-                    <button class="icon-btn" id="profileBtn">👤</button>
-                    <button class="icon-btn" id="friendBtn">👥</button>
-                </div>
+            <div class="top-buttons">
+                <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">0</span></button>
+                <button class="icon-btn" id="taskBtn">📋</button>  <!-- タスクボタン復活 -->
+                <button class="icon-btn" id="inventoryBtn">🎒</button>
+                <button class="icon-btn" id="shopBtn">🏪</button>
+                <button class="icon-btn" id="profileBtn">👤</button>
             </div>
         </div>
-
-        <div class="main-content">
-            <div class="screen active" id="menuScreen">
-                <div class="menu-title">🎮 タイピングゲーム</div>
-                <div class="menu-buttons">
-                    <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
-                    <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
-                </div>
-            </div>
-
-            <div class="screen" id="rankingModeScreen">
-                <div class="menu-title">🏆 ランキングモード</div>
-                <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 400px;">
-                    <button class="ranking-mode-btn" id="friendRankingViewBtn">フレンドランキングを見る</button>
-                    <button class="ranking-mode-btn" id="worldRankingViewBtn">ワールドランキングを見る</button>
-                    <button class="ranking-mode-btn" id="friendRankingPlayBtn">フレンドランキング(プレイ)</button>
-                    <button class="ranking-mode-btn" id="worldRankingPlayBtn">ワールドランキング(プレイ)</button>
-                </div>
-                <div class="ranking-update-timer" id="rankingUpdateTimer">次回更新まで: 00:00:00</div>
-                <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
-            </div>
-
-            <div class="screen" id="rankingViewScreen">
-                <div class="menu-title" id="rankingViewTitle">ランキング</div>
-                <div class="ranking-list" id="rankingListContainer"></div>
-                <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
-            </div>
-
-            <div class="screen" id="difficultyScreen">
-                <div style="font-size: 36px; font-weight: 700; color: var(--accent-blue);">難易度を選択</div>
-                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                    <button class="difficulty-btn easy" data-difficulty="easy">初級</button>
-                    <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
-                    <button class="difficulty-btn hard" data-difficulty="hard">上級</button>
-                </div>
-                <button class="back-btn" id="backBtn">戻る</button>
-            </div>
-
-            <div class="screen" id="gameScreen">
-                <div class="game-stats">
-                    <div class="stat-box">
-                        <div class="stat-label">Score</div>
-                        <div class="stat-value" id="scoreDisplay">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Combo</div>
-                        <div class="stat-value" id="comboDisplay">0</div>
-                    </div>
-                </div>
-                <div class="timer" id="timerDisplay">60</div>
-                <div class="current-question" id="questionDisplay">準備中...</div>
-                <div class="romaji-display" id="romajiDisplay"></div>
-            </div>
-
-            <div class="screen" id="resultScreen">
-                <div class="menu-title">ゲーム終了！</div>
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <div style="font-size: 14px; color: var(--text-gray); margin-bottom: 10px;">FINAL SCORE</div>
-                    <div id="finalScore" style="font-size: 48px; color: var(--accent-green); margin-bottom: 20px;">0</div>
-                    <div style="font-size: 20px; color: var(--text-gray);">
-                        <div>+<span id="earnedCoins">0</span> 💰</div>
-                        <div>+<span id="earnedXP">0</span> ⭐</div>
-                    </div>
-                </div>
-                <button class="menu-btn" id="continueBtn" style="width: 100%; max-width: 300px;"><div>続ける</div></button>
-            </div>
-        </div>
-
-        <div class="coin-display">
-            <div style="font-size: 24px;">💰</div>
-            <div class="coin-value" id="coinDisplay">0</div>
-        </div>
-
-        <div class="overlay" id="overlay"></div>
-
-        <div class="confirmation-dialog" id="confirmationDialog">
-            <div class="dialog-title" id="dialogTitle">確認</div>
-            <div class="dialog-message" id="dialogMessage">メッセージ</div>
-            <div class="dialog-warning" id="dialogWarning"></div>
-            <div class="dialog-buttons">
-                <button class="dialog-btn" id="dialogCancelBtn">キャンセル</button>
-                <button class="dialog-btn danger" id="dialogConfirmBtn">実行</button>
-            </div>
-        </div>
-
-        <div class="gift-dialog" id="giftDialog">
-            <button class="gift-close" id="giftCloseBtn">✕</button>
-            <div class="gift-title">🎁 ランキング報酬 🎁</div>
-            <div class="gift-content" id="giftContent">
-                ワールドランキングからの報酬<br>
-                <span class="gift-reward" id="giftReward">5000 XP, 10000 コイン</span>
-            </div>
-            <button class="gift-button" id="claimRewardBtn">受け取る</button>
-        </div>
-
-        <div class="side-panel" id="sidePanel">
-            <div class="panel-header">
-                <span id="panelTitle">パネル</span>
-                <button class="panel-close" id="panelCloseBtn">✕</button>
-            </div>
-
-            <div id="profilePanel">
-                <div class="profile-section">
-                    <div class="user-name" id="displayName">ユーザー</div>
-                    <div class="user-id" id="userId">ID: 000000</div>
-                    
-                    <input type="text" class="change-name-input" id="newNameInput" placeholder="新しい名前（最大20文字）" maxlength="20">
-                    <button class="change-name-btn" id="changeNameBtn">名前を変更</button>
-                    <div class="name-change-count" id="nameChangeCount">本日の変更回数: 0/3</div>
-
-                    <div class="friend-code">
-                        <div class="friend-code-label">フレンドコード</div>
-                        <div class="friend-code-value" id="friendCodeDisplay">000000ABC</div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="friendPanel" class="hidden">
-                <div class="add-friend-section">
-                    <input type="text" class="add-friend-input" id="addFriendCode" placeholder="フレンドコードを入力" maxlength="9">
-                    <button class="add-friend-btn" id="addFriendBtn">追加する</button>
-                </div>
-                <div id="friendsList" class="friends-list"></div>
-            </div>
-
-            <div id="taskPanel" class="hidden">
-                <div class="tab-bar">
-                    <button class="tab-btn active" data-tab="daily">毎日</button>
-                    <button class="tab-btn" data-tab="weekly">週間</button>
-                </div>
-                <div id="dailyTasksList"></div>
-                <div id="weeklyTasksList" class="hidden"></div>
-            </div>
-        </div>
-
-        <div class="firebase-status loading" id="firebaseStatus">⚡ Firebase 初期化中...</div>
     </div>
 
-    <script type="module">
-        // ===== Firebase インポート =====
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, update, remove, get, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <div class="main-content">
+        <!-- メインメニュー -->
+        <div class="screen active" id="menuScreen">
+            <div class="menu-title">⚔️ タイピングアドベンチャー</div>
+            <div class="menu-buttons">
+                <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
+                <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
+                <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
+            </div>
+        </div>
+        <!-- 難易度選択 (通常) -->
+        <div class="screen" id="difficultyScreen">
+            <div style="font-size:36px; color:var(--accent-blue);">難易度</div>
+            <div style="display:flex; gap:20px;">
+                <button class="difficulty-btn easy" data-difficulty="easy">初級</button>
+                <button class="difficulty-btn normal" data-difficulty="normal">中級</button>
+                <button class="difficulty-btn hard" data-difficulty="hard">上級</button>
+            </div>
+            <button class="back-btn" id="backBtn">戻る</button>
+        </div>
+        <!-- ストーリーマップ -->
+        <div class="screen" id="storyMapScreen">
+            <div class="menu-title">📖 ストーリーマップ</div>
+            <div class="story-info">ステージ <span id="currentStoryStage">1</span>/100</div>
+            <div class="story-map" id="storyMapContainer"></div>
+            <div style="display:flex; gap:20px;">
+                <button class="back-btn" id="backFromStoryBtn">戻る</button>
+                <button class="menu-btn" id="startStoryBtn" style="padding:15px 30px;">挑戦する</button>
+            </div>
+        </div>
+        <!-- ランキングモード (ワールドのみ) -->
+        <div class="screen" id="rankingModeScreen">
+            <div class="menu-title">🏆 ランキング</div>
+            <button class="ranking-mode-btn" id="worldRankingViewBtn">ランキングを見る</button>
+            <button class="ranking-mode-btn" id="worldRankingPlayBtn">ランキングプレイ</button>
+            <div class="ranking-update-timer" id="rankingUpdateTimer">次回更新まで: 00:00:00</div>
+            <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
+        </div>
+        <!-- ランキング表示画面 -->
+        <div class="screen" id="rankingViewScreen">
+            <div class="menu-title" id="rankingViewTitle">ワールドランキング</div>
+            <div class="ranking-list" id="rankingListContainer"></div>
+            <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
+        </div>
+        <!-- ゲーム画面 -->
+        <div class="screen" id="gameScreen">
+            <div class="game-stats">
+                <div class="stat-box"><div class="stat-label">Score</div><div class="stat-value" id="scoreDisplay">0</div></div>
+                <div class="stat-box"><div class="stat-label">Combo</div><div class="stat-value" id="comboDisplay">0</div></div>
+            </div>
+            <div class="timer" id="timerDisplay">60</div>
+            <div class="current-question" id="questionDisplay">準備中...</div>
+            <div class="romaji-display" id="romajiDisplay"></div>
+        </div>
+        <!-- 結果画面 -->
+        <div class="screen" id="resultScreen">
+            <div class="menu-title">結果</div>
+            <div style="text-align:center;">
+                <div style="font-size:14px;">FINAL SCORE</div>
+                <div id="finalScore" style="font-size:48px; color:var(--accent-green);">0</div>
+                <div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div>
+            </div>
+            <button class="menu-btn" id="continueBtn">続ける</button>
+        </div>
+    </div>
 
-        // ===== Firebase 設定 =====
-        const firebaseConfig = {
-            apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
-            authDomain: "typing-game-28ed0.firebaseapp.com",
-            databaseURL: "https://typing-game-28ed0-default-rtdb.firebaseio.com",
-            projectId: "typing-game-28ed0",
-            storageBucket: "typing-game-28ed0.firebasestorage.app",
-            messagingSenderId: "963797267101",
-            appId: "1:963797267101:web:0d5d700458fb1991021a74"
-        };
+    <div class="coin-display"><div style="font-size:24px;">💰</div><div class="coin-value" id="coinDisplay">0</div></div>
+    <div class="overlay" id="overlay"></div>
 
-        // Firebase 初期化
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    <!-- ギフトダイアログ (ランキング報酬) -->
+    <div class="gift-dialog" id="giftDialog">
+        <button class="gift-close" id="giftCloseBtn">✕</button>
+        <div class="gift-title">🎁 ランキング報酬</div>
+        <div class="gift-content" id="giftContent">ワールドランキング報酬が届いています</div>
+        <button class="gift-button" id="claimRewardBtn">受け取る</button>
+    </div>
 
-        let firebaseReady = true;
+    <!-- サイドパネル (プロフィール/持ち物/タスク共用) -->
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header"><span id="panelTitle">メニュー</span><button class="panel-close" id="panelCloseBtn">✕</button></div>
+        
+        <!-- プロフィール画面 -->
+        <div id="profilePanel" class="hidden">
+            <div class="profile-section">
+                <div class="user-name" id="displayName">プレイヤー</div>
+                <div class="user-id" id="userId">ID: ---</div>
+                <input type="text" class="change-name-input" id="newNameInput" placeholder="新しい名前" maxlength="20">
+                <button class="change-name-btn" id="changeNameBtn">名前変更 (残り<span id="nameChangeLeft">3</span>/3)</button>
+                <div class="name-change-count" id="nameChangeCount">本日:0/3</div>
+            </div>
+        </div>
+        
+        <!-- 持ち物パネル -->
+        <div id="inventoryPanel" class="hidden">
+            <div class="tab-bar" id="invTabs">
+                <button class="tab-btn active" data-inv="skills">スキル</button>
+                <button class="tab-btn" data-inv="items">アイテム</button>
+            </div>
+            <div id="skillsList" class="item-grid"></div>
+            <div id="itemsList" class="item-grid hidden"></div>
+        </div>
 
-        function updateFirebaseStatus(connected, text) {
-            const statusEl = document.getElementById('firebaseStatus');
-            if (statusEl) {
-                statusEl.textContent = text;
-                statusEl.className = connected ? 'firebase-status connected' : 'firebase-status disconnected';
-            }
+        <!-- タスクパネル (新設・復活) -->
+        <div id="taskPanel" class="hidden">
+            <div class="tab-bar" id="taskTabs">
+                <button class="tab-btn active" data-tab="daily">毎日</button>
+                <button class="tab-btn" data-tab="weekly">週間</button>
+            </div>
+            <div id="dailyTasksList" class="item-grid"></div>
+            <div id="weeklyTasksList" class="item-grid hidden"></div>
+        </div>
+    </div>
+
+    <!-- ショップパネル (別パネル) -->
+    <div class="side-panel" id="shopPanel">
+        <div class="panel-header"><span>ショップ</span><button class="panel-close" id="shopCloseBtn">✕</button></div>
+        <div class="tab-bar">
+            <button class="tab-btn active" data-shop="skills">スキル</button>
+            <button class="tab-btn" data-shop="credit">クレジット</button>
+        </div>
+        <div id="shopSkillsPanel" class="item-grid"></div>
+        <div id="shopCreditPanel" class="item-grid hidden">
+            <div class="shop-item">
+                <div>🔮 スキルのかけら交換</div>
+                <div>10,000,000コイン → かけら1個</div>
+                <button class="equip-btn" id="exchangeShardBtn">交換</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 演出レイヤー -->
+    <div class="darkness-overlay" id="darknessOverlay"></div>
+    <div class="screen-crack" id="screenCrack"></div>
+    <div id="taskNotification" class="task-notify hidden">🎉 タスククリア！</div>
+
+    <div class="firebase-status connected" id="firebaseStatus">✅ 接続済み</div>
+</div>
+
+<script type="module">
+    // ========== Firebase ==========
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
+        authDomain: "typing-game-28ed0.firebaseapp.com",
+        databaseURL: "https://typing-game-28ed0-default-rtdb.firebaseio.com",
+        projectId: "typing-game-28ed0",
+        storageBucket: "typing-game-28ed0.firebasestorage.app",
+        messagingSenderId: "963797267101",
+        appId: "1:963797267101:web:0d5d700458fb1991021a74"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const statusEl = document.getElementById('firebaseStatus');
+
+    // ========== ゲーム状態（タスク完全版） ==========
+    const gameState = {
+        userId: 'user_' + Math.random().toString(36).substr(2,8),
+        userName: '冒険者',
+        coins: 5000000,          // デバッグ用
+        level: 15,
+        xp: 0,
+        maxXp: 100,
+        nameChangeCount: 0,
+        lastNameChangeReset: new Date().toDateString(),
+        storyStage: 1,
+        storyClears: [],
+        shards: 0,
+        ownedSkills: [],
+        equippedSkills: [],
+        claimedRankings: { world: null },
+        // タスク関連 (毎日・毎週)
+        dailyTasks: [
+            { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
+            { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
+            { id: 'daily3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' }
+        ],
+        weeklyTasks: [
+            { id: 'weekly1', title: '100回タイピングをプレイ', current: 0, target: 100, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
+            { id: 'weekly2', title: 'スコア5000以上を10回達成', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
+            { id: 'weekly3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' }
+        ],
+        lastDailyReset: '',
+        lastWeeklyReset: ''
+    };
+
+    // 問題・変換
+    const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
+    const romajiMap = {'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko','が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','さ':'sa','し':'si','す':'su','せ':'se','そ':'so','ざ':'za','じ':'zi','ず':'zu','ぜ':'ze','ぞ':'zo','た':'ta','ち':'ti','つ':'tu','て':'te','と':'to','だ':'da','ぢ':'di','づ':'du','で':'de','ど':'do','な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no','は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo','ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po','ま':'ma','み':'mi','む':'mu','め':'me','も':'mo','や':'ya','ゆ':'yu','よ':'yo','ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'wo','ん':'nn','っ':'xtu'};
+    const youonMap = {'きゃ':'kya','きゅ':'kyu','きょ':'kyo','しゃ':'sya','しゅ':'syu','しょ':'syo','ちゃ':'tya','ちゅ':'tyu','ちょ':'tyo','にゃ':'nya','にゅ':'nyu','にょ':'nyo','ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','みゃ':'mya','みゅ':'myu','みょ':'myo','りゃ':'rya','りゅ':'ryu','りょ':'ryo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo','じゃ':'zya','じゅ':'zyu','じょ':'zyo','びゃ':'bya','びゅ':'byu','びょ':'byo','ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'};
+    function convertToRomaji(t) { let r='',i=0; while(i<t.length){ if(i+1<t.length&&youonMap[t.substring(i,i+2)]){ r+=youonMap[t.substring(i,i+2)]; i+=2; continue; } if(t[i]==='っ'&&i+1<t.length){ let n=t[i+1]; let nr=romajiMap[n]||n; r+=nr[0]+nr[0]+nr.substring(1); i+=2; } else { r+=romajiMap[t[i]]||t[i]; i++; } } return r; }
+
+    // ワールドランキング保存用
+    let worldRankings = [];
+    let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
+    let storyDebuffActive = false, storyCrackActive = false;
+
+    // ========== 永続化 ==========
+    function saveGameState() { localStorage.setItem('gameState',JSON.stringify(gameState)); syncFirebase(); }
+    function syncFirebase() { if(db) set(ref(db,`users/${gameState.userId}`),{ name:gameState.userName, lastActive:Date.now(), level:gameState.level, xp:gameState.xp, coins:gameState.coins, score:currentScore }).catch(()=>{}); }
+    (function load(){ 
+        const s=localStorage.getItem('gameState'); 
+        if(s) Object.assign(gameState,JSON.parse(s)); 
+        if(!gameState.storyClears) gameState.storyClears=[]; 
+        if(!gameState.ownedSkills) gameState.ownedSkills=[]; 
+        if(!gameState.equippedSkills) gameState.equippedSkills=[]; 
+        if(!gameState.shards) gameState.shards=0; 
+        if(!gameState.claimedRankings) gameState.claimedRankings={world:null};
+        if(!gameState.dailyTasks) { // 初回タスク初期化
+            gameState.dailyTasks = [ { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } ];
+            gameState.weeklyTasks = [ { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } ];
         }
+        checkTaskReset();
+        updateUI(); 
+    })();
 
-        updateFirebaseStatus(true, '✅ Firebase 接続済み');
+    // タスクリセット (毎日7時、毎週月曜7時)
+    function checkTaskReset(){
+        const now = new Date();
+        const today7 = new Date(); today7.setHours(7,0,0,0);
+        if(now > today7) today7.setDate(today7.getDate()+1);
+        const dayOfWeek = now.getDay(); // 0日 1月 2火...
+        const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1)); lastMon.setHours(7,0,0,0);
+        if(dayOfWeek===1 && now < lastMon) lastMon.setDate(lastMon.getDate()-7); // 月曜7時前なら先週
 
-        // ===== ゲームロジック =====
-        const gameState = {
-            userId: null, 
-            userName: 'User', 
-            friendCode: '', 
-            coins: 0, 
-            level: 1, 
-            xp: 0, 
-            maxXp: 100,
-            nameChangeCount: 0, 
-            lastNameChangeReset: new Date().toDateString(), 
-            friends: [], 
-            blockedUsers: [],
-            currentScore: 0, 
-            currentCombo: 0, 
-            gameActive: false, 
-            gameTime: 60, 
-            currentDifficulty: null,
-            // ランキング報酬受け取り済みフラグ
-            claimedRankings: {
-                world: null, // 最後に受け取った日付 (YYYY-MM-DD)
-                friend: null
-            },
-            // タスク
-            dailyTasks: [
-                { id: 'play10', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false },
-                { id: 'score5k', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false },
-                { id: 'combo50', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false }
-            ],
-            weeklyTasks: [
-                { id: 'play100', title: '100回タイピングをプレイ', current: 0, target: 100, reward: { xp: 500, coins: 15000 }, completed: false },
-                { id: 'score10x', title: 'スコア5000以上を10回達成', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false },
-                { id: 'comboWeekly', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false }
-            ]
-        };
+        const todayStr = today7.toDateString();
+        const weekStr = lastMon.toDateString();
 
-        const questions = {
-            easy: ['そら', 'うみ', 'えがお', 'へいわ', 'きずな', 'きぼう', 'ひかり', 'かぜ', 'みらい', 'じゆう', 'ゆうき', 'かんしゃ', 'とけい', 'たいよう', 'けしき', 'まほう', 'こきゅう', 'ほうせき', 'きおく', 'ぼうけん'],
-            normal: ['いっしょうけんめい', 'しこうさくご', 'せっさたくま', 'おんこちしん', 'いちごいちえ', 'しんきいってん', 'りんきおうへん', 'としょかん', 'しんかんせん', 'すいへいせん', 'てんたいかんそく', 'しんりんよく', 'りょうりきょうしつ', 'しょくぶつえん', 'はくぶつかん', 'うちゅうひこうし', 'つうしんきょういく', 'ちきゅうおんだんか', 'じこしょうかい', 'こうきょうしせつ'],
-            hard: ['ごんごどうだん', 'こうとうむけい', 'いしんでんしん', 'ひゃっかりょうらん', 'しめんそか', 'がしんしょうたん', 'ゆうずうむげ', 'せいれんけっぱく', 'あんちゅうもさく', 'でんぱぼうえんきょう', 'さんぎょうかくめい', 'しゅうぎいんぎいん', 'こくりつきょうぎじょう', 'せいしんほけんしてい', 'じんこうちのうかいはつ', 'ふろうふし', 'せいぶつたようせい', 'じぞくかのうせい', 'ひはかいけんさ', 'ぎむきょういくしょがっこう', 'しんらばんしょう']
-        };
-
-        const romajiMap = {'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o', 'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko', 'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go', 'さ': 'sa', 'し': 'si', 'す': 'su', 'せ': 'se', 'そ': 'so', 'ざ': 'za', 'じ': 'zi', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo', 'た': 'ta', 'ち': 'ti', 'つ': 'tu', 'て': 'te', 'と': 'to', 'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do', 'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no', 'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho', 'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo', 'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po', 'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo', 'や': 'ya', 'ゆ': 'yu', 'よ': 'yo', 'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro', 'わ': 'wa', 'を': 'wo', 'ん': 'nn', 'っ': 'xtu'};
-
-        const youonMap = {'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo', 'しゃ': 'sya', 'しゅ': 'syu', 'しょ': 'syo', 'ちゃ': 'tya', 'ちゅ': 'tyu', 'ちょ': 'tyo', 'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo', 'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo', 'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo', 'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo', 'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo', 'じゃ': 'zya', 'じゅ': 'zyu', 'じょ': 'zyo', 'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo', 'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo'};
-
-        let blockConfirmState = { targetCode: null, stage: 0 };
-        let friendsUnsubscribe = null;
-        let rankingUpdateTimer = null;
-        let worldRankings = [];
-        let friendRankings = [];
-        let friendItemsMap = new Map(); // フレンド要素を保持するマップ
-
-        function generateRandomId() { return Math.random().toString(36).substr(2, 12).toUpperCase(); }
-        function generateFriendCode() { 
-            const numbers = Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); 
-            const letters = Math.random().toString(36).substr(2, 3).toUpperCase(); 
-            return numbers + letters; 
+        if(gameState.lastDailyReset !== todayStr){
+            gameState.dailyTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=todayStr; });
+            gameState.lastDailyReset = todayStr;
         }
-
-        async function saveToFirebase() {
-            if (!firebaseReady || !db) return;
-            try {
-                await update(ref(db, `users/${gameState.friendCode}`), {
-                    name: gameState.userName,
-                    lastActive: Date.now(),
-                    level: gameState.level,
-                    xp: gameState.xp,
-                    coins: gameState.coins,
-                    score: gameState.currentScore
-                });
-            } catch (e) {
-                console.warn('Firebase 保存エラー:', e.message);
-            }
+        if(gameState.lastWeeklyReset !== weekStr){
+            gameState.weeklyTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=weekStr; });
+            gameState.lastWeeklyReset = weekStr;
         }
+    }
 
-        // ===== ランキング関連 =====
-        function getCurrentDate() {
-            const now = new Date();
-            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        }
+    function updateUI(){
+        document.getElementById('levelDisplay').textContent=gameState.level;
+        document.getElementById('xpBarFill').style.width=(gameState.xp/gameState.maxXp*100)+'%';
+        document.getElementById('coinDisplay').textContent=gameState.coins.toLocaleString();
+        document.getElementById('displayName').textContent=gameState.userName;
+        document.getElementById('userId').textContent='ID: '+gameState.userId.slice(0,8);
+        let left = Math.max(0,3-gameState.nameChangeCount);
+        document.getElementById('nameChangeLeft').textContent=left;
+        document.getElementById('nameChangeCount').textContent=`本日:${gameState.nameChangeCount}/3`;
+        checkRankingRewards();
+        updateTasksDisplay(); // タスク表示更新
+    }
 
-        function getTimeUntil7AM() {
-            const now = new Date();
-            const next7AM = new Date(now);
-            next7AM.setHours(7, 0, 0, 0);
-            
-            if (now > next7AM) {
-                next7AM.setDate(next7AM.getDate() + 1);
-            }
-            
-            const diff = next7AM - now;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function startRankingUpdateTimer() {
-            if (rankingUpdateTimer) clearInterval(rankingUpdateTimer);
-            
-            rankingUpdateTimer = setInterval(() => {
-                const timerEl = document.getElementById('rankingUpdateTimer');
-                if (timerEl) {
-                    timerEl.innerText = `次回更新まで: ${getTimeUntil7AM()}`;
-                }
-            }, 1000);
-        }
-
-        function getRankingReward(rank, type) {
-            if (type === 'world') {
-                if (rank === 1) return { xp: 5000, coins: 10000 };
-                if (rank === 2 || rank === 3) return { xp: 2000, coins: 5000 };
-                if (rank <= 10) return { xp: 1000, coins: 2000 };
-            } else if (type === 'friend') {
-                if (rank === 1) return { xp: 500, coins: 3000 };
-                if (rank <= 5) return { xp: 200, coins: 1000 };
-            }
-            return null;
-        }
-
-        function checkRankingRewards() {
-            const today = getCurrentDate();
-            const worldRankings = JSON.parse(localStorage.getItem('worldRankings')) || [];
-            const friendRankings = JSON.parse(localStorage.getItem('friendRankings')) || [];
-            const claimed = gameState.claimedRankings || { world: null, friend: null };
-            
-            // 自分のスコアを取得
-            const myWorldEntry = worldRankings.find(r => r.code === gameState.friendCode);
-            const myFriendEntry = friendRankings.find(r => r.code === gameState.friendCode);
-            
-            let hasReward = false;
-            
-            // ワールドランキングの報酬チェック（スコアが0より大きい場合のみ）
-            if (claimed.world !== today && myWorldEntry && myWorldEntry.score > 0) {
-                const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
-                if (myRank > 0 && myRank <= 10) {
-                    hasReward = true;
-                }
-            }
-            
-            // フレンドランキングの報酬チェック（スコアが0より大きい場合のみ）
-            if (claimed.friend !== today && myFriendEntry && myFriendEntry.score > 0) {
-                const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
-                if (myFriendRank > 0 && myFriendRank <= 5) {
-                    hasReward = true;
-                }
-            }
-            
-            const badge = document.getElementById('giftBadge');
-            if (badge) {
-                badge.textContent = hasReward ? '1' : '0';
-                badge.style.display = hasReward ? 'flex' : 'none';
-            }
-            
-            return hasReward;
-        }
-
-        function showGiftDialog() {
-            const today = getCurrentDate();
-            const worldRankings = JSON.parse(localStorage.getItem('worldRankings')) || [];
-            const friendRankings = JSON.parse(localStorage.getItem('friendRankings')) || [];
-            const claimed = gameState.claimedRankings || { world: null, friend: null };
-            
-            let rewards = [];
-            
-            // 自分のスコアを取得
-            const myWorldEntry = worldRankings.find(r => r.code === gameState.friendCode);
-            const myFriendEntry = friendRankings.find(r => r.code === gameState.friendCode);
-            
-            // ワールドランキング（スコアが0より大きい場合のみ）
-            if (claimed.world !== today && myWorldEntry && myWorldEntry.score > 0) {
-                const myRank = worldRankings.findIndex(r => r.code === gameState.friendCode) + 1;
-                const reward = getRankingReward(myRank, 'world');
-                if (reward) {
-                    rewards.push({
-                        type: 'world',
-                        rank: myRank,
-                        reward: reward
-                    });
-                }
-            }
-            
-            // フレンドランキング（スコアが0より大きい場合のみ）
-            if (claimed.friend !== today && myFriendEntry && myFriendEntry.score > 0) {
-                const myFriendRank = friendRankings.findIndex(r => r.code === gameState.friendCode) + 1;
-                const reward = getRankingReward(myFriendRank, 'friend');
-                if (reward) {
-                    rewards.push({
-                        type: 'friend',
-                        rank: myFriendRank,
-                        reward: reward
-                    });
-                }
-            }
-            
-            if (rewards.length === 0) {
-                alert('現在受け取れる報酬はありません');
-                return;
-            }
-            
-            const content = document.getElementById('giftContent');
-            const rewardText = document.getElementById('giftReward');
-            
-            let totalXp = 0;
-            let totalCoins = 0;
-            rewards.forEach(r => {
-                totalXp += r.reward.xp;
-                totalCoins += r.reward.coins;
+    // タスク表示
+    function updateTasksDisplay(){
+        const dailyDiv = document.getElementById('dailyTasksList'); if(dailyDiv){
+            dailyDiv.innerHTML = '';
+            gameState.dailyTasks.forEach(t=>{
+                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
+                let percent = Math.min(100, (t.current/t.target)*100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
+                dailyDiv.appendChild(d);
             });
-            
-            content.innerHTML = 'ワールドランキング＆フレンドランキングからの報酬<br>';
-            rewardText.innerHTML = `${totalXp} XP, ${totalCoins.toLocaleString()} コイン`;
-            
-            document.getElementById('giftDialog').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-            
-            // 受け取りボタンのイベントを設定
-            document.getElementById('claimRewardBtn').onclick = () => {
-                // 報酬を受け取る
-                gameState.xp += totalXp;
-                gameState.coins += totalCoins;
-                
-                // レベルアップ処理
-                while (gameState.xp >= gameState.maxXp) {
-                    gameState.xp -= gameState.maxXp;
-                    gameState.level++;
-                    gameState.maxXp = Math.floor(gameState.maxXp * 1.5);
+        }
+        const weeklyDiv = document.getElementById('weeklyTasksList'); if(weeklyDiv){
+            weeklyDiv.innerHTML = '';
+            gameState.weeklyTasks.forEach(t=>{
+                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
+                let percent = Math.min(100, (t.current/t.target)*100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
+                weeklyDiv.appendChild(d);
+            });
+        }
+    }
+
+    // タスク進捗更新関数 (ゲーム終了時に呼ぶ)
+    function updateTaskProgress(score, combo, isRankingPlay){
+        // 毎日: プレイ回数 (daily1) は startGame で増やす方が良いが、ここでもカウントできる
+        // 簡略化のため endGame 内で呼ぶ
+        let daily = gameState.dailyTasks;
+        let weekly = gameState.weeklyTasks;
+
+        // プレイ回数 (1回増加) -> startGameで行うが確実に
+        if(!daily[0].completed) { daily[0].current = Math.min(daily[0].current+1, daily[0].target); }
+        if(!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current+1, weekly[0].target); }
+
+        // スコア達成 daily2: 5000以上で+1 (1回のみ)
+        if(score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current+1, daily[1].target); }
+        // weekly2: 5000以上を10回達成 (1回につき+1)
+        if(score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current+1, weekly[1].target); }
+
+        // コンボ達成 daily3, weekly3
+        if(combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current+1, daily[2].target); }
+        if(combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current+1, weekly[2].target); }
+
+        // 各タスク完了チェックと報酬付与
+        [daily, weekly].forEach(tasks=>{
+            tasks.forEach(t=>{
+                if(!t.completed && t.current >= t.target){
+                    t.completed = true;
+                    gameState.xp += t.reward.xp;
+                    gameState.coins += t.reward.coins;
+                    showTaskNotification(t.title);
                 }
-                
-                // 受け取り済みにする
-                if (!gameState.claimedRankings) gameState.claimedRankings = {};
-                gameState.claimedRankings.world = today;
-                gameState.claimedRankings.friend = today;
-                
-                saveGameState();
-                updateUI();
-                
-                // ダイアログを閉じる
-                document.getElementById('giftDialog').classList.remove('active');
-                document.getElementById('overlay').classList.remove('active');
-                
-                // バッジを非表示
-                checkRankingRewards();
-                
-                alert(`✅ 報酬を受け取りました！\n+${totalXp} XP, +${totalCoins.toLocaleString()} コイン`);
-            };
-        }
+            });
+        });
 
-        function convertToRomaji(text) {
-            let result = '';
-            let i = 0;
-            
-            while (i < text.length) {
-                if (text[i] === 'っ' && i + 1 < text.length) {
-                    const nextChar = text[i + 1];
-                    let nextRomaji = '';
-                    
-                    if (i + 2 < text.length) {
-                        const twoChar = text.substring(i + 1, i + 3);
-                        if (youonMap[twoChar]) {
-                            nextRomaji = youonMap[twoChar];
-                        }
-                    }
-                    
-                    if (!nextRomaji) {
-                        nextRomaji = romajiMap[nextChar] || nextChar;
-                    }
-                    
-                    if (nextRomaji) {
-                        result += nextRomaji[0] + nextRomaji[0] + nextRomaji.substring(1);
-                    }
-                    
-                    i += 2;
-                    continue;
-                }
-                
-                if (i + 1 < text.length) {
-                    const twoChar = text.substring(i, i + 2);
-                    if (youonMap[twoChar]) {
-                        result += youonMap[twoChar];
-                        i += 2;
-                        continue;
-                    }
-                }
-                
-                const char = text[i];
-                result += romajiMap[char] || char;
-                i++;
-            }
-            
-            return result;
-        }
+        saveGameState();
+        updateTasksDisplay();
+    }
 
-        function saveGameState() {
-            localStorage.setItem('gameState', JSON.stringify(gameState));
-            saveToFirebase();
-        }
+    function showTaskNotification(title){
+        let noti = document.getElementById('taskNotification');
+        noti.textContent = `🎉 タスククリア！ ${title}`;
+        noti.classList.remove('hidden');
+        setTimeout(()=> noti.classList.add('hidden'), 3000);
+    }
 
-        function loadGameState() {
-            const saved = localStorage.getItem('gameState');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    Object.assign(gameState, parsed);
-                } catch (e) {
-                    console.error('保存データの読み込みに失敗:', e);
-                    createNewUser();
-                }
-            } else {
-                createNewUser();
-            }
-        }
+    // ========== ランキング関連 ==========
+    function getTodayString(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+    function getTimeUntil7AM(){ let n=new Date(); let n7=new Date(); n7.setHours(7,0,0,0); if(n>n7) n7.setDate(n7.getDate()+1); let d=n7-n; let h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
+    setInterval(()=>{ let t=document.getElementById('rankingUpdateTimer'); if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; },1000);
 
-        function createNewUser() {
-            gameState.userId = generateRandomId();
-            gameState.friendCode = generateFriendCode();
-            gameState.userName = 'ユーザー' + gameState.friendCode.slice(0, 4);
-            gameState.claimedRankings = { world: null, friend: null };
-            saveGameState();
-        }
+    async function fetchWorldRankings(){
+        if(!db) return [];
+        try { 
+            const snap = await get(ref(db,'users')); 
+            const users = snap.val()||{}; 
+            return Object.entries(users).map(([id,u])=>({ name:u.name||'名無し', score:u.score||0, id })).filter(u=>u.score>0).sort((a,b)=>b.score-a.score).slice(0,100);
+        } catch(e){ return []; }
+    }
 
-        function checkAndResetDaily() {
-            const today = new Date().toDateString();
-            if (gameState.lastNameChangeReset !== today) {
-                gameState.lastNameChangeReset = today;
-                gameState.nameChangeCount = 0;
-                gameState.dailyTasks.forEach(task => task.completed = false);
-                saveGameState();
-            }
-        }
+    async function displayRanking(){
+        switchScreen('rankingViewScreen');
+        document.getElementById('rankingViewTitle').textContent='ワールドランキング';
+        let container=document.getElementById('rankingListContainer'); container.innerHTML='<div>読込中...</div>';
+        worldRankings = await fetchWorldRankings();
+        localStorage.setItem('worldRankings',JSON.stringify(worldRankings));
+        container.innerHTML='';
+        worldRankings.forEach((e,i)=>{
+            let d=document.createElement('div'); d.className='ranking-item';
+            d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
+            container.appendChild(d);
+        });
+        checkRankingRewards();
+    }
 
-        function updateUI() {
-            document.getElementById('levelDisplay').textContent = gameState.level;
-            document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp) * 100 + '%';
-            document.getElementById('coinDisplay').textContent = gameState.coins.toLocaleString();
-            document.getElementById('displayName').textContent = gameState.userName;
-            document.getElementById('userId').textContent = 'ID: ' + gameState.friendCode.slice(0, 6);
-            document.getElementById('friendCodeDisplay').textContent = gameState.friendCode;
-            document.getElementById('nameChangeCount').textContent = `本日の変更回数: ${gameState.nameChangeCount}/3`;
-            updateTasksDisplay();
+    function checkRankingRewards(){
+        const today = getTodayString();
+        const claimed = gameState.claimedRankings.world;
+        const myEntry = worldRankings.find(r=>r.id===gameState.userId);
+        let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
+        const hasReward = (claimed !== today && inRank);
+        document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
+        document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
+        return hasReward;
+    }
+
+    function showGiftDialog(){
+        const today = getTodayString();
+        if(gameState.claimedRankings.world === today){ alert('本日分は受取済みです'); return; }
+        const myEntry = worldRankings.find(r=>r.id===gameState.userId);
+        if(!myEntry) { alert('ランキング圏外です'); return; }
+        const rank = worldRankings.findIndex(r=>r.id===gameState.userId)+1;
+        if(rank>10){ alert('10位以内のみ報酬'); return; }
+        let reward = rank===1?{xp:5000,coins:10000}: (rank<=3?{xp:2000,coins:5000}:{xp:1000,coins:2000});
+        document.getElementById('giftContent').innerHTML = `ワールドランキング ${rank}位報酬<br>${reward.xp} XP / ${reward.coins.toLocaleString()} コイン`;
+        document.getElementById('giftDialog').classList.add('active'); overlay(true);
+        document.getElementById('claimRewardBtn').onclick = ()=>{
+            gameState.xp += reward.xp; gameState.coins += reward.coins;
+            while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
+            gameState.claimedRankings.world = today;
+            saveGameState(); updateUI();
+            document.getElementById('giftDialog').classList.remove('active'); overlay(false);
             checkRankingRewards();
-        }
-
-        function updateTasksDisplay() {
-            const dailyList = document.getElementById('dailyTasksList');
-            dailyList.innerHTML = '';
-            gameState.dailyTasks.forEach(task => {
-                const taskEl = document.createElement('div');
-                taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
-                const percent = Math.min(100, (task.current / task.target) * 100);
-                taskEl.innerHTML = `<div class="task-title">${task.title}</div><div class="task-progress">${task.current} / ${task.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width: ${percent}%"></div></div><div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>`;
-                dailyList.appendChild(taskEl);
-            });
-
-            const weeklyList = document.getElementById('weeklyTasksList');
-            weeklyList.innerHTML = '';
-            gameState.weeklyTasks.forEach(task => {
-                const taskEl = document.createElement('div');
-                taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
-                const percent = Math.min(100, (task.current / task.target) * 100);
-                taskEl.innerHTML = `<div class="task-title">${task.title}</div><div class="task-progress">${task.current} / ${task.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width: ${percent}%"></div></div><div class="task-reward">報酬: +${task.reward.xp}⭐ +${task.reward.coins}💰</div>`;
-                weeklyList.appendChild(taskEl);
-            });
-        }
-
-        // ===== フレンド機能（改良版：要素を保持して差分更新）=====
-        function setupFriendsListener() {
-            if (!firebaseReady || !db || !gameState.friendCode) return;
-            
-            // 既存のリスナーを解除
-            if (friendsUnsubscribe) {
-                friendsUnsubscribe();
-                friendsUnsubscribe = null;
-            }
-            
-            const friendsRef = ref(db, `users/${gameState.friendCode}/friends`);
-            
-            friendsUnsubscribe = onValue(friendsRef, async (snapshot) => {
-                const friendsData = snapshot.val();
-                const friendsList = document.getElementById('friendsList');
-                
-                if (!friendsData) {
-                    friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
-                    gameState.friends = [];
-                    friendItemsMap.clear();
-                    localStorage.setItem('gameState', JSON.stringify(gameState));
-                    return;
-                }
-                
-                // フレンドの配列を作成
-                const friendCodes = Object.keys(friendsData);
-                
-                // 新しいフレンドデータを取得
-                const newFriendsMap = new Map();
-                
-                for (const code of friendCodes) {
-                    try {
-                        // 各フレンドの詳細情報を取得
-                        const userSnap = await get(ref(db, `users/${code}`));
-                        const userData = userSnap.val() || {};
-                        
-                        // オンライン状態を取得
-                        const statusSnap = await get(ref(db, `status/${code}`));
-                        const status = statusSnap.val();
-                        const isOnline = status && status.state === 'online';
-                        
-                        newFriendsMap.set(code, {
-                            code: code,
-                            name: userData.name || `ユーザー${code.slice(0, 4)}`,
-                            isOnline: isOnline,
-                            lastActive: userData.lastActive || Date.now()
-                        });
-                    } catch (e) {
-                        console.warn(`フレンド情報取得エラー (${code}):`, e);
-                        newFriendsMap.set(code, {
-                            code: code,
-                            name: `ユーザー${code.slice(0, 4)}`,
-                            isOnline: false,
-                            lastActive: Date.now()
-                        });
-                    }
-                }
-                
-                // gameStateを更新
-                gameState.friends = Array.from(newFriendsMap.values());
-                localStorage.setItem('gameState', JSON.stringify(gameState));
-                
-                // UIを差分更新
-                updateFriendsListDiff(newFriendsMap);
-                
-            }, (error) => {
-                console.error('フレンドリスト監視エラー:', error);
-            });
-        }
-
-        function updateFriendsListDiff(newFriendsMap) {
-            const friendsList = document.getElementById('friendsList');
-            
-            if (newFriendsMap.size === 0) {
-                friendsList.innerHTML = '<div style="text-align: center; color: var(--text-gray);">フレンドがいません</div>';
-                friendItemsMap.clear();
-                return;
-            }
-            
-            // 既存の要素をチェック
-            const currentCodes = Array.from(friendItemsMap.keys());
-            const newCodes = Array.from(newFriendsMap.keys());
-            
-            // 削除されたフレンドを特定
-            const removedCodes = currentCodes.filter(code => !newFriendsMap.has(code));
-            removedCodes.forEach(code => {
-                const element = friendItemsMap.get(code);
-                if (element && element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
-                friendItemsMap.delete(code);
-            });
-            
-            // 追加・更新されたフレンドを処理
-            newFriendsMap.forEach((friend, code) => {
-                let element = friendItemsMap.get(code);
-                
-                if (element) {
-                    // 既存要素を更新（ステータスのみ）
-                    const statusDot = element.querySelector('.friend-status');
-                    const statusText = element.querySelector('.friend-status-text');
-                    
-                    if (statusDot) {
-                        statusDot.className = `friend-status ${friend.isOnline ? '' : 'offline'}`;
-                    }
-                    if (statusText) {
-                        statusText.className = `friend-status-text ${friend.isOnline ? '' : 'offline'}`;
-                        statusText.textContent = friend.isOnline ? 'オンライン' : 'オフライン';
-                    }
-                } else {
-                    // 新規要素を作成
-                    element = document.createElement('div');
-                    element.className = 'friend-item';
-                    element.id = `friend-item-${code}`;
-                    element.innerHTML = `
-                        <div class="friend-info">
-                            <div class="friend-status ${friend.isOnline ? '' : 'offline'}"></div>
-                            <div class="friend-details">
-                                <div class="friend-name">${friend.name}</div>
-                                <div class="friend-code-small">${code}</div>
-                                <div class="friend-status-text ${friend.isOnline ? '' : 'offline'}">
-                                    ${friend.isOnline ? 'オンライン' : 'オフライン'}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="friend-actions">
-                            <button class="friend-btn delete" onclick="window.deleteFriendHandler('${code}')">削除</button>
-                            <button class="friend-btn block" onclick="window.blockFriendHandler('${code}')">ブロック</button>
-                        </div>
-                    `;
-                    
-                    friendsList.appendChild(element);
-                    friendItemsMap.set(code, element);
-                }
-            });
-            
-            // オンライン順に並び替え
-            const sortedFriends = Array.from(newFriendsMap.values()).sort((a, b) => {
-                if (a.isOnline && !b.isOnline) return -1;
-                if (!a.isOnline && b.isOnline) return 1;
-                return 0;
-            });
-            
-            // 並び順を反映
-            sortedFriends.forEach((friend, index) => {
-                const element = friendItemsMap.get(friend.code);
-                if (element) {
-                    // 現在の位置を確認
-                    const currentIndex = Array.from(friendsList.children).indexOf(element);
-                    if (currentIndex !== index) {
-                        if (index === 0) {
-                            friendsList.insertBefore(element, friendsList.firstChild);
-                        } else {
-                            const prevElement = friendsList.children[index];
-                            if (prevElement && prevElement !== element) {
-                                friendsList.insertBefore(element, prevElement);
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        window.deleteFriendHandler = (code) => {
-            showDeleteConfirmation(code);
         };
-        
-        window.blockFriendHandler = (code) => {
-            blockConfirmState = { targetCode: null, stage: 0 };
-            showBlockConfirmation(code);
-        };
+    }
 
-        function showDeleteConfirmation(code) { 
-            blockConfirmState.targetCode = code; 
-            blockConfirmState.stage = 'delete'; 
-            showDialog('フレンドを削除', `${code}\nこのフレンドを削除しますか？`, '', false, '削除'); 
-        }
-        
-        function showBlockConfirmation(code) { 
-            blockConfirmState.targetCode = code; 
-            blockConfirmState.stage = 1; 
-            showDialog('ブロック確認', `${code}\nこのフレンドを1ヶ月間ブロックしますか？`, '⚠️ 相手はあなたをフレンド招待できなくなります', true, '確認済み - 次へ'); 
-        }
-        
-        function showDialog(title, msg, warning, hasWarning, btnText = '実行') {
-            document.getElementById('dialogTitle').textContent = title;
-            document.getElementById('dialogMessage').textContent = msg;
-            document.getElementById('dialogWarning').textContent = warning;
-            document.getElementById('dialogWarning').style.display = hasWarning ? 'block' : 'none';
-            document.getElementById('dialogConfirmBtn').textContent = btnText;
-            document.getElementById('confirmationDialog').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        }
-        
-        function closeConfirmationDialog() { 
-            document.getElementById('confirmationDialog').classList.remove('active'); 
-            document.getElementById('overlay').classList.remove('active'); 
-            blockConfirmState = { targetCode: null, stage: 0 }; 
-        }
+    // ========== ゲーム制御 ==========
+    function startGame(difficulty, storyMode = false){
+        currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
+        document.getElementById('scoreDisplay').textContent='0'; document.getElementById('comboDisplay').textContent='0'; document.getElementById('timerDisplay').textContent='60';
+        switchScreen('gameScreen');
+        nextQuestion();
+        gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(storyMode); },1000);
 
-        async function addFriend(code) {
-            if (code === gameState.friendCode) { 
-                alert('自分のコードは追加できません'); 
-                return; 
+        if(storyMode){
+            let stage = gameState.storyStage;
+            if(stage>=25 && stage<50 && !storyDebuffActive){
+                setTimeout(()=>{
+                    if(!gameActive) return;
+                    storyDebuffActive=true;
+                    document.getElementById('darknessOverlay').classList.add('active');
+                    setTimeout(()=>{ if(gameActive) document.getElementById('darknessOverlay').classList.remove('active'); storyDebuffActive=false; }, 1000);
+                }, Math.random()*20000+5000);
             }
-            
-            if (!firebaseReady || !db) {
-                alert('⚠️ Firebase がまだ初期化されていません。');
-                return;
+            if(stage>=50 && stage<75){ gameTime = Math.max(55, gameTime-5); document.getElementById('timerDisplay').textContent=gameTime; }
+            if(stage>=75 && stage<=100 && !storyCrackActive){
+                setTimeout(()=>{
+                    if(!gameActive) return;
+                    storyCrackActive=true;
+                    document.getElementById('screenCrack').classList.add('active');
+                    currentCombo=0; document.getElementById('comboDisplay').textContent='0';
+                    setTimeout(()=>{ document.getElementById('screenCrack').classList.remove('active'); storyCrackActive=false; }, 5000);
+                }, Math.random()*15000+5000);
             }
-            
-            try {
-                console.log('🔍 フレンド追加開始:', code);
-                
-                // 対象ユーザーの存在確認
-                const targetSnap = await get(ref(db, `users/${code}`));
-                if (!targetSnap.exists()) {
-                    alert('そのフレンドコードは存在しません');
-                    return;
+        }
+    }
+
+    function nextQuestion(){ 
+        let arr = questions[currentDifficulty]; 
+        currentQuestion = arr[Math.floor(Math.random()*arr.length)]; 
+        currentRomaji = convertToRomaji(currentQuestion).toLowerCase(); 
+        typedInput=''; 
+        document.getElementById('questionDisplay').textContent=currentQuestion; 
+        updateRomajiDisplay(); 
+    }
+    function updateRomajiDisplay(){ document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; }
+
+    function endGame(storyMode){
+        gameActive=false; clearInterval(gameTimer);
+        let coins = Math.floor(currentScore/10); let xp = Math.floor(currentScore/100);
+        gameState.coins += coins; gameState.xp += xp;
+        while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
+
+        // タスク更新
+        updateTaskProgress(currentScore, currentCombo, !storyMode);
+
+        if(storyMode){
+            let stage = gameState.storyStage;
+            let target = 10000 + (stage-1)*1000;
+            if(currentScore >= target){
+                if(!gameState.storyClears.includes(stage)) gameState.storyClears.push(stage);
+                if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
+                if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
+                if(stage===100){ 
+                    gameState.shards+=8; 
+                    if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
+                    alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
                 }
-                
-                const targetData = targetSnap.val();
-                const friendName = targetData.name || `ユーザー${code.slice(0, 4)}`;
-                
-                console.log('👤 フレンド名:', friendName);
-                
-                // 相互フレンド関係を構築
-                await update(ref(db, `users/${gameState.friendCode}/friends/${code}`), { active: true });
-                await update(ref(db, `users/${code}/friends/${gameState.friendCode}`), { active: true });
-                
-                document.getElementById('addFriendCode').value = '';
-                alert(`✅ ${friendName} をフレンドに追加しました！`);
-                
-            } catch (e) {
-                console.error('❌ フレンド追加エラー:', e);
-                alert('フレンド追加に失敗しました:\n' + e.message);
-            }
+                if(stage<100) gameState.storyStage++;
+            } else { alert(`目標スコア ${target} に届きませんでした`); }
         }
 
-        async function deleteFriend(code) { 
-            if (!firebaseReady || !db) {
-                gameState.friends = gameState.friends.filter(f => f.code !== code);
-                friendItemsMap.delete(code);
-                saveGameState();
-                renderFriendsList(gameState.friends);
-                closeConfirmationDialog();
-                return;
-            }
-            
-            try {
-                await remove(ref(db, `users/${gameState.friendCode}/friends/${code}`));
-                await remove(ref(db, `users/${code}/friends/${gameState.friendCode}`));
-                
-                // 要素を削除
-                const element = friendItemsMap.get(code);
-                if (element && element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
-                friendItemsMap.delete(code);
-                
-                gameState.friends = gameState.friends.filter(f => f.code !== code);
-                saveGameState();
-                
-                closeConfirmationDialog();
-                console.log(`✅ フレンド ${code} を削除しました`);
-                
-            } catch (e) {
-                console.error('❌ フレンド削除エラー:', e.message);
-                alert('フレンド削除に失敗しました:\n' + e.message);
-            }
-        }
-
-        function blockFriend(code) {
-            if (blockConfirmState.stage === 1) { 
-                blockConfirmState.stage = 2; 
-                showDialog('ブロック最終確認', `${code}\n本当にブロックしますか？`, '⚠️ ⚠️ これは取り返しがつきません', true, 'ブロック実行'); 
-                return; 
-            }
-            if (blockConfirmState.stage === 2) { 
-                gameState.blockedUsers.push({ 
-                    code, 
-                    blockTime: new Date().toISOString() 
-                }); 
-                gameState.friends = gameState.friends.filter(f => f.code !== code); 
-                
-                // 要素を削除
-                const element = friendItemsMap.get(code);
-                if (element && element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
-                friendItemsMap.delete(code);
-                
-                saveGameState(); 
-                closeConfirmationDialog(); 
-                alert('✅ フレンドをブロックしました（1ヶ月間）'); 
-            }
-        }
-
-        function switchScreen(screenId) { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-            document.getElementById(screenId).classList.add('active'); 
-        }
-
-        async function displayRanking(type) {
-            switchScreen('rankingViewScreen');
-            const title = type === 'friend' ? 'フレンドランキング' : 'ワールドランキング';
-            document.getElementById('rankingViewTitle').textContent = title;
-            const container = document.getElementById('rankingListContainer');
-            container.innerHTML = '<div style="text-align: center; color: var(--text-gray);">ランキング読み込み中...</div>';
-
-            let rankings = [];
-
-            if (type === 'friend') {
-                // フレンドランキング
-                for (const friend of gameState.friends) {
-                    let score = 0;
-                    if (firebaseReady && db) {
-                        try {
-                            const snap = await get(ref(db, `users/${friend.code}/score`));
-                            score = snap.val() || 0;
-                        } catch (e) {
-                            console.warn('スコア取得エラー:', e);
-                        }
-                    }
-                    rankings.push({ 
-                        name: friend.name, 
-                        score: score,
-                        code: friend.code 
-                    });
-                }
-            } else {
-                // ワールドランキング
-                if (firebaseReady && db) {
-                    try {
-                        const snap = await get(ref(db, 'users'));
-                        const users = snap.val() || {};
-                        Object.entries(users).forEach(([code, user]) => {
-                            if (user.name && user.score && user.score > 0) { // スコア0は除外
-                                rankings.push({ 
-                                    name: user.name, 
-                                    score: user.score,
-                                    code: code 
-                                });
-                            }
-                        });
-                    } catch (e) {
-                        console.warn('ランキング読み込みエラー:', e.message);
-                    }
-                }
-            }
-
-            // スコアでソート
-            rankings.sort((a, b) => b.score - a.score);
-            rankings = rankings.slice(0, 100);
-
-            // ランキングを保存
-            if (type === 'friend') {
-                friendRankings = rankings;
-                localStorage.setItem('friendRankings', JSON.stringify(rankings));
-            } else {
-                worldRankings = rankings;
-                localStorage.setItem('worldRankings', JSON.stringify(rankings));
-            }
-
-            container.innerHTML = '';
-            rankings.forEach((entry, idx) => {
-                const isCurrentUser = entry.code === gameState.friendCode;
-                const item = document.createElement('div');
-                item.className = 'ranking-item';
-                item.innerHTML = `<div class="ranking-rank">${idx + 1}位</div><div class="ranking-name" style="${isCurrentUser ? 'color: var(--accent-green); font-weight: bold;' : ''}">${entry.name}${isCurrentUser ? ' (あなた)' : ''}</div><div class="ranking-score">${entry.score.toLocaleString()}</div>`;
-                container.appendChild(item);
-            });
-            
-            // 報酬チェック
-            checkRankingRewards();
-        }
-
-        let gameTimer = null, currentQuestion = '', currentRomaji = '', typedInput = '';
-        
-        function startGame(difficulty) {
-            gameState.currentDifficulty = difficulty; 
-            gameState.currentScore = 0; 
-            gameState.currentCombo = 0; 
-            gameState.gameTime = 60; 
-            gameState.gameActive = true; 
-            typedInput = '';
-            document.getElementById('scoreDisplay').textContent = '0'; 
-            document.getElementById('comboDisplay').textContent = '0'; 
-            document.getElementById('timerDisplay').textContent = '60';
-            switchScreen('gameScreen'); 
-            nextQuestion(); 
-            startTimer();
-            gameState.dailyTasks[0].current++; 
-            gameState.weeklyTasks[0].current++; 
-            updateTasksDisplay(); 
-            saveGameState();
-        }
-
-        function nextQuestion() { 
-            const qArray = questions[gameState.currentDifficulty]; 
-            currentQuestion = qArray[Math.floor(Math.random() * qArray.length)]; 
-            currentRomaji = convertToRomaji(currentQuestion).toLowerCase(); 
-            typedInput = ''; 
-            document.getElementById('questionDisplay').textContent = currentQuestion; 
-            updateRomajiDisplay(); 
-        }
-        
-        function updateRomajiDisplay() { 
-            const romajiEl = document.getElementById('romajiDisplay'); 
-            romajiEl.innerHTML = `<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; 
-        }
-        
-        function startTimer() { 
-            gameTimer = setInterval(() => { 
-                gameState.gameTime--; 
-                document.getElementById('timerDisplay').textContent = gameState.gameTime; 
-                if (gameState.gameTime <= 0) endGame(); 
-            }, 1000); 
-        }
-        
-        function endGame() {
-            gameState.gameActive = false; 
-            clearInterval(gameTimer); 
-            const coins = Math.floor(gameState.currentScore / 10); 
-            const xp = Math.floor(gameState.currentScore / 100); 
-            gameState.coins += coins; 
-            gameState.xp += xp;
-            
-            if (gameState.currentScore >= 5000) gameState.dailyTasks[1].current++;
-            if (gameState.currentCombo >= 50) { 
-                gameState.dailyTasks[2].current++; 
-                gameState.weeklyTasks[2].current++; 
-            }
-            if (gameState.currentScore >= 5000) gameState.weeklyTasks[1].current++;
-            
-            while (gameState.xp >= gameState.maxXp) { 
-                gameState.xp -= gameState.maxXp; 
-                gameState.level++;
-                gameState.maxXp = Math.floor(gameState.maxXp * 1.5);
-            }
-            
-            if (firebaseReady && db) {
-                set(ref(db, `users/${gameState.friendCode}/score`), gameState.currentScore)
-                    .catch(e => console.warn('スコア保存エラー:', e));
-            }
-            
-            saveGameState();
-            document.getElementById('finalScore').textContent = gameState.currentScore; 
-            document.getElementById('earnedCoins').textContent = coins; 
-            document.getElementById('earnedXP').textContent = xp;
-            switchScreen('resultScreen'); 
-            updateUI();
-        }
-
-        // イベントリスナーの設定
-        document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
-        document.getElementById('rankingBtn').addEventListener('click', () => {
-            switchScreen('rankingModeScreen');
-            startRankingUpdateTimer();
-        });
-        document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
-        document.getElementById('friendRankingViewBtn').addEventListener('click', () => displayRanking('friend'));
-        document.getElementById('worldRankingViewBtn').addEventListener('click', () => displayRanking('world'));
-        document.getElementById('backFromRankingViewBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
-        
-        document.getElementById('friendRankingPlayBtn').addEventListener('click', () => { 
-            if (gameState.friends.length >= 2) {
-                startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]); 
-            } else {
-                alert('フレンドランキングには2人以上のフレンドが必要です'); 
-            }
-        });
-        
-        document.getElementById('worldRankingPlayBtn').addEventListener('click', () => {
-            startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)]);
-        });
-        
-        document.getElementById('giftBtn').addEventListener('click', showGiftDialog);
-        document.getElementById('giftCloseBtn').addEventListener('click', () => {
-            document.getElementById('giftDialog').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-        });
-        
-        document.getElementById('taskBtn').addEventListener('click', () => {
-            document.getElementById('profilePanel').classList.add('hidden');
-            document.getElementById('friendPanel').classList.add('hidden');
-            document.getElementById('taskPanel').classList.remove('hidden');
-            document.getElementById('panelTitle').textContent = 'タスク';
-            document.getElementById('sidePanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        });
-        
-        document.getElementById('profileBtn').addEventListener('click', () => {
-            document.getElementById('profilePanel').classList.remove('hidden');
-            document.getElementById('friendPanel').classList.add('hidden');
-            document.getElementById('taskPanel').classList.add('hidden');
-            document.getElementById('panelTitle').textContent = 'プロフィール';
-            document.getElementById('sidePanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        });
-        
-        document.getElementById('friendBtn').addEventListener('click', () => {
-            document.getElementById('profilePanel').classList.add('hidden');
-            document.getElementById('friendPanel').classList.remove('hidden');
-            document.getElementById('taskPanel').classList.add('hidden');
-            document.getElementById('panelTitle').textContent = 'フレンド';
-            document.getElementById('sidePanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-            // フレンドリストを表示（既存の要素があるので何もしなくてOK）
-        });
-
-        document.querySelectorAll('.difficulty-btn').forEach(btn => {
-            btn.addEventListener('click', () => startGame(btn.dataset.difficulty));
-        });
-        
-        document.getElementById('backBtn').addEventListener('click', () => switchScreen('menuScreen'));
-        document.getElementById('continueBtn').addEventListener('click', () => { 
-            switchScreen('menuScreen'); 
-            updateUI(); 
-        });
-        
-        document.getElementById('overlay').addEventListener('click', () => { 
-            document.getElementById('sidePanel').classList.remove('active'); 
-            document.getElementById('overlay').classList.remove('active'); 
-            document.getElementById('giftDialog').classList.remove('active');
-            closeConfirmationDialog(); 
-        });
-        
-        document.getElementById('panelCloseBtn').addEventListener('click', () => { 
-            document.getElementById('sidePanel').classList.remove('active'); 
-            document.getElementById('overlay').classList.remove('active'); 
-        });
-        
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                if (this.dataset.tab === 'weekly') {
-                    document.getElementById('dailyTasksList').classList.add('hidden');
-                    document.getElementById('weeklyTasksList').classList.remove('hidden');
-                } else {
-                    document.getElementById('dailyTasksList').classList.remove('hidden');
-                    document.getElementById('weeklyTasksList').classList.add('hidden');
-                }
-            });
-        });
-        
-        document.getElementById('dialogCancelBtn').addEventListener('click', closeConfirmationDialog);
-        
-        document.getElementById('dialogConfirmBtn').addEventListener('click', () => {
-            if (blockConfirmState.stage === 'delete') {
-                deleteFriend(blockConfirmState.targetCode);
-            } else if (blockConfirmState.stage === 1 || blockConfirmState.stage === 2) {
-                blockFriend(blockConfirmState.targetCode);
-            }
-        });
-        
-        document.getElementById('changeNameBtn').addEventListener('click', async () => {
-            const newName = document.getElementById('newNameInput').value.trim();
-            if (newName && gameState.nameChangeCount < 3) {
-                gameState.userName = newName;
-                gameState.nameChangeCount++;
-                
-                if (firebaseReady && db) {
-                    try {
-                        await set(ref(db, `users/${gameState.friendCode}/name`), newName);
-                        console.log(`✅ Firebase に名前を保存しました: ${newName}`);
-                    } catch (e) {
-                        console.error('❌ Firebase 名前保存エラー:', e.message);
-                    }
-                }
-                
-                saveGameState();
-                updateUI();
-                document.getElementById('newNameInput').value = '';
-                alert(`✅ 名前を「${newName}」に変更しました！`);
-            } else if (gameState.nameChangeCount >= 3) {
-                alert('本日の変更回数に達しました。明日00:00に更新されます。');
-            }
-        });
-        
-        document.getElementById('addFriendBtn').addEventListener('click', () => { 
-            const code = document.getElementById('addFriendCode').value.trim(); 
-            if (code) addFriend(code); 
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (!gameState.gameActive) return;
-            const key = e.key.toLowerCase();
-            if (key.match(/[a-z]/)) {
-                const expectedChar = currentRomaji[typedInput.length];
-                if (key === expectedChar) {
-                    typedInput += key;
-                    gameState.currentCombo++;
-                    gameState.currentScore += 5 * gameState.currentCombo;
-                    document.getElementById('scoreDisplay').textContent = gameState.currentScore;
-                    document.getElementById('comboDisplay').textContent = gameState.currentCombo;
-                    updateRomajiDisplay();
-                    if (typedInput === currentRomaji) nextQuestion();
-                } else {
-                    gameState.currentCombo = 0;
-                    document.getElementById('comboDisplay').textContent = '0';
-                    updateRomajiDisplay();
-                }
-            }
-        });
-
-        // 初期化
-        loadGameState();
-        checkAndResetDaily();
+        if(db) set(ref(db,`users/${gameState.userId}/score`), currentScore).catch(()=>{});
+        saveGameState();
+        document.getElementById('finalScore').textContent=currentScore;
+        document.getElementById('earnedCoins').textContent=coins;
+        document.getElementById('earnedXP').textContent=xp;
+        switchScreen('resultScreen');
         updateUI();
+    }
 
-        // Firebase同期とフレンドリスナー設定
-        setTimeout(async () => {
-            // ユーザーデータをFirebaseに保存
-            if (firebaseReady && db && gameState.friendCode) {
-                try {
-                    await set(ref(db, `users/${gameState.friendCode}`), {
-                        name: gameState.userName,
-                        lastActive: Date.now(),
-                        level: gameState.level,
-                        xp: gameState.xp,
-                        coins: gameState.coins,
-                        score: gameState.currentScore
-                    });
-                    console.log('✅ ユーザーデータ同期完了');
-                    
-                    // フレンドリスナーを設定
-                    setupFriendsListener();
-                    
-                    // オンライン状態を設定
-                    const userStatusRef = ref(db, `status/${gameState.friendCode}`);
-                    const connectedRef = ref(db, '.info/connected');
-                    onValue(connectedRef, (snap) => {
-                        if (snap.val() === true) {
-                            set(userStatusRef, {
-                                state: 'online',
-                                lastOnline: Date.now()
-                            });
-                            onDisconnect(userStatusRef).set({
-                                state: 'offline',
-                                lastOnline: Date.now()
-                            });
-                        }
-                    });
-                } catch (e) {
-                    console.warn('Firebase 初期化エラー:', e);
-                }
-            }
-            
-            // ランキングタイマー開始
-            startRankingUpdateTimer();
-            
-            // 既存のランキングを読み込み
-            const savedWorld = localStorage.getItem('worldRankings');
-            if (savedWorld) worldRankings = JSON.parse(savedWorld);
-            const savedFriend = localStorage.getItem('friendRankings');
-            if (savedFriend) friendRankings = JSON.parse(savedFriend);
-            
-            // 報酬チェック
-            checkRankingRewards();
-        }, 1000);
-    </script>
+    function renderStoryMap(){
+        let container = document.getElementById('storyMapContainer'); container.innerHTML='';
+        for(let i=1;i<=100;i++){
+            let node = document.createElement('div'); node.className='story-node';
+            if(gameState.storyClears.includes(i)) node.classList.add('clear');
+            if(i===gameState.storyStage) node.classList.add('current');
+            if(i>gameState.storyStage && !gameState.storyClears.includes(i-1) && i!==1) node.classList.add('locked');
+            node.innerHTML = `${i}<br>${10000+(i-1)*1000}`;
+            if(i===25||i===50||i===75||i===100) node.innerHTML += '<br>🎁';
+            node.onclick = ()=>{ if(!node.classList.contains('locked')) gameState.storyStage = i; renderStoryMap(); };
+            container.appendChild(node);
+        }
+        document.getElementById('currentStoryStage').textContent = gameState.storyStage;
+    }
+
+    function renderInventory(){
+        let skillsDiv = document.getElementById('skillsList'); skillsDiv.innerHTML='';
+        let itemsDiv = document.getElementById('itemsList'); itemsDiv.innerHTML='<div class="item-card">🔮 スキルのかけら <span class="item-count">'+gameState.shards+'</span></div>';
+        const allSkills = [
+            {id:'auto',name:'⚡自動入力',desc:'30秒:0.25秒/文字 3.5秒'},{id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ'},{id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},{id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'}
+        ];
+        gameState.ownedSkills.forEach(sid=>{
+            let sk = allSkills.find(s=>s.id===sid); if(!sk) return;
+            let div = document.createElement('div'); div.className='item-card skill';
+            let equipped = gameState.equippedSkills.includes(sid);
+            div.innerHTML = `<div class="item-info"><span class="item-name">${sk.name}</span><span class="item-desc">${sk.desc}</span></div><button class="equip-btn">${equipped?'装備中':'装備'}</button>`;
+            div.querySelector('.equip-btn').onclick=()=>{
+                if(equipped) gameState.equippedSkills = gameState.equippedSkills.filter(id=>id!==sid);
+                else if(gameState.equippedSkills.length<3) gameState.equippedSkills.push(sid);
+                else alert('装備は3つまで');
+                saveGameState(); renderInventory();
+            };
+            skillsDiv.appendChild(div);
+        });
+    }
+
+    function renderShop(){
+        let skillsDiv = document.getElementById('shopSkillsPanel'); skillsDiv.innerHTML='';
+        const shopSkills = [
+            {id:'auto',name:'自動入力',desc:'かけら5',price:5},{id:'timeExtend',name:'時間伸ばし',desc:'かけら5',price:5},{id:'comboUp',name:'コンボアップ',desc:'かけら5',price:5}
+        ];
+        shopSkills.forEach(sk=>{
+            let div = document.createElement('div'); div.className='shop-item item-card';
+            div.innerHTML = `<div><span class="item-name">${sk.name}</span><div>${sk.desc}</div></div><button class="equip-btn" data-id="${sk.id}">購入 (🔮5)</button>`;
+            div.querySelector('button').onclick=()=>{
+                if(gameState.shards>=5){
+                    if(!gameState.ownedSkills.includes(sk.id)) gameState.ownedSkills.push(sk.id);
+                    gameState.shards-=5; saveGameState(); renderShop(); alert(`${sk.name}入手`);
+                } else alert('かけら不足');
+            };
+            skillsDiv.appendChild(div);
+        });
+        document.getElementById('exchangeShardBtn').onclick=()=>{
+            if(gameState.coins >= 10000000){ gameState.coins -= 10000000; gameState.shards += 1; saveGameState(); renderShop(); alert('交換完了'); } 
+            else alert('コイン不足');
+        };
+    }
+
+    function overlay(show){ document.getElementById('overlay').classList.toggle('active',show); }
+    function switchScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    // イベントリスナー
+    document.getElementById('playBtn').addEventListener('click',()=>switchScreen('difficultyScreen'));
+    document.getElementById('storyBtn').addEventListener('click',()=>{
+        if(gameState.level < 15){ alert('ストーリーはレベル15から解放'); return; }
+        renderStoryMap(); switchScreen('storyMapScreen');
+    });
+    document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
+    document.getElementById('worldRankingViewBtn').addEventListener('click',displayRanking);
+    document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], false); });
+    document.getElementById('backFromRankingModeBtn').addEventListener('click',()=>switchScreen('menuScreen'));
+    document.getElementById('backFromRankingViewBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
+    document.getElementById('backBtn').addEventListener('click',()=>switchScreen('menuScreen'));
+    document.getElementById('continueBtn').addEventListener('click',()=>switchScreen('menuScreen'));
+    document.getElementById('backFromStoryBtn').addEventListener('click',()=>switchScreen('menuScreen'));
+    document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], true); });
+    document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty,false)));
+
+    document.getElementById('giftBtn').addEventListener('click',showGiftDialog);
+    document.getElementById('giftCloseBtn').addEventListener('click',()=>{ document.getElementById('giftDialog').classList.remove('active'); overlay(false); });
+    document.getElementById('overlay').addEventListener('click',()=>{
+        document.getElementById('sidePanel').classList.remove('active');
+        document.getElementById('shopPanel').classList.remove('active');
+        document.getElementById('giftDialog').classList.remove('active');
+        overlay(false);
+    });
+
+    // タスクボタン (新設)
+    document.getElementById('taskBtn').addEventListener('click',()=>{
+        document.getElementById('panelTitle').textContent='タスク';
+        document.getElementById('profilePanel').classList.add('hidden');
+        document.getElementById('inventoryPanel').classList.add('hidden');
+        document.getElementById('taskPanel').classList.remove('hidden');
+        updateTasksDisplay();
+        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+    });
+
+    document.getElementById('profileBtn').addEventListener('click',()=>{
+        document.getElementById('panelTitle').textContent='プロフィール';
+        document.getElementById('profilePanel').classList.remove('hidden');
+        document.getElementById('inventoryPanel').classList.add('hidden');
+        document.getElementById('taskPanel').classList.add('hidden');
+        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+    });
+    document.getElementById('inventoryBtn').addEventListener('click',()=>{
+        document.getElementById('panelTitle').textContent='持ち物';
+        document.getElementById('profilePanel').classList.add('hidden');
+        document.getElementById('inventoryPanel').classList.remove('hidden');
+        document.getElementById('taskPanel').classList.add('hidden');
+        renderInventory();
+        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+    });
+    document.getElementById('shopBtn').addEventListener('click',()=>{
+        renderShop();
+        document.getElementById('shopPanel').classList.add('active'); overlay(true);
+    });
+    document.getElementById('panelCloseBtn').addEventListener('click',()=>{ document.getElementById('sidePanel').classList.remove('active'); overlay(false); });
+    document.getElementById('shopCloseBtn').addEventListener('click',()=>{ document.getElementById('shopPanel').classList.remove('active'); overlay(false); });
+
+    document.getElementById('changeNameBtn').addEventListener('click',()=>{
+        let newName = document.getElementById('newNameInput').value.trim();
+        if(newName && gameState.nameChangeCount<3){
+            gameState.userName = newName; gameState.nameChangeCount++;
+            if(db) set(ref(db,`users/${gameState.userId}/name`), newName).catch(()=>{});
+            saveGameState(); updateUI(); document.getElementById('newNameInput').value=''; alert('名前変更完了');
+        } else if(gameState.nameChangeCount>=3) alert('変更回数上限');
+    });
+
+    // タブ切り替え (持ち物)
+    document.querySelectorAll('#invTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
+        document.querySelectorAll('#invTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
+        if(this.dataset.inv==='skills'){ document.getElementById('skillsList').classList.remove('hidden'); document.getElementById('itemsList').classList.add('hidden'); }
+        else { document.getElementById('skillsList').classList.add('hidden'); document.getElementById('itemsList').classList.remove('hidden'); }
+    }));
+    // タブ切り替え (タスク)
+    document.querySelectorAll('#taskTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
+        document.querySelectorAll('#taskTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
+        if(this.dataset.tab==='daily'){ document.getElementById('dailyTasksList').classList.remove('hidden'); document.getElementById('weeklyTasksList').classList.add('hidden'); }
+        else { document.getElementById('dailyTasksList').classList.add('hidden'); document.getElementById('weeklyTasksList').classList.remove('hidden'); }
+    }));
+    document.querySelectorAll('#shopPanel .tab-btn').forEach(t=>t.addEventListener('click',function(){
+        document.querySelectorAll('#shopPanel .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
+        document.getElementById('shopSkillsPanel').classList.toggle('hidden',this.dataset.shop!=='skills');
+        document.getElementById('shopCreditPanel').classList.toggle('hidden',this.dataset.shop==='skills');
+    }));
+
+    document.addEventListener('keydown',(e)=>{
+        if(!gameActive) return;
+        let key=e.key.toLowerCase();
+        if(key.match(/[a-z]/)){
+            let ex = currentRomaji[typedInput.length];
+            if(key===ex){ typedInput+=key; currentCombo++; currentScore+=5*currentCombo; document.getElementById('scoreDisplay').textContent=currentScore; document.getElementById('comboDisplay').textContent=currentCombo; updateRomajiDisplay(); if(typedInput===currentRomaji) nextQuestion(); }
+            else { currentCombo=0; document.getElementById('comboDisplay').textContent='0'; updateRomajiDisplay(); }
+        }
+    });
+
+    setInterval(()=>checkRankingRewards(), 20000);
+    updateUI();
+    fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
+</script>
 </body>
 </html>
