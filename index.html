@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・ランキング修正版</title>
+    <title>⚡ タイピングストーリー・スキル実装版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -121,12 +121,18 @@
         .task-reward { margin-top: 10px; font-size: 14px; color: var(--accent-gold); font-weight: 600; }
         .task-notify { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, gold, orange); color: black; padding: 16px 32px; border-radius: 60px; font-weight: 700; z-index: 3000; animation: fadeInOut 3s forwards; pointer-events: none; }
         @keyframes fadeInOut { 0% { opacity:0; top:0; } 15% { opacity:1; top:20px; } 85% { opacity:1; top:20px; } 100% { opacity:0; top:0; } }
+        /* スキルボタン */
+        .skill-bar { position: fixed; bottom: 120px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        .skill-use-btn { padding: 12px 24px; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); border: none; border-radius: 40px; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 0 20px var(--accent-purple); transition: 0.2s; }
+        .skill-use-btn:hover { transform: scale(1.05); }
+        .skill-use-btn.disabled { opacity: 0.4; pointer-events: none; }
+        .cooldown-overlay { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.5); border-radius: 40px; }
     </style>
 </head>
 <body>
 <div class="game-container">
     <div class="header">
-        <div class="game-title">⚡ TYPING・ランキング修正</div>
+        <div class="game-title">⚡ タイピング・スキル実装</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -140,6 +146,26 @@
                 <button class="icon-btn" id="shopBtn">🏪</button>
                 <button class="icon-btn" id="profileBtn">👤</button>
             </div>
+        </div>
+    </div>
+
+    <!-- スキル使用ボタン (ゲーム中のみ表示) -->
+    <div class="skill-bar" id="skillBar" style="display: none;">
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillAutoBtn" style="background:linear-gradient(135deg,#00aaff,#0066cc);">⚡自動入力</button>
+            <div class="cooldown-overlay" id="cooldownAuto" style="width:0%;"></div>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillTimeBtn" style="background:linear-gradient(135deg,#ffaa00,#cc8800);">⏳時間伸ばし</button>
+            <div class="cooldown-overlay" id="cooldownTime" style="width:0%;"></div>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillComboBtn" style="background:linear-gradient(135deg,#ff44aa,#aa2266);">🔥コンボアップ</button>
+            <div class="cooldown-overlay" id="cooldownCombo" style="width:0%;"></div>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillComboPlusBtn" style="background:linear-gradient(135deg,gold,orange);">✨コンボ+</button>
+            <div class="cooldown-overlay" id="cooldownComboPlus" style="width:0%;"></div>
         </div>
     </div>
 
@@ -168,9 +194,9 @@
             <div class="menu-title">📖 ストーリーマップ</div>
             <div class="story-info">ステージ <span id="currentStoryStage">1</span>/100</div>
             <div class="story-map" id="storyMapContainer"></div>
-            <div style="display:flex; gap:20px;">
-                <button class="back-btn" id="backFromStoryBtn">戻る</button>
+            <div style="display:flex; justify-content:flex-end; width:100%; padding-right:40px;"> <!-- 右寄せ -->
                 <button class="menu-btn" id="startStoryBtn" style="padding:15px 30px;">挑戦する</button>
+                <button class="back-btn" id="backFromStoryBtn" style="margin-left:20px;">戻る</button>
             </div>
         </div>
         <!-- ランキングモード (ワールドのみ) -->
@@ -212,7 +238,7 @@
     <div class="coin-display"><div style="font-size:24px;">💰</div><div class="coin-value" id="coinDisplay">0</div></div>
     <div class="overlay" id="overlay"></div>
 
-    <!-- ギフトダイアログ (ランキング報酬) -->
+    <!-- ギフトダイアログ -->
     <div class="gift-dialog" id="giftDialog">
         <button class="gift-close" id="giftCloseBtn">✕</button>
         <div class="gift-title">🎁 ランキング報酬</div>
@@ -220,11 +246,9 @@
         <button class="gift-button" id="claimRewardBtn">受け取る</button>
     </div>
 
-    <!-- サイドパネル (プロフィール/持ち物/タスク共用) -->
+    <!-- サイドパネル -->
     <div class="side-panel" id="sidePanel">
         <div class="panel-header"><span id="panelTitle">メニュー</span><button class="panel-close" id="panelCloseBtn">✕</button></div>
-        
-        <!-- プロフィール画面 -->
         <div id="profilePanel" class="hidden">
             <div class="profile-section">
                 <div class="user-name" id="displayName">プレイヤー</div>
@@ -234,8 +258,6 @@
                 <div class="name-change-count" id="nameChangeCount">本日:0/3</div>
             </div>
         </div>
-        
-        <!-- 持ち物パネル -->
         <div id="inventoryPanel" class="hidden">
             <div class="tab-bar" id="invTabs">
                 <button class="tab-btn active" data-inv="skills">スキル</button>
@@ -244,8 +266,6 @@
             <div id="skillsList" class="item-grid"></div>
             <div id="itemsList" class="item-grid hidden"></div>
         </div>
-
-        <!-- タスクパネル -->
         <div id="taskPanel" class="hidden">
             <div class="tab-bar" id="taskTabs">
                 <button class="tab-btn active" data-tab="daily">毎日</button>
@@ -256,7 +276,7 @@
         </div>
     </div>
 
-    <!-- ショップパネル (別パネル) -->
+    <!-- ショップパネル -->
     <div class="side-panel" id="shopPanel">
         <div class="panel-header"><span>ショップ</span><button class="panel-close" id="shopCloseBtn">✕</button></div>
         <div class="tab-bar">
@@ -277,7 +297,6 @@
     <div class="darkness-overlay" id="darknessOverlay"></div>
     <div class="screen-crack" id="screenCrack"></div>
     <div id="taskNotification" class="task-notify hidden">🎉 タスククリア！</div>
-
     <div class="firebase-status connected" id="firebaseStatus">✅ 接続済み</div>
 </div>
 
@@ -296,25 +315,25 @@
     };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const statusEl = document.getElementById('firebaseStatus');
 
     // ========== ゲーム状態 ==========
     const gameState = {
         userId: 'user_' + Math.random().toString(36).substr(2,8),
         userName: '冒険者',
-        coins: 5000000,          // デバッグ用
-        level: 10,                // レベル10からストーリー解放 (変更)
+        coins: 5000000,
+        level: 10,
         xp: 0,
         maxXp: 100,
         nameChangeCount: 0,
         lastNameChangeReset: new Date().toDateString(),
         storyStage: 1,
         storyClears: [],
-        shards: 0,
+        shards: 5, // デバッグ用
         ownedSkills: [],
         equippedSkills: [],
-        claimedRankings: { world: null }, // 最後に報酬を受け取った日付 (YYYY-MM-DD)
-        // タスク関連
+        claimedRankings: { world: null },
+        // ランキング用最高スコア (ワールドランキングモードのみ)
+        rankingHighScore: 0,
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -327,8 +346,14 @@
         ],
         lastDailyReset: '',
         lastWeeklyReset: '',
-        lastRankingDate: ''        // 最後にランキングを確認した日付 (内部用)
     };
+
+    // スキルクールダウン管理
+    const cooldowns = { auto:0, timeExtend:0, comboUp:0, comboPlus:0 };
+    const skillDurations = { auto:3.5, timeExtend:0, comboUp:0, comboPlus:0 }; // 持続時間
+    let skillAutoActive = false;
+    let autoInterval = null;
+    let timeExtendActive = false;
 
     // 問題・変換
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
@@ -336,14 +361,14 @@
     const youonMap = {'きゃ':'kya','きゅ':'kyu','きょ':'kyo','しゃ':'sya','しゅ':'syu','しょ':'syo','ちゃ':'tya','ちゅ':'tyu','ちょ':'tyo','にゃ':'nya','にゅ':'nyu','にょ':'nyo','ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','みゃ':'mya','みゅ':'myu','みょ':'myo','りゃ':'rya','りゅ':'ryu','りょ':'ryo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo','じゃ':'zya','じゅ':'zyu','じょ':'zyo','びゃ':'bya','びゅ':'byu','びょ':'byo','ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'};
     function convertToRomaji(t) { let r='',i=0; while(i<t.length){ if(i+1<t.length&&youonMap[t.substring(i,i+2)]){ r+=youonMap[t.substring(i,i+2)]; i+=2; continue; } if(t[i]==='っ'&&i+1<t.length){ let n=t[i+1]; let nr=romajiMap[n]||n; r+=nr[0]+nr[0]+nr.substring(1); i+=2; } else { r+=romajiMap[t[i]]||t[i]; i++; } } return r; }
 
-    // ワールドランキング保存用
     let worldRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
+    let currentMode = 'normal'; // 'normal' or 'ranking'
 
     // ========== 永続化 ==========
     function saveGameState() { localStorage.setItem('gameState',JSON.stringify(gameState)); syncFirebase(); }
-    function syncFirebase() { if(db) set(ref(db,`users/${gameState.userId}`),{ name:gameState.userName, lastActive:Date.now(), level:gameState.level, xp:gameState.xp, coins:gameState.coins, score:currentScore }).catch(()=>{}); }
+    function syncFirebase() { if(db) set(ref(db,`users/${gameState.userId}`),{ name:gameState.userName, lastActive:Date.now(), level:gameState.level, xp:gameState.xp, coins:gameState.coins, score:gameState.rankingHighScore }).catch(()=>{}); }
     (function load(){ 
         const s=localStorage.getItem('gameState'); 
         if(s) Object.assign(gameState,JSON.parse(s)); 
@@ -358,9 +383,10 @@
         }
         checkTaskReset();
         updateUI(); 
+        updateSkillButtons();
     })();
 
-    // タスクリセット (毎日7時、毎週月曜7時)
+    // タスクリセット
     function checkTaskReset(){
         const now = new Date();
         const today7 = new Date(); today7.setHours(7,0,0,0);
@@ -368,10 +394,8 @@
         const dayOfWeek = now.getDay();
         const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1)); lastMon.setHours(7,0,0,0);
         if(dayOfWeek===1 && now < lastMon) lastMon.setDate(lastMon.getDate()-7);
-
         const todayStr = today7.toDateString();
         const weekStr = lastMon.toDateString();
-
         if(gameState.lastDailyReset !== todayStr){
             gameState.dailyTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=todayStr; });
             gameState.lastDailyReset = todayStr;
@@ -391,11 +415,10 @@
         let left = Math.max(0,3-gameState.nameChangeCount);
         document.getElementById('nameChangeLeft').textContent=left;
         document.getElementById('nameChangeCount').textContent=`本日:${gameState.nameChangeCount}/3`;
-        checkRankingRewards(); // ギフトバッジ更新
+        checkRankingRewards();
         updateTasksDisplay();
     }
 
-    // タスク表示
     function updateTasksDisplay(){
         const dailyDiv = document.getElementById('dailyTasksList'); if(dailyDiv){
             dailyDiv.innerHTML = '';
@@ -417,20 +440,15 @@
         }
     }
 
-    // タスク進捗更新
-    function updateTaskProgress(score, combo, isRankingPlay){
+    function updateTaskProgress(score, combo){
         let daily = gameState.dailyTasks;
         let weekly = gameState.weeklyTasks;
-
         if(!daily[0].completed) { daily[0].current = Math.min(daily[0].current+1, daily[0].target); }
         if(!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current+1, weekly[0].target); }
-
         if(score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current+1, daily[1].target); }
         if(score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current+1, weekly[1].target); }
-
         if(combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current+1, daily[2].target); }
         if(combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current+1, weekly[2].target); }
-
         [daily, weekly].forEach(tasks=>{
             tasks.forEach(t=>{
                 if(!t.completed && t.current >= t.target){
@@ -441,7 +459,6 @@
                 }
             });
         });
-
         saveGameState();
         updateTasksDisplay();
     }
@@ -453,7 +470,7 @@
         setTimeout(()=> noti.classList.add('hidden'), 3000);
     }
 
-    // ========== ランキング関連 (毎日7時にリセット＆報酬) ==========
+    // ========== ランキング関連 ==========
     function getTodayString(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
     function getTimeUntil7AM(){ let n=new Date(); let n7=new Date(); n7.setHours(7,0,0,0); if(n>n7) n7.setDate(n7.getDate()+1); let d=n7-n; let h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
     setInterval(()=>{ let t=document.getElementById('rankingUpdateTimer'); if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; },1000);
@@ -479,23 +496,20 @@
             d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
             container.appendChild(d);
         });
-        // ランキング表示時に報酬チェック (毎日7時にリセットされているので、ここでバッジ更新)
         checkRankingRewards();
     }
 
-    // バッジ表示：前回の受け取り日と今日が異なり、かつ自分が10位以内ならギフトマーク
     function checkRankingRewards(){
         const today = getTodayString();
         const claimed = gameState.claimedRankings.world;
         const myEntry = worldRankings.find(r=>r.id===gameState.userId);
         let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
-        const hasReward = (claimed !== today && inRank);   // 今日まだ受け取っておらず、10位以内
+        const hasReward = (claimed !== today && inRank);
         document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
         document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
         return hasReward;
     }
 
-    // ギフトダイアログ表示 (報酬受け取り)
     function showGiftDialog(){
         const today = getTodayString();
         if(gameState.claimedRankings.world === today){ alert('本日分は受取済みです'); return; }
@@ -509,42 +523,112 @@
         document.getElementById('claimRewardBtn').onclick = ()=>{
             gameState.xp += reward.xp; gameState.coins += reward.coins;
             while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
-            gameState.claimedRankings.world = today;   // 受け取り済みにする
+            gameState.claimedRankings.world = today;
             saveGameState(); updateUI();
             document.getElementById('giftDialog').classList.remove('active'); overlay(false);
-            checkRankingRewards();  // バッジ消去
+            checkRankingRewards();
         };
     }
 
+    // ========== スキルシステム ==========
+    function updateSkillButtons(){
+        const skillBar = document.getElementById('skillBar');
+        if(gameActive) skillBar.style.display = 'flex';
+        else skillBar.style.display = 'none';
+        
+        const autoBtn = document.getElementById('skillAutoBtn');
+        const timeBtn = document.getElementById('skillTimeBtn');
+        const comboBtn = document.getElementById('skillComboBtn');
+        const comboPlusBtn = document.getElementById('skillComboPlusBtn');
+        
+        autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
+        timeBtn.style.display = gameState.ownedSkills.includes('timeExtend') && gameState.equippedSkills.includes('timeExtend') ? 'block' : 'none';
+        comboBtn.style.display = gameState.ownedSkills.includes('comboUp') && gameState.equippedSkills.includes('comboUp') ? 'block' : 'none';
+        comboPlusBtn.style.display = gameState.ownedSkills.includes('comboPlus') && gameState.equippedSkills.includes('comboPlus') ? 'block' : 'none';
+    }
+
+    function useSkill(skillId){
+        if(!gameActive) return;
+        const now = Date.now();
+        if(skillId === 'auto' && cooldowns.auto < now){
+            cooldowns.auto = now + 30000; // 30秒
+            skillAutoActive = true;
+            showAnimation('⚡自動入力!');
+            autoInterval = setInterval(()=>{
+                if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+                // 0.25秒に1文字自動入力
+                let ex = currentRomaji[typedInput.length];
+                if(ex){
+                    typedInput += ex;
+                    currentCombo++;
+                    currentScore += 5 * currentCombo;
+                    document.getElementById('scoreDisplay').textContent = currentScore;
+                    document.getElementById('comboDisplay').textContent = currentCombo;
+                    updateRomajiDisplay();
+                    if(typedInput === currentRomaji) nextQuestion();
+                }
+            }, 250);
+            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 3500);
+        }
+        else if(skillId === 'timeExtend' && cooldowns.timeExtend < now){
+            cooldowns.timeExtend = now + 45000;
+            timeExtendActive = true;
+            showAnimation('⏳タイミングゲーム!');
+            // 簡易バーゲーム (実際はもっとリッチに)
+            gameActive = false; // 一時停止
+            clearInterval(gameTimer);
+            let barGame = document.createElement('div'); barGame.className='bar-game';
+            barGame.innerHTML = '<div class="bar-fill" id="barFill"></div><div class="bar-marker" id="barMarker"></div>';
+            document.querySelector('.game-container').appendChild(barGame);
+            let pos = 0, interval = setInterval(()=>{ pos+=2; if(pos>=100) pos=0; document.getElementById('barFill').style.width=pos+'%'; },50);
+            barGame.onclick = ()=>{
+                clearInterval(interval); barGame.remove();
+                let zones = [20,40,60,80]; // 外枠:0-20, 中枠:20-40, 中の中:40-60, 中の中の中:60-80
+                let gain = 3;
+                if(pos>60 && pos<=80) gain = 8;
+                else if(pos>40 && pos<=60) gain = 6;
+                else if(pos>20 && pos<=40) gain = 6;
+                else if(pos<=20) gain = 3;
+                gameTime += gain;
+                document.getElementById('timerDisplay').textContent = gameTime;
+                alert(`${gain}秒延びた!`);
+                gameActive = true;
+                gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(currentMode==='ranking'); },1000);
+                timeExtendActive = false;
+            };
+        }
+        else if(skillId === 'comboUp' && cooldowns.comboUp < now){
+            cooldowns.comboUp = now + 30000;
+            showAnimation('🔥コンボ+40!');
+            currentCombo += 40;
+            document.getElementById('comboDisplay').textContent = currentCombo;
+        }
+        else if(skillId === 'comboPlus' && cooldowns.comboPlus < now){
+            cooldowns.comboPlus = now + 150000;
+            let add = Math.floor(Math.random()*36)+25; // 25-60
+            showAnimation(`✨コンボ+${add}!`);
+            currentCombo += add;
+            document.getElementById('comboDisplay').textContent = currentCombo;
+        }
+    }
+
+    function showAnimation(text){
+        let anim = document.createElement('div'); anim.className='skill-animation'; anim.textContent=text;
+        document.body.appendChild(anim);
+        setTimeout(()=> anim.remove(), 1000);
+    }
+
     // ========== ゲーム制御 ==========
-    function startGame(difficulty, storyMode = false){
+    function startGame(difficulty, mode = 'normal'){ // mode: 'normal' or 'ranking'
+        currentMode = mode;
         currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
         document.getElementById('scoreDisplay').textContent='0'; document.getElementById('comboDisplay').textContent='0'; document.getElementById('timerDisplay').textContent='60';
         switchScreen('gameScreen');
         nextQuestion();
-        gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(storyMode); },1000);
+        gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(); },1000);
+        updateSkillButtons();
 
-        if(storyMode){
-            let stage = gameState.storyStage;
-            if(stage>=25 && stage<50 && !storyDebuffActive){
-                setTimeout(()=>{
-                    if(!gameActive) return;
-                    storyDebuffActive=true;
-                    document.getElementById('darknessOverlay').classList.add('active');
-                    setTimeout(()=>{ if(gameActive) document.getElementById('darknessOverlay').classList.remove('active'); storyDebuffActive=false; }, 1000);
-                }, Math.random()*20000+5000);
-            }
-            if(stage>=50 && stage<75){ gameTime = Math.max(55, gameTime-5); document.getElementById('timerDisplay').textContent=gameTime; }
-            if(stage>=75 && stage<=100 && !storyCrackActive){
-                setTimeout(()=>{
-                    if(!gameActive) return;
-                    storyCrackActive=true;
-                    document.getElementById('screenCrack').classList.add('active');
-                    currentCombo=0; document.getElementById('comboDisplay').textContent='0';
-                    setTimeout(()=>{ document.getElementById('screenCrack').classList.remove('active'); storyCrackActive=false; }, 5000);
-                }, Math.random()*15000+5000);
-            }
-        }
+        if(mode === 'ranking'){ /* ランキングモード特別処理なし */ }
     }
 
     function nextQuestion(){ 
@@ -557,38 +641,48 @@
     }
     function updateRomajiDisplay(){ document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; }
 
-    function endGame(storyMode){
+    function endGame(){
         gameActive=false; clearInterval(gameTimer);
         let coins = Math.floor(currentScore/10); let xp = Math.floor(currentScore/100);
         gameState.coins += coins; gameState.xp += xp;
         while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
 
-        // タスク更新
-        updateTaskProgress(currentScore, currentCombo, !storyMode);
+        updateTaskProgress(currentScore, currentCombo);
 
-        if(storyMode){
-            let stage = gameState.storyStage;
-            let target = 10000 + (stage-1)*1000;
-            if(currentScore >= target){
-                if(!gameState.storyClears.includes(stage)) gameState.storyClears.push(stage);
-                if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
-                if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
-                if(stage===100){ 
-                    gameState.shards+=8; 
-                    if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
-                    alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
+        if(currentMode === 'ranking'){
+            if(currentScore > gameState.rankingHighScore) gameState.rankingHighScore = currentScore;
+            if(db) set(ref(db,`users/${gameState.userId}/score`), gameState.rankingHighScore).catch(()=>{});
+        } else {
+            // ストーリーモード処理
+            if(document.getElementById('storyMapScreen').classList.contains('active')){
+                let stage = gameState.storyStage;
+                let target = 10000 + (stage-1)*1000;
+                if(currentScore >= target && !gameState.storyClears.includes(stage)){
+                    gameState.storyClears.push(stage);
+                    if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
+                    if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
+                    if(stage===100){ 
+                        gameState.shards+=8; 
+                        if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
+                        alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
+                    }
+                    if(stage<100) gameState.storyStage++;
+                    renderStoryMap();
+                } else if(gameState.storyClears.includes(stage)){
+                    alert('このステージは既にクリア済みです');
+                } else {
+                    alert(`目標スコア ${target} に届きませんでした`);
                 }
-                if(stage<100) gameState.storyStage++;
-            } else { alert(`目標スコア ${target} に届きませんでした`); }
+            }
         }
 
-        if(db) set(ref(db,`users/${gameState.userId}/score`), currentScore).catch(()=>{});
         saveGameState();
         document.getElementById('finalScore').textContent=currentScore;
         document.getElementById('earnedCoins').textContent=coins;
         document.getElementById('earnedXP').textContent=xp;
         switchScreen('resultScreen');
         updateUI();
+        updateSkillButtons();
     }
 
     function renderStoryMap(){
@@ -600,7 +694,7 @@
             if(i>gameState.storyStage && !gameState.storyClears.includes(i-1) && i!==1) node.classList.add('locked');
             node.innerHTML = `${i}<br>${10000+(i-1)*1000}`;
             if(i===25||i===50||i===75||i===100) node.innerHTML += '<br>🎁';
-            node.onclick = ()=>{ if(!node.classList.contains('locked')) gameState.storyStage = i; renderStoryMap(); };
+            node.onclick = ()=>{ if(!node.classList.contains('locked') && !gameState.storyClears.includes(i)) gameState.storyStage = i; renderStoryMap(); };
             container.appendChild(node);
         }
         document.getElementById('currentStoryStage').textContent = gameState.storyStage;
@@ -621,7 +715,7 @@
                 if(equipped) gameState.equippedSkills = gameState.equippedSkills.filter(id=>id!==sid);
                 else if(gameState.equippedSkills.length<3) gameState.equippedSkills.push(sid);
                 else alert('装備は3つまで');
-                saveGameState(); renderInventory();
+                saveGameState(); renderInventory(); updateSkillButtons();
             };
             skillsDiv.appendChild(div);
         });
@@ -655,19 +749,19 @@
     // イベントリスナー
     document.getElementById('playBtn').addEventListener('click',()=>switchScreen('difficultyScreen'));
     document.getElementById('storyBtn').addEventListener('click',()=>{
-        if(gameState.level < 10){ alert('ストーリーはレベル10から解放'); return; } // レベル10に変更
+        if(gameState.level < 10){ alert('ストーリーはレベル10から解放'); return; }
         renderStoryMap(); switchScreen('storyMapScreen');
     });
     document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
     document.getElementById('worldRankingViewBtn').addEventListener('click',displayRanking);
-    document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], false); });
+    document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'ranking'); });
     document.getElementById('backFromRankingModeBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('backFromRankingViewBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
     document.getElementById('backBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('continueBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('backFromStoryBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], true); });
-    document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty,false)));
+    document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'story'); });
+    document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty, 'normal')));
 
     document.getElementById('giftBtn').addEventListener('click',showGiftDialog);
     document.getElementById('giftCloseBtn').addEventListener('click',()=>{ document.getElementById('giftDialog').classList.remove('active'); overlay(false); });
@@ -678,7 +772,6 @@
         overlay(false);
     });
 
-    // タスクボタン
     document.getElementById('taskBtn').addEventListener('click',()=>{
         document.getElementById('panelTitle').textContent='タスク';
         document.getElementById('profilePanel').classList.add('hidden');
@@ -719,6 +812,12 @@
         } else if(gameState.nameChangeCount>=3) alert('変更回数上限');
     });
 
+    // スキルボタン
+    document.getElementById('skillAutoBtn').addEventListener('click',()=>useSkill('auto'));
+    document.getElementById('skillTimeBtn').addEventListener('click',()=>useSkill('timeExtend'));
+    document.getElementById('skillComboBtn').addEventListener('click',()=>useSkill('comboUp'));
+    document.getElementById('skillComboPlusBtn').addEventListener('click',()=>useSkill('comboPlus'));
+
     // タブ切り替え
     document.querySelectorAll('#invTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
         document.querySelectorAll('#invTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
@@ -741,12 +840,24 @@
         let key=e.key.toLowerCase();
         if(key.match(/[a-z]/)){
             let ex = currentRomaji[typedInput.length];
-            if(key===ex){ typedInput+=key; currentCombo++; currentScore+=5*currentCombo; document.getElementById('scoreDisplay').textContent=currentScore; document.getElementById('comboDisplay').textContent=currentCombo; updateRomajiDisplay(); if(typedInput===currentRomaji) nextQuestion(); }
-            else { currentCombo=0; document.getElementById('comboDisplay').textContent='0'; updateRomajiDisplay(); }
+            if(key===ex){ 
+                typedInput+=key; 
+                if(!skillAutoActive) { // 自動入力中は手動でもカウントするが、自動で既に入力済みの可能性もあるため重複防止は簡略
+                    currentCombo++; 
+                    currentScore+=5*currentCombo; 
+                }
+                document.getElementById('scoreDisplay').textContent=currentScore; 
+                document.getElementById('comboDisplay').textContent=currentCombo; 
+                updateRomajiDisplay(); 
+                if(typedInput===currentRomaji) nextQuestion(); 
+            } else { 
+                currentCombo=0; 
+                document.getElementById('comboDisplay').textContent='0'; 
+                updateRomajiDisplay(); 
+            }
         }
     });
 
-    // ランキング定期チェック (バッジ更新)
     setInterval(()=>checkRankingRewards(), 20000);
     updateUI();
     fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
