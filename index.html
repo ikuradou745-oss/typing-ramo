@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・スキル実装版</title>
+    <title>⚡ タイピングストーリー・修正版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -132,7 +132,7 @@
 <body>
 <div class="game-container">
     <div class="header">
-        <div class="game-title">⚡ タイピング・スキル実装</div>
+        <div class="game-title">⚡ タイピング・ストーリー改</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -194,7 +194,7 @@
             <div class="menu-title">📖 ストーリーマップ</div>
             <div class="story-info">ステージ <span id="currentStoryStage">1</span>/100</div>
             <div class="story-map" id="storyMapContainer"></div>
-            <div style="display:flex; justify-content:flex-end; width:100%; padding-right:40px;"> <!-- 右寄せ -->
+            <div style="display:flex; justify-content:flex-end; width:100%; padding-right:40px;">
                 <button class="menu-btn" id="startStoryBtn" style="padding:15px 30px;">挑戦する</button>
                 <button class="back-btn" id="backFromStoryBtn" style="margin-left:20px;">戻る</button>
             </div>
@@ -328,11 +328,10 @@
         lastNameChangeReset: new Date().toDateString(),
         storyStage: 1,
         storyClears: [],
-        shards: 5, // デバッグ用
+        shards: 5,
         ownedSkills: [],
         equippedSkills: [],
         claimedRankings: { world: null },
-        // ランキング用最高スコア (ワールドランキングモードのみ)
         rankingHighScore: 0,
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -350,21 +349,65 @@
 
     // スキルクールダウン管理
     const cooldowns = { auto:0, timeExtend:0, comboUp:0, comboPlus:0 };
-    const skillDurations = { auto:3.5, timeExtend:0, comboUp:0, comboPlus:0 }; // 持続時間
     let skillAutoActive = false;
     let autoInterval = null;
-    let timeExtendActive = false;
 
-    // 問題・変換
+    // 問題・変換 (修正版: しょ→syo, ふ→hu, ょ→lyo)
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
-    const romajiMap = {'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko','が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','さ':'sa','し':'si','す':'su','せ':'se','そ':'so','ざ':'za','じ':'zi','ず':'zu','ぜ':'ze','ぞ':'zo','た':'ta','ち':'ti','つ':'tu','て':'te','と':'to','だ':'da','ぢ':'di','づ':'du','で':'de','ど':'do','な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no','は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo','ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po','ま':'ma','み':'mi','む':'mu','め':'me','も':'mo','や':'ya','ゆ':'yu','よ':'yo','ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'wo','ん':'nn','っ':'xtu'};
-    const youonMap = {'きゃ':'kya','きゅ':'kyu','きょ':'kyo','しゃ':'sya','しゅ':'syu','しょ':'syo','ちゃ':'tya','ちゅ':'tyu','ちょ':'tyo','にゃ':'nya','にゅ':'nyu','にょ':'nyo','ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','みゃ':'mya','みゅ':'myu','みょ':'myo','りゃ':'rya','りゅ':'ryu','りょ':'ryo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo','じゃ':'zya','じゅ':'zyu','じょ':'zyo','びゃ':'bya','びゅ':'byu','びょ':'byo','ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'};
-    function convertToRomaji(t) { let r='',i=0; while(i<t.length){ if(i+1<t.length&&youonMap[t.substring(i,i+2)]){ r+=youonMap[t.substring(i,i+2)]; i+=2; continue; } if(t[i]==='っ'&&i+1<t.length){ let n=t[i+1]; let nr=romajiMap[n]||n; r+=nr[0]+nr[0]+nr.substring(1); i+=2; } else { r+=romajiMap[t[i]]||t[i]; i++; } } return r; }
+    
+    // ローマ字マップ修正: ふ→hu, しょ→syo, きょ→kyo etc (既存のyouonMapでカバー)
+    const romajiMap = {
+        'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+        'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','さ':'sa','し':'si','す':'su','せ':'se','そ':'so',
+        'ざ':'za','じ':'zi','ず':'zu','ぜ':'ze','ぞ':'zo','た':'ta','ち':'ti','つ':'tu','て':'te','と':'to',
+        'だ':'da','ぢ':'di','づ':'du','で':'de','ど':'do','な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+        'は':'ha','ひ':'hi','ふ':'hu','へ':'he','ほ':'ho','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+        'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po','ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+        'や':'ya','ゆ':'yu','よ':'yo','ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'wo',
+        'ん':'nn','っ':'xtu'
+    };
+    const youonMap = {
+        'きゃ':'kya','きゅ':'kyu','きょ':'kyo','しゃ':'sya','しゅ':'syu','しょ':'syo',
+        'ちゃ':'tya','ちゅ':'tyu','ちょ':'tyo','にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+        'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','みゃ':'mya','みゅ':'myu','みょ':'myo',
+        'りゃ':'rya','りゅ':'ryu','りょ':'ryo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
+        'じゃ':'zya','じゅ':'zyu','じょ':'zyo','びゃ':'bya','びゅ':'byu','びょ':'byo',
+        'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'
+    };
+    
+    function convertToRomaji(t) {
+        let r='', i=0;
+        while(i<t.length){
+            // 2文字で拗音チェック
+            if(i+1<t.length && youonMap[t.substring(i,i+2)]){
+                r += youonMap[t.substring(i,i+2)];
+                i+=2;
+                continue;
+            }
+            // 促音処理
+            if(t[i]==='っ' && i+1<t.length){
+                let n = t[i+1];
+                let nr = romajiMap[n] || n;
+                // 次の文字の最初の子音を重ねる (例: かった→katta)
+                if(nr.length>1){
+                    r += nr[0] + nr[0] + nr.substring(1);
+                } else {
+                    r += nr + nr;
+                }
+                i+=2;
+                continue;
+            }
+            // 通常文字
+            r += romajiMap[t[i]] || t[i];
+            i++;
+        }
+        return r;
+    }
 
     let worldRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
-    let currentMode = 'normal'; // 'normal' or 'ranking'
+    let currentMode = 'normal'; // 'normal', 'ranking', 'story'
 
     // ========== 永続化 ==========
     function saveGameState() { localStorage.setItem('gameState',JSON.stringify(gameState)); syncFirebase(); }
@@ -551,12 +594,12 @@
         if(!gameActive) return;
         const now = Date.now();
         if(skillId === 'auto' && cooldowns.auto < now){
-            cooldowns.auto = now + 30000; // 30秒
+            cooldowns.auto = now + 30000;
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
+            if(autoInterval) clearInterval(autoInterval);
             autoInterval = setInterval(()=>{
                 if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
-                // 0.25秒に1文字自動入力
                 let ex = currentRomaji[typedInput.length];
                 if(ex){
                     typedInput += ex;
@@ -572,10 +615,8 @@
         }
         else if(skillId === 'timeExtend' && cooldowns.timeExtend < now){
             cooldowns.timeExtend = now + 45000;
-            timeExtendActive = true;
             showAnimation('⏳タイミングゲーム!');
-            // 簡易バーゲーム (実際はもっとリッチに)
-            gameActive = false; // 一時停止
+            gameActive = false;
             clearInterval(gameTimer);
             let barGame = document.createElement('div'); barGame.className='bar-game';
             barGame.innerHTML = '<div class="bar-fill" id="barFill"></div><div class="bar-marker" id="barMarker"></div>';
@@ -583,7 +624,6 @@
             let pos = 0, interval = setInterval(()=>{ pos+=2; if(pos>=100) pos=0; document.getElementById('barFill').style.width=pos+'%'; },50);
             barGame.onclick = ()=>{
                 clearInterval(interval); barGame.remove();
-                let zones = [20,40,60,80]; // 外枠:0-20, 中枠:20-40, 中の中:40-60, 中の中の中:60-80
                 let gain = 3;
                 if(pos>60 && pos<=80) gain = 8;
                 else if(pos>40 && pos<=60) gain = 6;
@@ -593,8 +633,7 @@
                 document.getElementById('timerDisplay').textContent = gameTime;
                 alert(`${gain}秒延びた!`);
                 gameActive = true;
-                gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(currentMode==='ranking'); },1000);
-                timeExtendActive = false;
+                gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(); },1000);
             };
         }
         else if(skillId === 'comboUp' && cooldowns.comboUp < now){
@@ -605,7 +644,7 @@
         }
         else if(skillId === 'comboPlus' && cooldowns.comboPlus < now){
             cooldowns.comboPlus = now + 150000;
-            let add = Math.floor(Math.random()*36)+25; // 25-60
+            let add = Math.floor(Math.random()*36)+25;
             showAnimation(`✨コンボ+${add}!`);
             currentCombo += add;
             document.getElementById('comboDisplay').textContent = currentCombo;
@@ -619,7 +658,7 @@
     }
 
     // ========== ゲーム制御 ==========
-    function startGame(difficulty, mode = 'normal'){ // mode: 'normal' or 'ranking'
+    function startGame(difficulty, mode = 'normal'){
         currentMode = mode;
         currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
         document.getElementById('scoreDisplay').textContent='0'; document.getElementById('comboDisplay').textContent='0'; document.getElementById('timerDisplay').textContent='60';
@@ -628,7 +667,28 @@
         gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(); },1000);
         updateSkillButtons();
 
-        if(mode === 'ranking'){ /* ランキングモード特別処理なし */ }
+        // ストーリーモードデバフ
+        if(mode === 'story'){
+            let stage = gameState.storyStage;
+            if(stage>=25 && stage<50 && !storyDebuffActive){
+                setTimeout(()=>{
+                    if(!gameActive) return;
+                    storyDebuffActive=true;
+                    document.getElementById('darknessOverlay').classList.add('active');
+                    setTimeout(()=>{ if(gameActive) document.getElementById('darknessOverlay').classList.remove('active'); storyDebuffActive=false; }, 1000);
+                }, Math.random()*20000+5000);
+            }
+            if(stage>=50 && stage<75){ gameTime = Math.max(55, gameTime-5); document.getElementById('timerDisplay').textContent=gameTime; }
+            if(stage>=75 && stage<=100 && !storyCrackActive){
+                setTimeout(()=>{
+                    if(!gameActive) return;
+                    storyCrackActive=true;
+                    document.getElementById('screenCrack').classList.add('active');
+                    currentCombo=0; document.getElementById('comboDisplay').textContent='0';
+                    setTimeout(()=>{ document.getElementById('screenCrack').classList.remove('active'); storyCrackActive=false; }, 5000);
+                }, Math.random()*15000+5000);
+            }
+        }
     }
 
     function nextQuestion(){ 
@@ -652,27 +712,28 @@
         if(currentMode === 'ranking'){
             if(currentScore > gameState.rankingHighScore) gameState.rankingHighScore = currentScore;
             if(db) set(ref(db,`users/${gameState.userId}/score`), gameState.rankingHighScore).catch(()=>{});
-        } else {
-            // ストーリーモード処理
-            if(document.getElementById('storyMapScreen').classList.contains('active')){
-                let stage = gameState.storyStage;
-                let target = 10000 + (stage-1)*1000;
-                if(currentScore >= target && !gameState.storyClears.includes(stage)){
-                    gameState.storyClears.push(stage);
-                    if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
-                    if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
-                    if(stage===100){ 
-                        gameState.shards+=8; 
-                        if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
-                        alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
-                    }
-                    if(stage<100) gameState.storyStage++;
-                    renderStoryMap();
-                } else if(gameState.storyClears.includes(stage)){
-                    alert('このステージは既にクリア済みです');
-                } else {
-                    alert(`目標スコア ${target} に届きませんでした`);
+        } else if(currentMode === 'story'){
+            let stage = gameState.storyStage;
+            let target = 10000 + (stage-1)*1000;
+            console.log('ストーリー終了', stage, target, currentScore);
+            if(currentScore >= target && !gameState.storyClears.includes(stage)){
+                gameState.storyClears.push(stage);
+                if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
+                if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
+                if(stage===100){ 
+                    gameState.shards+=8; 
+                    if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
+                    alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
                 }
+                if(stage<100) {
+                    gameState.storyStage++;
+                    alert(`ステージ${stage}クリア！ 次のステージは${gameState.storyStage}です`);
+                }
+                renderStoryMap();
+            } else if(gameState.storyClears.includes(stage)){
+                alert('このステージは既にクリア済みです');
+            } else {
+                alert(`目標スコア ${target} に届きませんでした (現在 ${currentScore})`);
             }
         }
 
@@ -691,10 +752,16 @@
             let node = document.createElement('div'); node.className='story-node';
             if(gameState.storyClears.includes(i)) node.classList.add('clear');
             if(i===gameState.storyStage) node.classList.add('current');
-            if(i>gameState.storyStage && !gameState.storyClears.includes(i-1) && i!==1) node.classList.add('locked');
-            node.innerHTML = `${i}<br>${10000+(i-1)*1000}`;
+            // ロック: 1つ前がクリアされていないとロック (ただし1は常に解放)
+            if(i>1 && !gameState.storyClears.includes(i-1) && i!==gameState.storyStage) node.classList.add('locked');
+            node.innerHTML = `${i}<br>${(10000+(i-1)*1000).toLocaleString()}`;
             if(i===25||i===50||i===75||i===100) node.innerHTML += '<br>🎁';
-            node.onclick = ()=>{ if(!node.classList.contains('locked') && !gameState.storyClears.includes(i)) gameState.storyStage = i; renderStoryMap(); };
+            node.onclick = ()=>{ 
+                if(!node.classList.contains('locked') && !gameState.storyClears.includes(i)){
+                    gameState.storyStage = i; 
+                    renderStoryMap();
+                }
+            };
             container.appendChild(node);
         }
         document.getElementById('currentStoryStage').textContent = gameState.storyStage;
@@ -812,7 +879,6 @@
         } else if(gameState.nameChangeCount>=3) alert('変更回数上限');
     });
 
-    // スキルボタン
     document.getElementById('skillAutoBtn').addEventListener('click',()=>useSkill('auto'));
     document.getElementById('skillTimeBtn').addEventListener('click',()=>useSkill('timeExtend'));
     document.getElementById('skillComboBtn').addEventListener('click',()=>useSkill('comboUp'));
@@ -842,7 +908,7 @@
             let ex = currentRomaji[typedInput.length];
             if(key===ex){ 
                 typedInput+=key; 
-                if(!skillAutoActive) { // 自動入力中は手動でもカウントするが、自動で既に入力済みの可能性もあるため重複防止は簡略
+                if(!skillAutoActive) { 
                     currentCombo++; 
                     currentScore+=5*currentCombo; 
                 }
