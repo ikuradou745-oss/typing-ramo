@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・スキル調整版</title>
+    <title>⚡ タイピングストーリー・最終調整版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -136,6 +136,7 @@
         .skill-use-btn:hover { transform: scale(1.05); }
         .skill-use-btn.disabled { opacity: 0.4; pointer-events: none; }
         .cooldown-overlay { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.6); border-radius: 40px; pointer-events: none; }
+        .cooldown-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px black; z-index: 2; }
         /* デバッグモードUI */
         .debug-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 3px solid var(--accent-pink); border-radius: 20px; padding: 30px; z-index: 10000; display: none; flex-direction: column; gap: 20px; min-width: 300px; }
         .debug-panel.active { display: flex; }
@@ -150,7 +151,7 @@
 <body>
 <div class="game-container">
     <div class="header">
-        <div class="game-title">⚡ タイピング・スキル調整</div>
+        <div class="game-title">⚡ タイピング・最終調整</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -172,18 +173,22 @@
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillAutoBtn" style="background:linear-gradient(135deg,#00aaff,#0066cc);">⚡自動入力</button>
             <div class="cooldown-overlay" id="cooldownAuto" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownAutoText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillTimeBtn" style="background:linear-gradient(135deg,#ffaa00,#cc8800);">⏳時間伸ばし</button>
             <div class="cooldown-overlay" id="cooldownTime" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownTimeText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillComboBtn" style="background:linear-gradient(135deg,#ff44aa,#aa2266);">🔥コンボアップ</button>
             <div class="cooldown-overlay" id="cooldownCombo" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownComboText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillComboPlusBtn" style="background:linear-gradient(135deg,gold,orange);">✨コンボ+</button>
             <div class="cooldown-overlay" id="cooldownComboPlus" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownComboPlusText"></span>
         </div>
     </div>
 
@@ -390,7 +395,7 @@
         shards: 5,
         shardFragments: 0,
         ownedSkills: [],
-        equippedSkills: [], // 装備は最大1つに変更
+        equippedSkills: [],
         claimedRankings: { world: null },
         rankingHighScore: 0,
         highScoreCombo: 0,
@@ -415,8 +420,8 @@
     let skillAutoActive = false;
     let autoInterval = null;
 
-    // 自動入力の速度設定 (ms) - 15倍高速化 (元250ms → 16ms)
-    const AUTO_INPUT_INTERVAL = 16; // 約60fps
+    // 自動入力の速度設定 (ms) - 16msを4で割って4msに (さらに高速化)
+    const AUTO_INPUT_INTERVAL = 4; // 超高速 (250msの62.5倍)
 
     // 問題・変換
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
@@ -739,23 +744,32 @@
         const comboBtn = document.getElementById('skillComboBtn');
         const comboPlusBtn = document.getElementById('skillComboPlusBtn');
         
-        // 装備は1つのみ
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
         timeBtn.style.display = gameState.ownedSkills.includes('timeExtend') && gameState.equippedSkills.includes('timeExtend') ? 'block' : 'none';
         comboBtn.style.display = gameState.ownedSkills.includes('comboUp') && gameState.equippedSkills.includes('comboUp') ? 'block' : 'none';
         comboPlusBtn.style.display = gameState.ownedSkills.includes('comboPlus') && gameState.equippedSkills.includes('comboPlus') ? 'block' : 'none';
         
-        // クールダウン表示更新
+        // クールダウン表示更新 (残り秒数を表示)
         const now = Date.now();
+        const skillDurations = {
+            auto: 30000,
+            timeExtend: 45000,
+            comboUp: 30000,
+            comboPlus: 150000
+        };
+        
         ['auto','timeExtend','comboUp','comboPlus'].forEach(id => {
-            let el = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}`);
-            if (el) {
+            let overlay = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}`);
+            let textEl = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}Text`);
+            if (overlay && textEl) {
                 if (cooldowns[id] > now) {
                     let remain = cooldowns[id] - now;
-                    let percent = (remain / (id==='comboPlus'?150000:(id==='timeExtend'?45000:30000))) * 100;
-                    el.style.width = percent + '%';
+                    let percent = (remain / skillDurations[id]) * 100;
+                    overlay.style.width = percent + '%';
+                    textEl.textContent = Math.ceil(remain / 1000) + 's';
                 } else {
-                    el.style.width = '0%';
+                    overlay.style.width = '0%';
+                    textEl.textContent = '';
                 }
             }
         });
@@ -780,6 +794,16 @@
                     document.getElementById('comboDisplay').textContent = currentCombo;
                     updateRomajiDisplay();
                     if(typedInput === currentRomaji) nextQuestion();
+                    // ストーリーモードで目標達成チェック
+                    if (currentMode === 'story') {
+                        let target = 10000 + (gameState.storyStage-1)*1000;
+                        if (currentScore >= target) {
+                            // 即時クリア
+                            clearInterval(gameTimer);
+                            endGame();
+                            return;
+                        }
+                    }
                 }
             }, AUTO_INPUT_INTERVAL);
             setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 3500);
@@ -790,7 +814,6 @@
             gameActive = false;
             clearInterval(gameTimer);
             
-            // 改良版バーゲーム
             const container = document.createElement('div'); container.className = 'bar-game-container';
             container.innerHTML = `
                 <div class="bar-game" id="barGame">
@@ -821,19 +844,23 @@
                 clearInterval(interval);
                 container.remove();
                 
-                // ゾーン判定 (0-20%,20-40%,40-60%,60-80%,80-100%)
                 let gain = 3;
-                if (pos > 80) gain = 3; // 外枠
-                else if (pos > 60) gain = 8; // 中の中の中
-                else if (pos > 40) gain = 6; // 中の中
-                else if (pos > 20) gain = 6; // 中枠
-                else gain = 3; // 外枠
+                if (pos > 80) gain = 3;
+                else if (pos > 60) gain = 8;
+                else if (pos > 40) gain = 6;
+                else if (pos > 20) gain = 6;
+                else gain = 3;
                 
                 gameTime += gain;
                 document.getElementById('timerDisplay').textContent = gameTime;
                 alert(`✨ ${gain}秒延びた! (ゾーン: ${pos.toFixed(1)}%)`);
                 gameActive = true;
-                gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(); },1000);
+                gameTimer = setInterval(()=>{ 
+                    gameTime--; 
+                    document.getElementById('timerDisplay').textContent=gameTime; 
+                    if(gameTime<=0) endGame(); 
+                    if (currentMode === 'story') updateStoryGoalBar();
+                },1000);
             };
             
             document.getElementById('stopBarBtn').addEventListener('click', stopHandler, { once: true });
@@ -866,7 +893,6 @@
         currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
         document.getElementById('scoreDisplay').textContent='0'; document.getElementById('comboDisplay').textContent='0'; document.getElementById('timerDisplay').textContent='60';
         
-        // ストーリーモードの場合、目標バー表示
         const storyGoalContainer = document.getElementById('storyGoalContainer');
         if (mode === 'story') {
             storyGoalContainer.style.display = 'flex';
@@ -914,6 +940,12 @@
         let percent = Math.min(100, (currentScore / target) * 100);
         document.getElementById('storyGoalFill').style.width = percent + '%';
         document.getElementById('storyGoalText').textContent = `${currentScore}/${target}`;
+        
+        // 目標達成したら即時終了
+        if (currentScore >= target && gameActive) {
+            clearInterval(gameTimer);
+            endGame();
+        }
     }
 
     function nextQuestion(){ 
@@ -1022,7 +1054,7 @@
         itemsDiv.innerHTML = `<div class="item-card">🔮 スキルのかけら <span class="item-count">${gameState.shards}</span></div>
                               <div class="item-card">🔮 スキルのかけら(欠片) <span class="item-count">${gameState.shardFragments}</span></div>`;
         const allSkills = [
-            {id:'auto',name:'⚡自動入力',desc:'30秒:超高速自動入力'}, // 説明更新
+            {id:'auto',name:'⚡自動入力',desc:'30秒:超高速自動入力'},
             {id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ(色付き)'},
             {id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},
             {id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'}
@@ -1207,7 +1239,7 @@
     });
 
     setInterval(()=>checkRankingRewards(), 20000);
-    setInterval(()=>updateSkillButtons(), 500); // クールダウン表示更新
+    setInterval(()=>updateSkillButtons(), 500);
     updateUI();
     fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
 </script>
