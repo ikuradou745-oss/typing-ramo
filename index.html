@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・修正版</title>
+    <title>⚡ タイピングストーリー・ハイスコア版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -127,12 +127,21 @@
         .skill-use-btn:hover { transform: scale(1.05); }
         .skill-use-btn.disabled { opacity: 0.4; pointer-events: none; }
         .cooldown-overlay { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.5); border-radius: 40px; }
+        /* デバッグモードUI */
+        .debug-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 3px solid var(--accent-pink); border-radius: 20px; padding: 30px; z-index: 10000; display: none; flex-direction: column; gap: 20px; min-width: 300px; }
+        .debug-panel.active { display: flex; }
+        .debug-title { font-size: 24px; color: var(--accent-pink); text-align: center; }
+        .debug-input { padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--accent-blue); border-radius: 8px; color: white; font-size: 16px; }
+        .debug-btn { padding: 10px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; }
+        .debug-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-gray); font-size: 20px; cursor: pointer; }
+        /* ハイスコアランキング画面 */
+        .highscore-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; }
     </style>
 </head>
 <body>
 <div class="game-container">
     <div class="header">
-        <div class="game-title">⚡ タイピング・ストーリー改</div>
+        <div class="game-title">⚡ タイピング・ハイスコア</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -177,6 +186,7 @@
                 <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
                 <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
                 <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
+                <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
             </div>
         </div>
         <!-- 難易度選択 (通常) -->
@@ -212,6 +222,25 @@
             <div class="menu-title" id="rankingViewTitle">ワールドランキング</div>
             <div class="ranking-list" id="rankingListContainer"></div>
             <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
+        </div>
+        <!-- ハイスコアランキングメニュー -->
+        <div class="screen" id="highscoreMenuScreen">
+            <div class="menu-title">📊 ハイスコアランキング</div>
+            <div class="highscore-buttons">
+                <button class="ranking-mode-btn" id="viewComboRankingBtn">🔥 ハイスコアコンボを見る</button>
+                <button class="ranking-mode-btn" id="viewPlayCountRankingBtn">🎮 プレイ回数ランキングを見る</button>
+                <button class="ranking-mode-btn" id="viewXPRankingBtn">⭐ 獲得XPランキングを見る</button>
+            </div>
+            <div style="font-size:14px; color:var(--text-gray); margin-top:20px; text-align:center;">
+                ※ 対象: ストーリーモード / 通常プレイ<br>毎朝7時に更新・報酬あり
+            </div>
+            <button class="back-btn" id="backFromHighscoreBtn">戻る</button>
+        </div>
+        <!-- ハイスコア表示画面 -->
+        <div class="screen" id="highscoreViewScreen">
+            <div class="menu-title" id="highscoreViewTitle">ランキング</div>
+            <div class="ranking-list" id="highscoreListContainer"></div>
+            <button class="back-btn" id="backFromHighscoreViewBtn">戻る</button>
         </div>
         <!-- ゲーム画面 -->
         <div class="screen" id="gameScreen">
@@ -290,7 +319,21 @@
                 <div>10,000,000コイン → かけら1個</div>
                 <button class="equip-btn" id="exchangeShardBtn">交換</button>
             </div>
+            <div class="shop-item" style="margin-top:10px;">
+                <div>🔮 スキルのかけら(欠片)交換</div>
+                <div>欠片5個 → かけら1個</div>
+                <button class="equip-btn" id="exchangeFragmentBtn">交換 (欠片5)</button>
+            </div>
         </div>
+    </div>
+
+    <!-- デバッグパネル (隠し機能) -->
+    <div class="debug-panel" id="debugPanel">
+        <button class="debug-close" id="debugCloseBtn">✕</button>
+        <div class="debug-title">🛠️ デバッグモード</div>
+        <input type="number" class="debug-input" id="debugCoinInput" placeholder="コイン数を入力" value="10000">
+        <button class="debug-btn" id="debugSetCoinsBtn">コインを設定</button>
+        <div style="color:var(--text-gray); font-size:12px; text-align:center;">※ 入力した値にコインが変わります</div>
     </div>
 
     <!-- 演出レイヤー -->
@@ -328,11 +371,16 @@
         lastNameChangeReset: new Date().toDateString(),
         storyStage: 1,
         storyClears: [],
-        shards: 5,
+        shards: 5,           // スキルのかけら
+        shardFragments: 0,   // スキルのかけらのかけら (新規)
         ownedSkills: [],
         equippedSkills: [],
         claimedRankings: { world: null },
         rankingHighScore: 0,
+        // ハイスコア記録 (最高値のみ保存)
+        highScoreCombo: 0,
+        totalPlayCount: 0,    // 累計プレイ回数 (ストーリー+通常)
+        totalXPEarned: 0,      // 累計獲得XP
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -355,7 +403,6 @@
     // 問題・変換 (修正版: しょ→syo, ふ→hu, ょ→lyo)
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
     
-    // ローマ字マップ修正: ふ→hu, しょ→syo, きょ→kyo etc (既存のyouonMapでカバー)
     const romajiMap = {
         'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
         'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','さ':'sa','し':'si','す':'su','せ':'se','そ':'so',
@@ -378,17 +425,14 @@
     function convertToRomaji(t) {
         let r='', i=0;
         while(i<t.length){
-            // 2文字で拗音チェック
             if(i+1<t.length && youonMap[t.substring(i,i+2)]){
                 r += youonMap[t.substring(i,i+2)];
                 i+=2;
                 continue;
             }
-            // 促音処理
             if(t[i]==='っ' && i+1<t.length){
                 let n = t[i+1];
                 let nr = romajiMap[n] || n;
-                // 次の文字の最初の子音を重ねる (例: かった→katta)
                 if(nr.length>1){
                     r += nr[0] + nr[0] + nr.substring(1);
                 } else {
@@ -397,7 +441,6 @@
                 i+=2;
                 continue;
             }
-            // 通常文字
             r += romajiMap[t[i]] || t[i];
             i++;
         }
@@ -409,9 +452,65 @@
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal'; // 'normal', 'ranking', 'story'
 
+    // ========== デバッグモード関連 ==========
+    let debugKeys = { '6': false, 'ArrowLeft': false, 'Enter': false };
+    let debugCodeInput = '';
+    let debugModeActive = false;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '6') debugKeys['6'] = true;
+        if (e.key === 'ArrowLeft') debugKeys['ArrowLeft'] = true;
+        if (e.key === 'Enter') debugKeys['Enter'] = true;
+        
+        if (debugKeys['6'] && debugKeys['ArrowLeft'] && debugKeys['Enter']) {
+            console.log('デバッグコードを入力してください');
+            let code = prompt('デバッグコードを入力:');
+            if (code === '1x4x5f') {
+                debugModeActive = true;
+                document.getElementById('debugPanel').classList.add('active');
+                document.getElementById('overlay').classList.add('active');
+            }
+            // リセット
+            debugKeys = { '6': false, 'ArrowLeft': false, 'Enter': false };
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === '6') debugKeys['6'] = false;
+        if (e.key === 'ArrowLeft') debugKeys['ArrowLeft'] = false;
+        if (e.key === 'Enter') debugKeys['Enter'] = false;
+    });
+
+    // デバッグパネル操作
+    document.getElementById('debugCloseBtn').addEventListener('click', () => {
+        document.getElementById('debugPanel').classList.remove('active');
+        document.getElementById('overlay').classList.remove('active');
+    });
+    document.getElementById('debugSetCoinsBtn').addEventListener('click', () => {
+        let val = parseInt(document.getElementById('debugCoinInput').value);
+        if (!isNaN(val) && val >= 0) {
+            gameState.coins = val;
+            saveGameState();
+            updateUI();
+            alert(`コインを ${val} に設定しました`);
+        }
+    });
+
     // ========== 永続化 ==========
     function saveGameState() { localStorage.setItem('gameState',JSON.stringify(gameState)); syncFirebase(); }
-    function syncFirebase() { if(db) set(ref(db,`users/${gameState.userId}`),{ name:gameState.userName, lastActive:Date.now(), level:gameState.level, xp:gameState.xp, coins:gameState.coins, score:gameState.rankingHighScore }).catch(()=>{}); }
+    function syncFirebase() { 
+        if(db) set(ref(db,`users/${gameState.userId}`),{ 
+            name:gameState.userName, 
+            lastActive:Date.now(), 
+            level:gameState.level, 
+            xp:gameState.xp, 
+            coins:gameState.coins, 
+            score:gameState.rankingHighScore,
+            highScoreCombo: gameState.highScoreCombo,
+            totalPlayCount: gameState.totalPlayCount,
+            totalXPEarned: gameState.totalXPEarned
+        }).catch(()=>{}); 
+    }
     (function load(){ 
         const s=localStorage.getItem('gameState'); 
         if(s) Object.assign(gameState,JSON.parse(s)); 
@@ -419,7 +518,11 @@
         if(!gameState.ownedSkills) gameState.ownedSkills=[]; 
         if(!gameState.equippedSkills) gameState.equippedSkills=[]; 
         if(!gameState.shards) gameState.shards=0; 
+        if(!gameState.shardFragments) gameState.shardFragments=0;
         if(!gameState.claimedRankings) gameState.claimedRankings={world:null};
+        if(!gameState.highScoreCombo) gameState.highScoreCombo=0;
+        if(!gameState.totalPlayCount) gameState.totalPlayCount=0;
+        if(!gameState.totalXPEarned) gameState.totalXPEarned=0;
         if(!gameState.dailyTasks) { 
             gameState.dailyTasks = [ { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } ];
             gameState.weeklyTasks = [ { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } ];
@@ -573,6 +676,42 @@
         };
     }
 
+    // ========== ハイスコアランキング ==========
+    async function fetchHighScoreRanking(type) {
+        if(!db) return [];
+        try {
+            const snap = await get(ref(db,'users'));
+            const users = snap.val()||{};
+            let entries = [];
+            Object.entries(users).forEach(([id, u]) => {
+                if (type === 'combo') entries.push({ name: u.name || '名無し', value: u.highScoreCombo || 0, id });
+                else if (type === 'playcount') entries.push({ name: u.name || '名無し', value: u.totalPlayCount || 0, id });
+                else if (type === 'xp') entries.push({ name: u.name || '名無し', value: u.totalXPEarned || 0, id });
+            });
+            return entries.filter(e => e.value > 0).sort((a,b) => b.value - a.value).slice(0,100);
+        } catch(e) { return []; }
+    }
+
+    async function displayHighScoreRanking(type) {
+        switchScreen('highscoreViewScreen');
+        let title = '';
+        if (type === 'combo') title = '🔥 ハイスコアコンボ';
+        else if (type === 'playcount') title = '🎮 プレイ回数';
+        else if (type === 'xp') title = '⭐ 獲得XP';
+        document.getElementById('highscoreViewTitle').textContent = title;
+        let container = document.getElementById('highscoreListContainer');
+        container.innerHTML = '<div>読込中...</div>';
+        
+        let rankings = await fetchHighScoreRanking(type);
+        container.innerHTML = '';
+        rankings.forEach((e, i) => {
+            let d = document.createElement('div'); d.className = 'ranking-item';
+            d.innerHTML = `<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.value.toLocaleString()}</div>`;
+            container.appendChild(d);
+        });
+        if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
+    }
+
     // ========== スキルシステム ==========
     function updateSkillButtons(){
         const skillBar = document.getElementById('skillBar');
@@ -667,7 +806,6 @@
         gameTimer = setInterval(()=>{ gameTime--; document.getElementById('timerDisplay').textContent=gameTime; if(gameTime<=0) endGame(); },1000);
         updateSkillButtons();
 
-        // ストーリーモードデバフ
         if(mode === 'story'){
             let stage = gameState.storyStage;
             if(stage>=25 && stage<50 && !storyDebuffActive){
@@ -703,8 +841,18 @@
 
     function endGame(){
         gameActive=false; clearInterval(gameTimer);
-        let coins = Math.floor(currentScore/10); let xp = Math.floor(currentScore/100);
-        gameState.coins += coins; gameState.xp += xp;
+        let coins = Math.floor(currentScore/10); 
+        let xp = Math.floor(currentScore/100);
+        gameState.coins += coins; 
+        gameState.xp += xp;
+        
+        // ハイスコア更新 (ストーリー/通常プレイのみ)
+        if (currentMode !== 'ranking') {
+            gameState.totalPlayCount++;
+            gameState.totalXPEarned += xp;
+            if (currentCombo > gameState.highScoreCombo) gameState.highScoreCombo = currentCombo;
+        }
+        
         while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
 
         updateTaskProgress(currentScore, currentCombo);
@@ -715,7 +863,6 @@
         } else if(currentMode === 'story'){
             let stage = gameState.storyStage;
             let target = 10000 + (stage-1)*1000;
-            console.log('ストーリー終了', stage, target, currentScore);
             if(currentScore >= target && !gameState.storyClears.includes(stage)){
                 gameState.storyClears.push(stage);
                 if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
@@ -737,6 +884,23 @@
             }
         }
 
+        // Firebaseにハイスコア情報を保存
+        if(db && currentMode !== 'ranking') {
+            set(ref(db,`users/${gameState.userId}`), {
+                name: gameState.userName,
+                lastActive: Date.now(),
+                level: gameState.level,
+                xp: gameState.xp,
+                coins: gameState.coins,
+                score: gameState.rankingHighScore,
+                highScoreCombo: gameState.highScoreCombo,
+                totalPlayCount: gameState.totalPlayCount,
+                totalXPEarned: gameState.totalXPEarned
+            }).catch(()=>{});
+        } else {
+            syncFirebase();
+        }
+
         saveGameState();
         document.getElementById('finalScore').textContent=currentScore;
         document.getElementById('earnedCoins').textContent=coins;
@@ -752,7 +916,6 @@
             let node = document.createElement('div'); node.className='story-node';
             if(gameState.storyClears.includes(i)) node.classList.add('clear');
             if(i===gameState.storyStage) node.classList.add('current');
-            // ロック: 1つ前がクリアされていないとロック (ただし1は常に解放)
             if(i>1 && !gameState.storyClears.includes(i-1) && i!==gameState.storyStage) node.classList.add('locked');
             node.innerHTML = `${i}<br>${(10000+(i-1)*1000).toLocaleString()}`;
             if(i===25||i===50||i===75||i===100) node.innerHTML += '<br>🎁';
@@ -769,7 +932,9 @@
 
     function renderInventory(){
         let skillsDiv = document.getElementById('skillsList'); skillsDiv.innerHTML='';
-        let itemsDiv = document.getElementById('itemsList'); itemsDiv.innerHTML='<div class="item-card">🔮 スキルのかけら <span class="item-count">'+gameState.shards+'</span></div>';
+        let itemsDiv = document.getElementById('itemsList'); 
+        itemsDiv.innerHTML = `<div class="item-card">🔮 スキルのかけら <span class="item-count">${gameState.shards}</span></div>
+                              <div class="item-card">🔮 スキルのかけら(欠片) <span class="item-count">${gameState.shardFragments}</span></div>`;
         const allSkills = [
             {id:'auto',name:'⚡自動入力',desc:'30秒:0.25秒/文字 3.5秒'},{id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ'},{id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},{id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'}
         ];
@@ -808,6 +973,17 @@
             if(gameState.coins >= 10000000){ gameState.coins -= 10000000; gameState.shards += 1; saveGameState(); renderShop(); alert('交換完了'); } 
             else alert('コイン不足');
         };
+        document.getElementById('exchangeFragmentBtn').onclick=()=>{
+            if(gameState.shardFragments >= 5){ 
+                gameState.shardFragments -= 5; 
+                gameState.shards += 1; 
+                saveGameState(); 
+                renderShop(); 
+                alert('交換完了！ 欠片5→かけら1'); 
+            } else { 
+                alert('欠片が足りません'); 
+            }
+        };
     }
 
     function overlay(show){ document.getElementById('overlay').classList.toggle('active',show); }
@@ -820,10 +996,19 @@
         renderStoryMap(); switchScreen('storyMapScreen');
     });
     document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
+    document.getElementById('highscoreRankingBtn').addEventListener('click',()=>switchScreen('highscoreMenuScreen'));
+    
     document.getElementById('worldRankingViewBtn').addEventListener('click',displayRanking);
     document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'ranking'); });
     document.getElementById('backFromRankingModeBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('backFromRankingViewBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
+    document.getElementById('backFromHighscoreBtn').addEventListener('click',()=>switchScreen('menuScreen'));
+    document.getElementById('backFromHighscoreViewBtn').addEventListener('click',()=>switchScreen('highscoreMenuScreen'));
+    
+    document.getElementById('viewComboRankingBtn').addEventListener('click',()=>displayHighScoreRanking('combo'));
+    document.getElementById('viewPlayCountRankingBtn').addEventListener('click',()=>displayHighScoreRanking('playcount'));
+    document.getElementById('viewXPRankingBtn').addEventListener('click',()=>displayHighScoreRanking('xp'));
+    
     document.getElementById('backBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('continueBtn').addEventListener('click',()=>switchScreen('menuScreen'));
     document.getElementById('backFromStoryBtn').addEventListener('click',()=>switchScreen('menuScreen'));
@@ -836,6 +1021,7 @@
         document.getElementById('sidePanel').classList.remove('active');
         document.getElementById('shopPanel').classList.remove('active');
         document.getElementById('giftDialog').classList.remove('active');
+        document.getElementById('debugPanel').classList.remove('active');
         overlay(false);
     });
 
