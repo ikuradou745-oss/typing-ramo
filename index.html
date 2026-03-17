@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・イベント版</title>
+    <title>⚡ タイピングストーリー・ランキングリセット版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -148,18 +148,18 @@
         /* ハイスコアランキング画面 */
         .highscore-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; }
         /* イベント関連 */
-        .event-banner { position: absolute; top: 80px; right: 20px; background: linear-gradient(135deg, #00aa00, #006600); padding: 10px 20px; border-radius: 40px; font-weight: 700; color: gold; border: 2px solid gold; z-index: 50; }
+        .event-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #00aa00, #006600); padding: 15px 30px; border-radius: 60px; font-weight: 700; color: gold; border: 3px solid gold; z-index: 50; font-size: 24px; white-space: nowrap; box-shadow: 0 0 30px gold; }
         .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
         .clover-value { color: var(--accent-green-light); }
     </style>
 </head>
 <body>
 <div class="game-container">
-    <!-- イベントバナー (3/31まで表示) -->
+    <!-- イベントバナー (3/31まで表示) 中央配置 -->
     <div class="event-banner" id="eventBanner">🍀 セントパトリックデーイベント 🍀</div>
 
     <div class="header">
-        <div class="game-title">⚡ タイピング・イベント</div>
+        <div class="game-title">⚡ タイピング・ランキングリセット</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -197,6 +197,12 @@
             <button class="skill-use-btn" id="skillComboPlusBtn" style="background:linear-gradient(135deg,gold,orange);">✨コンボ+</button>
             <div class="cooldown-overlay" id="cooldownComboPlus" style="width:0%;"></div>
             <span class="cooldown-text" id="cooldownComboPlusText"></span>
+        </div>
+        <!-- 新スキル: 自動入力β -->
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillAutoBetaBtn" style="background:linear-gradient(135deg,#00aaff,#0044aa);">⚡自動入力β</button>
+            <div class="cooldown-overlay" id="cooldownAutoBeta" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownAutoBetaText"></span>
         </div>
         <!-- イベントスキル -->
         <div style="position:relative;">
@@ -451,7 +457,8 @@
         shardFragments: 0,
         ownedSkills: [],
         equippedSkills: [],
-        claimedRankings: { world: null },
+        claimedRankings: { world: null }, // ワールドランキング報酬受け取り日
+        claimedHighScoreRankings: { combo: null, playcount: null, xp: null }, // ハイスコア報酬受け取り日
         rankingHighScore: 0,
         highScoreCombo: 0,
         totalPlayCount: 0,
@@ -479,7 +486,7 @@
 
     // スキルクールダウン管理
     const cooldowns = { 
-        auto:0, timeExtend:0, comboUp:0, comboPlus:0,
+        auto:0, autoBeta:0, timeExtend:0, comboUp:0, comboPlus:0,
         leprechaun:0, combo25:0, luckyBlock:0 
     };
     let skillAutoActive = false;
@@ -488,8 +495,8 @@
     let combo25Active = false;    // コンボ倍率2.5倍
     let comboMultiplier = 1;
 
-    // 自動入力の速度設定 (ms)
-    const AUTO_INPUT_INTERVAL = 4;
+    // 自動入力の速度設定 (ms) - 64フレーム相当 (60fps基準で約16.67ms * 64 ≈ 1067ms? いや、16ms * 64 = 1024msなので1秒に1文字? ここでは16ms * 4 = 64msに設定)
+    const AUTO_INPUT_INTERVAL = 64; // 64ms (約15.6文字/秒)
 
     // 問題・変換
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
@@ -542,6 +549,53 @@
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event'
+
+    // ========== ランキングリセット & 報酬処理 (毎日7時) ==========
+    function checkRankingReset() {
+        const now = new Date();
+        const today7 = new Date();
+        today7.setHours(7, 0, 0, 0);
+        
+        // 前回のリセット日時をローカルストレージから取得
+        let lastReset = localStorage.getItem('lastRankingReset');
+        let todayStr = today7.toDateString();
+        
+        if (lastReset !== todayStr && now >= today7) {
+            // ランキングリセット実行
+            console.log('ランキングリセット実行');
+            
+            // ワールドランキングの報酬チェックとリセット
+            if (worldRankings.length > 0) {
+                // 自分が10位以内なら報酬をギフトに追加 (オフライン対応のため、次回ログイン時に判定)
+                // 実際の報酬付与はギフトボタンを押したときに行うので、ここではフラグのみ設定
+                localStorage.setItem('pendingRankingRewards', JSON.stringify({
+                    date: todayStr,
+                    worldRankings: worldRankings
+                }));
+            }
+            
+            // ハイスコアランキングの報酬チェック
+            ['combo', 'playcount', 'xp'].forEach(type => {
+                // 非同期で取得する必要があるが、簡略化のため次回表示時に判定
+            });
+            
+            // ランキングデータをクリア
+            worldRankings = [];
+            localStorage.removeItem('worldRankings');
+            localStorage.removeItem('highScoreRankings');
+            
+            // リセット日時を保存
+            localStorage.setItem('lastRankingReset', todayStr);
+            
+            // ギフトバッジ更新
+            checkRankingRewards();
+        }
+    }
+    
+    // 1分ごとにチェック
+    setInterval(checkRankingReset, 60000);
+    // 起動時にもチェック
+    setTimeout(checkRankingReset, 1000);
 
     // ========== イベント期間チェック ==========
     function isEventActive() {
@@ -622,6 +676,7 @@
         if(!gameState.shards) gameState.shards=0; 
         if(!gameState.shardFragments) gameState.shardFragments=0;
         if(!gameState.claimedRankings) gameState.claimedRankings={world:null};
+        if(!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings={combo:null,playcount:null,xp:null};
         if(!gameState.highScoreCombo) gameState.highScoreCombo=0;
         if(!gameState.totalPlayCount) gameState.totalPlayCount=0;
         if(!gameState.totalXPEarned) gameState.totalXPEarned=0;
@@ -838,6 +893,9 @@
         container.innerHTML = '<div>読込中...</div>';
         
         let rankings = await fetchHighScoreRanking(type);
+        // ハイスコアランキングもリセット対象なので、表示時に最新を取得
+        localStorage.setItem(`highScoreRankings_${type}`, JSON.stringify(rankings));
+        
         container.innerHTML = '';
         rankings.forEach((e, i) => {
             let d = document.createElement('div'); d.className = 'ranking-item';
@@ -845,6 +903,22 @@
             container.appendChild(d);
         });
         if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
+        
+        // ハイスコア報酬チェック
+        checkHighScoreRewards(type, rankings);
+    }
+
+    function checkHighScoreRewards(type, rankings) {
+        const today = getTodayString();
+        const claimed = gameState.claimedHighScoreRankings[type];
+        const myEntry = rankings.find(r => r.id === gameState.userId);
+        const isRank1 = myEntry && rankings.findIndex(r => r.id === gameState.userId) === 0;
+        
+        if (claimed !== today && isRank1) {
+            // 報酬があることをギフトバッジで通知 (簡略化のためワールドランキングと統合)
+            document.getElementById('giftBadge').textContent = '1';
+            document.getElementById('giftBadge').style.display = 'flex';
+        }
     }
 
     // ========== スキルシステム ==========
@@ -854,6 +928,7 @@
         else skillBar.style.display = 'none';
         
         const autoBtn = document.getElementById('skillAutoBtn');
+        const autoBetaBtn = document.getElementById('skillAutoBetaBtn');
         const timeBtn = document.getElementById('skillTimeBtn');
         const comboBtn = document.getElementById('skillComboBtn');
         const comboPlusBtn = document.getElementById('skillComboPlusBtn');
@@ -862,6 +937,7 @@
         const luckyBlockBtn = document.getElementById('skillLuckyBlockBtn');
         
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
+        autoBetaBtn.style.display = gameState.ownedSkills.includes('autoBeta') && gameState.equippedSkills.includes('autoBeta') ? 'block' : 'none';
         timeBtn.style.display = gameState.ownedSkills.includes('timeExtend') && gameState.equippedSkills.includes('timeExtend') ? 'block' : 'none';
         comboBtn.style.display = gameState.ownedSkills.includes('comboUp') && gameState.equippedSkills.includes('comboUp') ? 'block' : 'none';
         comboPlusBtn.style.display = gameState.ownedSkills.includes('comboPlus') && gameState.equippedSkills.includes('comboPlus') ? 'block' : 'none';
@@ -873,6 +949,7 @@
         const now = Date.now();
         const skillDurations = {
             auto: 30000,
+            autoBeta: 30000,
             timeExtend: 45000,
             comboUp: 30000,
             comboPlus: 150000,
@@ -881,7 +958,7 @@
             luckyBlock: 25000
         };
         
-        ['auto','timeExtend','comboUp','comboPlus','leprechaun','combo25','luckyBlock'].forEach(id => {
+        ['auto','autoBeta','timeExtend','comboUp','comboPlus','leprechaun','combo25','luckyBlock'].forEach(id => {
             let overlay = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}`);
             let textEl = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}Text`);
             if (overlay && textEl) {
@@ -908,6 +985,7 @@
         // クールダウン設定
         const cooldownTimes = {
             auto: 30000,
+            autoBeta: 30000,
             timeExtend: 45000,
             comboUp: 30000,
             comboPlus: 150000,
@@ -945,6 +1023,34 @@
                 }
             }, AUTO_INPUT_INTERVAL);
             setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 3500);
+        }
+        else if(skillId === 'autoBeta'){
+            skillAutoActive = true;
+            showAnimation('⚡自動入力β!');
+            if(autoInterval) clearInterval(autoInterval);
+            autoInterval = setInterval(()=>{
+                if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+                let ex = currentRomaji[typedInput.length];
+                if(ex){
+                    typedInput += ex;
+                    currentCombo++;
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                    currentScore += addScore;
+                    document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
+                    document.getElementById('comboDisplay').textContent = currentCombo;
+                    updateRomajiDisplay();
+                    if(typedInput === currentRomaji) nextQuestion();
+                    if (currentMode === 'story' || currentMode === 'event') {
+                        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
+                        if (currentScore >= target) {
+                            clearInterval(gameTimer);
+                            endGame();
+                            return;
+                        }
+                    }
+                }
+            }, AUTO_INPUT_INTERVAL);
+            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 6500); // 6.5秒
         }
         else if(skillId === 'timeExtend'){
             showAnimation('⏳タイミングゲーム!');
@@ -1288,12 +1394,13 @@
                               <div class="item-card">🔮 スキルのかけら(欠片) <span class="item-count">${gameState.shardFragments}</span></div>`;
         const allSkills = [
             {id:'auto',name:'⚡自動入力',desc:'30秒:超高速自動入力'},
+            {id:'autoBeta',name:'⚡自動入力β',desc:'30秒:6.5秒間自動入力'},
             {id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ(色付き)'},
             {id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},
             {id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'},
-            {id:'leprechaun',name:'🍀レプラコーン',desc:'30秒:10秒間ミスってもコンボ継続'},
-            {id:'combo25',name:'🔥コンボ2.5倍',desc:'45秒:10秒間コンボ倍率2.5倍'},
-            {id:'luckyBlock',name:'🎲ラッキーブロック',desc:'パッシブ:XP1.5倍/25秒:ランダム効果'}
+            {id:'leprechaun',name:'🍀レプラコーン (スキル)',desc:'30秒:10秒間ミスってもコンボ継続'},
+            {id:'combo25',name:'🔥コンボ2.5倍 (スキル)',desc:'45秒:10秒間コンボ倍率2.5倍'},
+            {id:'luckyBlock',name:'🎲ラッキーブロック (スキル)',desc:'パッシブ:XP1.5倍/25秒:ランダム効果'}
         ];
         gameState.ownedSkills.forEach(sid=>{
             let sk = allSkills.find(s=>s.id===sid); if(!sk) return;
@@ -1319,15 +1426,19 @@
     function renderShop(){
         let skillsDiv = document.getElementById('shopSkillsPanel'); skillsDiv.innerHTML='';
         const shopSkills = [
-            {id:'auto',name:'自動入力',desc:'かけら5',price:5},{id:'timeExtend',name:'時間伸ばし',desc:'かけら5',price:5},{id:'comboUp',name:'コンボアップ',desc:'かけら5',price:5}
+            {id:'auto',name:'自動入力',desc:'かけら5',price:5},
+            {id:'autoBeta',name:'自動入力β',desc:'かけら50',price:50},
+            {id:'timeExtend',name:'時間伸ばし',desc:'かけら5',price:5},
+            {id:'comboUp',name:'コンボアップ',desc:'かけら5',price:5}
         ];
         shopSkills.forEach(sk=>{
             let div = document.createElement('div'); div.className='shop-item item-card';
-            div.innerHTML = `<div><span class="item-name">${sk.name}</span><div>${sk.desc}</div></div><button class="equip-btn" data-id="${sk.id}">購入 (🔮5)</button>`;
+            div.innerHTML = `<div><span class="item-name">${sk.name}</span><div>${sk.desc}</div></div><button class="equip-btn" data-id="${sk.id}">購入 (🔮${sk.price})</button>`;
             div.querySelector('button').onclick=()=>{
-                if(gameState.shards>=5){
+                if(gameState.shards >= sk.price){
                     if(!gameState.ownedSkills.includes(sk.id)) gameState.ownedSkills.push(sk.id);
-                    gameState.shards-=5; saveGameState(); renderShop(); alert(`${sk.name}入手`);
+                    gameState.shards -= sk.price; 
+                    saveGameState(); renderShop(); alert(`${sk.name}入手`);
                 } else alert('かけら不足');
             };
             skillsDiv.appendChild(div);
@@ -1353,15 +1464,15 @@
         const container = document.getElementById('eventShopItems');
         container.innerHTML = '';
         const items = [
-            { name: '🔮 スキルのかけら(欠片) x1', price: 10, action: () => { gameState.shardFragments += 1; } },
-            { name: '🔮 スキルのかけら(欠片) x15', price: 100, action: () => { gameState.shardFragments += 15; } },
-            { name: '🍀 レプラコーン', price: 50, skillId: 'leprechaun', action: () => { 
+            { name: '🔮 スキルのかけら(欠片) x1', price: 20, action: () => { gameState.shardFragments += 1; } },
+            { name: '🔮 スキルのかけら(欠片) x12', price: 200, action: () => { gameState.shardFragments += 12; } },
+            { name: '🍀 レプラコーン (スキル)', price: 150, skillId: 'leprechaun', action: () => { 
                 if (!gameState.ownedSkills.includes('leprechaun')) gameState.ownedSkills.push('leprechaun'); 
             }},
-            { name: '🔥 コンボ2.5倍', price: 50, skillId: 'combo25', action: () => { 
+            { name: '🔥 コンボ2.5倍 (スキル)', price: 150, skillId: 'combo25', action: () => { 
                 if (!gameState.ownedSkills.includes('combo25')) gameState.ownedSkills.push('combo25'); 
             }},
-            { name: '🎲 ラッキーブロック', price: 350, skillId: 'luckyBlock', action: () => { 
+            { name: '🎲 ラッキーブロック (スキル)', price: 500, skillId: 'luckyBlock', action: () => { 
                 if (!gameState.ownedSkills.includes('luckyBlock')) gameState.ownedSkills.push('luckyBlock'); 
             }}
         ];
@@ -1502,6 +1613,7 @@
     });
 
     document.getElementById('skillAutoBtn').addEventListener('click',()=>useSkill('auto'));
+    document.getElementById('skillAutoBetaBtn').addEventListener('click',()=>useSkill('autoBeta'));
     document.getElementById('skillTimeBtn').addEventListener('click',()=>useSkill('timeExtend'));
     document.getElementById('skillComboBtn').addEventListener('click',()=>useSkill('comboUp'));
     document.getElementById('skillComboPlusBtn').addEventListener('click',()=>useSkill('comboPlus'));
