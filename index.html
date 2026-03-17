@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・最終調整版</title>
+    <title>⚡ タイピングストーリー・イベント版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -13,6 +13,7 @@
         :root {
             --primary-dark: #0a0e27; --accent-blue: #00d4ff; --accent-green: #00ff88;
             --accent-pink: #ff006e; --accent-purple: #7c3aed; --accent-gold: #ffd700;
+            --accent-green-light: #90EE90; --accent-green-dark: #006400;
             --text-white: #f0f0f0; --text-gray: #a0a0a0;
         }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; }
@@ -146,12 +147,19 @@
         .debug-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-gray); font-size: 20px; cursor: pointer; }
         /* ハイスコアランキング画面 */
         .highscore-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; }
+        /* イベント関連 */
+        .event-banner { position: absolute; top: 80px; right: 20px; background: linear-gradient(135deg, #00aa00, #006600); padding: 10px 20px; border-radius: 40px; font-weight: 700; color: gold; border: 2px solid gold; z-index: 50; }
+        .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
+        .clover-value { color: var(--accent-green-light); }
     </style>
 </head>
 <body>
 <div class="game-container">
+    <!-- イベントバナー (3/31まで表示) -->
+    <div class="event-banner" id="eventBanner">🍀 セントパトリックデーイベント 🍀</div>
+
     <div class="header">
-        <div class="game-title">⚡ タイピング・最終調整</div>
+        <div class="game-title">⚡ タイピング・イベント</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -190,6 +198,22 @@
             <div class="cooldown-overlay" id="cooldownComboPlus" style="width:0%;"></div>
             <span class="cooldown-text" id="cooldownComboPlusText"></span>
         </div>
+        <!-- イベントスキル -->
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillLeprechaunBtn" style="background:linear-gradient(135deg,#00aa00,#006600);">🍀レプラコーン</button>
+            <div class="cooldown-overlay" id="cooldownLeprechaun" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownLeprechaunText"></span>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillCombo25Btn" style="background:linear-gradient(135deg,#ffaa00,#886600);">🔥コンボ2.5倍</button>
+            <div class="cooldown-overlay" id="cooldownCombo25" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownCombo25Text"></span>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillLuckyBlockBtn" style="background:linear-gradient(135deg,gold,#aa8800);">🎲ラッキーブロック</button>
+            <div class="cooldown-overlay" id="cooldownLuckyBlock" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownLuckyBlockText"></span>
+        </div>
     </div>
 
     <div class="main-content">
@@ -201,6 +225,7 @@
                 <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
                 <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
+                <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
             </div>
         </div>
         <!-- 難易度選択 (通常) -->
@@ -256,6 +281,23 @@
             <div class="ranking-list" id="highscoreListContainer"></div>
             <button class="back-btn" id="backFromHighscoreViewBtn">戻る</button>
         </div>
+        <!-- イベントメニュー -->
+        <div class="screen" id="eventMenuScreen">
+            <div class="menu-title">🍀 セントパトリックデー</div>
+            <div style="font-size:18px; margin-bottom:10px;">期間: 〜3/31</div>
+            <div class="highscore-buttons">
+                <button class="ranking-mode-btn" id="eventPlayBtn">🎮 イベントをプレイ</button>
+                <button class="ranking-mode-btn" id="eventShopBtn">🏪 イベントショップ</button>
+                <button class="ranking-mode-btn" id="eventTaskBtn">📋 イベントタスク</button>
+            </div>
+            <button class="back-btn" id="backFromEventBtn">戻る</button>
+        </div>
+        <!-- イベントタスク画面 -->
+        <div class="screen" id="eventTaskScreen">
+            <div class="menu-title">🍀 イベントタスク</div>
+            <div id="eventTasksList" class="item-grid" style="width:100%; max-width:500px;"></div>
+            <button class="back-btn" id="backFromEventTaskBtn">戻る</button>
+        </div>
         <!-- ゲーム画面 -->
         <div class="screen" id="gameScreen">
             <!-- ストーリーモード用目標バー -->
@@ -280,9 +322,16 @@
                 <div style="font-size:14px;">FINAL SCORE</div>
                 <div id="finalScore" style="font-size:48px; color:var(--accent-green);">0</div>
                 <div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div>
+                <div id="eventReward" style="font-size:18px; margin-top:10px; color:var(--accent-green-light);"></div>
             </div>
             <button class="menu-btn" id="continueBtn">続ける</button>
         </div>
+    </div>
+
+    <!-- クローバー表示 (イベント通貨) -->
+    <div class="clover-display" id="cloverDisplay">
+        <div style="font-size:24px;">🍀</div>
+        <div class="clover-value" id="cloverValue">0</div>
     </div>
 
     <div class="coin-display"><div style="font-size:24px;">💰</div><div class="coin-value" id="coinDisplay">0</div></div>
@@ -326,7 +375,7 @@
         </div>
     </div>
 
-    <!-- ショップパネル -->
+    <!-- ショップパネル (通常) -->
     <div class="side-panel" id="shopPanel">
         <div class="panel-header"><span>ショップ</span><button class="panel-close" id="shopCloseBtn">✕</button></div>
         <div class="tab-bar">
@@ -346,6 +395,12 @@
                 <button class="equip-btn" id="exchangeFragmentBtn">交換 (欠片5)</button>
             </div>
         </div>
+    </div>
+
+    <!-- イベントショップパネル -->
+    <div class="side-panel" id="eventShopPanel">
+        <div class="panel-header"><span>🍀 イベントショップ</span><button class="panel-close" id="eventShopCloseBtn">✕</button></div>
+        <div class="item-grid" id="eventShopItems"></div>
     </div>
 
     <!-- デバッグパネル (隠し機能) -->
@@ -401,6 +456,13 @@
         highScoreCombo: 0,
         totalPlayCount: 0,
         totalXPEarned: 0,
+        // イベント関連
+        clovers: 0,
+        eventTasks: [
+            { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
+            { id: 'event2', title: 'イベントで50コンボ達成', current: 0, target: 1, reward: 5, completed: false },
+            { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false }
+        ],
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -416,12 +478,18 @@
     };
 
     // スキルクールダウン管理
-    const cooldowns = { auto:0, timeExtend:0, comboUp:0, comboPlus:0 };
+    const cooldowns = { 
+        auto:0, timeExtend:0, comboUp:0, comboPlus:0,
+        leprechaun:0, combo25:0, luckyBlock:0 
+    };
     let skillAutoActive = false;
     let autoInterval = null;
+    let leprechaunActive = false; // ミスってもコンボ継続
+    let combo25Active = false;    // コンボ倍率2.5倍
+    let comboMultiplier = 1;
 
-    // 自動入力の速度設定 (ms) - 16msを4で割って4msに (さらに高速化)
-    const AUTO_INPUT_INTERVAL = 64; // 超高速 (250msの62.5倍)
+    // 自動入力の速度設定 (ms)
+    const AUTO_INPUT_INTERVAL = 4;
 
     // 問題・変換
     const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['いっしょうけんめい','しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
@@ -473,7 +541,19 @@
     let worldRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
-    let currentMode = 'normal'; // 'normal', 'ranking', 'story'
+    let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event'
+
+    // ========== イベント期間チェック ==========
+    function isEventActive() {
+        const now = new Date();
+        const eventEnd = new Date(now.getFullYear(), 2, 31); // 3月31日 (月は0-index)
+        return now <= eventEnd;
+    }
+
+    // イベントバナー表示制御
+    if (!isEventActive()) {
+        document.getElementById('eventBanner').style.display = 'none';
+    }
 
     // ========== デバッグモード関連 ==========
     let debugKeys = { '6': false, 'ArrowLeft': false, 'Enter': false };
@@ -529,7 +609,8 @@
             score:gameState.rankingHighScore,
             highScoreCombo: gameState.highScoreCombo,
             totalPlayCount: gameState.totalPlayCount,
-            totalXPEarned: gameState.totalXPEarned
+            totalXPEarned: gameState.totalXPEarned,
+            clovers: gameState.clovers
         }).catch(()=>{}); 
     }
     (function load(){ 
@@ -544,6 +625,14 @@
         if(!gameState.highScoreCombo) gameState.highScoreCombo=0;
         if(!gameState.totalPlayCount) gameState.totalPlayCount=0;
         if(!gameState.totalXPEarned) gameState.totalXPEarned=0;
+        if(!gameState.clovers) gameState.clovers=0;
+        if(!gameState.eventTasks) {
+            gameState.eventTasks = [
+                { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
+                { id: 'event2', title: 'イベントで50コンボ達成', current: 0, target: 1, reward: 5, completed: false },
+                { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false }
+            ];
+        }
         if(!gameState.dailyTasks) { 
             gameState.dailyTasks = [ { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } ];
             gameState.weeklyTasks = [ { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } ];
@@ -551,6 +640,7 @@
         checkTaskReset();
         updateUI(); 
         updateSkillButtons();
+        updateEventUI();
     })();
 
     // タスクリセット
@@ -577,6 +667,7 @@
         document.getElementById('levelDisplay').textContent=gameState.level;
         document.getElementById('xpBarFill').style.width=(gameState.xp/gameState.maxXp*100)+'%';
         document.getElementById('coinDisplay').textContent=gameState.coins.toLocaleString();
+        document.getElementById('cloverValue').textContent=gameState.clovers;
         document.getElementById('displayName').textContent=gameState.userName;
         document.getElementById('userId').textContent='ID: '+gameState.userId.slice(0,8);
         let left = Math.max(0,3-gameState.nameChangeCount);
@@ -630,9 +721,32 @@
         updateTasksDisplay();
     }
 
+    function updateEventTasks(score, combo) {
+        if (currentMode !== 'event') return;
+        let tasks = gameState.eventTasks;
+        if (!tasks[0].completed && score >= 10000) {
+            tasks[0].current = Math.min(tasks[0].current+1, tasks[0].target);
+        }
+        if (!tasks[1].completed && combo >= 50) {
+            tasks[1].current = Math.min(tasks[1].current+1, tasks[1].target);
+        }
+        if (!tasks[2].completed) {
+            tasks[2].current = Math.min(tasks[2].current+1, tasks[2].target);
+        }
+        
+        tasks.forEach(t => {
+            if (!t.completed && t.current >= t.target) {
+                t.completed = true;
+                gameState.clovers += t.reward;
+                showTaskNotification(`イベントタスククリア！ +${t.reward}🍀`);
+            }
+        });
+        saveGameState();
+    }
+
     function showTaskNotification(title){
         let noti = document.getElementById('taskNotification');
-        noti.textContent = `🎉 タスククリア！ ${title}`;
+        noti.textContent = `🎉 ${title}`;
         noti.classList.remove('hidden');
         setTimeout(()=> noti.classList.add('hidden'), 3000);
     }
@@ -743,22 +857,31 @@
         const timeBtn = document.getElementById('skillTimeBtn');
         const comboBtn = document.getElementById('skillComboBtn');
         const comboPlusBtn = document.getElementById('skillComboPlusBtn');
+        const leprechaunBtn = document.getElementById('skillLeprechaunBtn');
+        const combo25Btn = document.getElementById('skillCombo25Btn');
+        const luckyBlockBtn = document.getElementById('skillLuckyBlockBtn');
         
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
         timeBtn.style.display = gameState.ownedSkills.includes('timeExtend') && gameState.equippedSkills.includes('timeExtend') ? 'block' : 'none';
         comboBtn.style.display = gameState.ownedSkills.includes('comboUp') && gameState.equippedSkills.includes('comboUp') ? 'block' : 'none';
         comboPlusBtn.style.display = gameState.ownedSkills.includes('comboPlus') && gameState.equippedSkills.includes('comboPlus') ? 'block' : 'none';
+        leprechaunBtn.style.display = gameState.ownedSkills.includes('leprechaun') && gameState.equippedSkills.includes('leprechaun') ? 'block' : 'none';
+        combo25Btn.style.display = gameState.ownedSkills.includes('combo25') && gameState.equippedSkills.includes('combo25') ? 'block' : 'none';
+        luckyBlockBtn.style.display = gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock') ? 'block' : 'none';
         
-        // クールダウン表示更新 (残り秒数を表示)
+        // クールダウン表示更新
         const now = Date.now();
         const skillDurations = {
             auto: 30000,
             timeExtend: 45000,
             comboUp: 30000,
-            comboPlus: 150000
+            comboPlus: 150000,
+            leprechaun: 30000,
+            combo25: 45000,
+            luckyBlock: 25000
         };
         
-        ['auto','timeExtend','comboUp','comboPlus'].forEach(id => {
+        ['auto','timeExtend','comboUp','comboPlus','leprechaun','combo25','luckyBlock'].forEach(id => {
             let overlay = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}`);
             let textEl = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}Text`);
             if (overlay && textEl) {
@@ -778,8 +901,24 @@
     function useSkill(skillId){
         if(!gameActive) return;
         const now = Date.now();
-        if(skillId === 'auto' && cooldowns.auto < now){
-            cooldowns.auto = now + 30000;
+        
+        // 共通: クールダウン中なら使用不可
+        if (cooldowns[skillId] > now) return;
+        
+        // クールダウン設定
+        const cooldownTimes = {
+            auto: 30000,
+            timeExtend: 45000,
+            comboUp: 30000,
+            comboPlus: 150000,
+            leprechaun: 30000,
+            combo25: 45000,
+            luckyBlock: 25000
+        };
+        cooldowns[skillId] = now + cooldownTimes[skillId];
+        
+        // スキル効果発動
+        if(skillId === 'auto'){
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
             if(autoInterval) clearInterval(autoInterval);
@@ -789,16 +928,15 @@
                 if(ex){
                     typedInput += ex;
                     currentCombo++;
-                    currentScore += 5 * currentCombo;
-                    document.getElementById('scoreDisplay').textContent = currentScore;
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                    currentScore += addScore;
+                    document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
                     document.getElementById('comboDisplay').textContent = currentCombo;
                     updateRomajiDisplay();
                     if(typedInput === currentRomaji) nextQuestion();
-                    // ストーリーモードで目標達成チェック
-                    if (currentMode === 'story') {
-                        let target = 10000 + (gameState.storyStage-1)*1000;
+                    if (currentMode === 'story' || currentMode === 'event') {
+                        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
                         if (currentScore >= target) {
-                            // 即時クリア
                             clearInterval(gameTimer);
                             endGame();
                             return;
@@ -808,8 +946,7 @@
             }, AUTO_INPUT_INTERVAL);
             setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 3500);
         }
-        else if(skillId === 'timeExtend' && cooldowns.timeExtend < now){
-            cooldowns.timeExtend = now + 45000;
+        else if(skillId === 'timeExtend'){
             showAnimation('⏳タイミングゲーム!');
             gameActive = false;
             clearInterval(gameTimer);
@@ -859,25 +996,82 @@
                     gameTime--; 
                     document.getElementById('timerDisplay').textContent=gameTime; 
                     if(gameTime<=0) endGame(); 
-                    if (currentMode === 'story') updateStoryGoalBar();
+                    if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
                 },1000);
             };
             
             document.getElementById('stopBarBtn').addEventListener('click', stopHandler, { once: true });
         }
-        else if(skillId === 'comboUp' && cooldowns.comboUp < now){
-            cooldowns.comboUp = now + 30000;
+        else if(skillId === 'comboUp'){
             showAnimation('🔥コンボ+40!');
             currentCombo += 40;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
-        else if(skillId === 'comboPlus' && cooldowns.comboPlus < now){
-            cooldowns.comboPlus = now + 150000;
+        else if(skillId === 'comboPlus'){
             let add = Math.floor(Math.random()*36)+25;
             showAnimation(`✨コンボ+${add}!`);
             currentCombo += add;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
+        else if(skillId === 'leprechaun'){
+            showAnimation('🍀 レプラコーンビーム!');
+            leprechaunActive = true;
+            // エフェクト: 画面中央にビーム
+            const beam = document.createElement('div'); 
+            beam.style.position = 'fixed'; beam.style.top = '0'; beam.style.left = '50%'; 
+            beam.style.width = '10px'; beam.style.height = '100%'; 
+            beam.style.background = 'linear-gradient(to bottom, lime, gold)'; 
+            beam.style.boxShadow = '0 0 50px lime'; beam.style.transform = 'translateX(-50%)'; 
+            beam.style.zIndex = '15000'; beam.style.animation = 'skillPop 0.5s';
+            document.body.appendChild(beam);
+            setTimeout(() => beam.remove(), 1000);
+            
+            setTimeout(() => { leprechaunActive = false; }, 10000);
+        }
+        else if(skillId === 'combo25'){
+            showAnimation('🔥 コンボ2.5倍!');
+            combo25Active = true;
+            comboMultiplier = 2.5;
+            setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 10000);
+        }
+        else if(skillId === 'luckyBlock'){
+            showAnimation('🎲 ラッキーブロック!');
+            const effects = ['auto', 'combo', 'time'];
+            const selected = effects[Math.floor(Math.random() * effects.length)];
+            
+            if (selected === 'auto') {
+                // 1.5秒間自動入力
+                const oldAuto = skillAutoActive;
+                skillAutoActive = true;
+                if(autoInterval) clearInterval(autoInterval);
+                autoInterval = setInterval(()=>{
+                    if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+                    let ex = currentRomaji[typedInput.length];
+                    if(ex){
+                        typedInput += ex;
+                        currentCombo++;
+                        let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                        currentScore += addScore;
+                        document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
+                        document.getElementById('comboDisplay').textContent = currentCombo;
+                        updateRomajiDisplay();
+                        if(typedInput === currentRomaji) nextQuestion();
+                    }
+                }, AUTO_INPUT_INTERVAL);
+                setTimeout(() => { skillAutoActive = oldAuto; clearInterval(autoInterval); }, 1500);
+                showAnimation('⚡ 自動入力(1.5s)');
+            } else if (selected === 'combo') {
+                let add = 25;
+                currentCombo += add;
+                document.getElementById('comboDisplay').textContent = currentCombo;
+                showAnimation(`✨ コンボ+${add}`);
+            } else {
+                gameTime += 2.5;
+                document.getElementById('timerDisplay').textContent = Math.floor(gameTime);
+                showAnimation('⏳ +2.5秒');
+            }
+        }
+        
         updateSkillButtons();
     }
 
@@ -891,11 +1085,21 @@
     function startGame(difficulty, mode = 'normal'){
         currentMode = mode;
         currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
-        document.getElementById('scoreDisplay').textContent='0'; document.getElementById('comboDisplay').textContent='0'; document.getElementById('timerDisplay').textContent='60';
+        comboMultiplier = 1;
+        leprechaunActive = false;
+        combo25Active = false;
+        
+        document.getElementById('scoreDisplay').textContent='0'; 
+        document.getElementById('comboDisplay').textContent='0'; 
+        document.getElementById('timerDisplay').textContent='60';
         
         const storyGoalContainer = document.getElementById('storyGoalContainer');
         if (mode === 'story') {
             storyGoalContainer.style.display = 'flex';
+            updateStoryGoalBar();
+        } else if (mode === 'event') {
+            storyGoalContainer.style.display = 'flex';
+            document.getElementById('storyGoalText').textContent = `0/50000`;
             updateStoryGoalBar();
         } else {
             storyGoalContainer.style.display = 'none';
@@ -905,9 +1109,9 @@
         nextQuestion();
         gameTimer = setInterval(()=>{ 
             gameTime--; 
-            document.getElementById('timerDisplay').textContent=gameTime; 
+            document.getElementById('timerDisplay').textContent=Math.floor(gameTime); 
             if (gameTime <= 0) endGame(); 
-            if (mode === 'story') updateStoryGoalBar();
+            if (mode === 'story' || mode === 'event') updateStoryGoalBar();
         }, 1000);
         updateSkillButtons();
 
@@ -935,13 +1139,12 @@
     }
 
     function updateStoryGoalBar() {
-        if (currentMode !== 'story') return;
-        let target = 10000 + (gameState.storyStage-1)*1000;
+        if (currentMode !== 'story' && currentMode !== 'event') return;
+        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
         let percent = Math.min(100, (currentScore / target) * 100);
         document.getElementById('storyGoalFill').style.width = percent + '%';
-        document.getElementById('storyGoalText').textContent = `${currentScore}/${target}`;
+        document.getElementById('storyGoalText').textContent = `${Math.floor(currentScore)}/${target}`;
         
-        // 目標達成したら即時終了
         if (currentScore >= target && gameActive) {
             clearInterval(gameTimer);
             endGame();
@@ -955,14 +1158,23 @@
         typedInput=''; 
         document.getElementById('questionDisplay').textContent=currentQuestion; 
         updateRomajiDisplay(); 
-        if (currentMode === 'story') updateStoryGoalBar();
+        if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
     }
     function updateRomajiDisplay(){ document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; }
 
     function endGame(){
-        gameActive=false; clearInterval(gameTimer);
+        gameActive=false; 
+        clearInterval(gameTimer);
+        if(autoInterval) clearInterval(autoInterval);
+        
         let coins = Math.floor(currentScore/10); 
         let xp = Math.floor(currentScore/100);
+        
+        // ラッキーブロックのパッシブ効果: XP1.5倍
+        if (gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock')) {
+            xp = Math.floor(xp * 1.5);
+        }
+        
         gameState.coins += coins; 
         gameState.xp += xp;
         
@@ -970,6 +1182,14 @@
             gameState.totalPlayCount++;
             gameState.totalXPEarned += xp;
             if (currentCombo > gameState.highScoreCombo) gameState.highScoreCombo = currentCombo;
+        }
+        
+        // イベントモードの場合、クローバー獲得
+        let earnedClovers = 0;
+        if (currentMode === 'event') {
+            earnedClovers = Math.floor(currentScore / 50000);
+            gameState.clovers += earnedClovers;
+            updateEventTasks(currentScore, currentCombo);
         }
         
         while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
@@ -1013,16 +1233,29 @@
                 score: gameState.rankingHighScore,
                 highScoreCombo: gameState.highScoreCombo,
                 totalPlayCount: gameState.totalPlayCount,
-                totalXPEarned: gameState.totalXPEarned
+                totalXPEarned: gameState.totalXPEarned,
+                clovers: gameState.clovers
             }).catch(()=>{});
         } else {
             syncFirebase();
         }
 
         saveGameState();
-        document.getElementById('finalScore').textContent=currentScore;
+        document.getElementById('finalScore').textContent=Math.floor(currentScore);
         document.getElementById('earnedCoins').textContent=coins;
         document.getElementById('earnedXP').textContent=xp;
+        const eventRewardEl = document.getElementById('eventReward');
+        if (currentMode === 'event') {
+            eventRewardEl.textContent = `+${earnedClovers}🍀 獲得!`;
+        } else {
+            eventRewardEl.textContent = '';
+        }
+        
+        // クールダウンリセット
+        for (let key in cooldowns) {
+            cooldowns[key] = 0;
+        }
+        
         switchScreen('resultScreen');
         updateUI();
         updateSkillButtons();
@@ -1057,7 +1290,10 @@
             {id:'auto',name:'⚡自動入力',desc:'30秒:超高速自動入力'},
             {id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ(色付き)'},
             {id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},
-            {id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'}
+            {id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'},
+            {id:'leprechaun',name:'🍀レプラコーン',desc:'30秒:10秒間ミスってもコンボ継続'},
+            {id:'combo25',name:'🔥コンボ2.5倍',desc:'45秒:10秒間コンボ倍率2.5倍'},
+            {id:'luckyBlock',name:'🎲ラッキーブロック',desc:'パッシブ:XP1.5倍/25秒:ランダム効果'}
         ];
         gameState.ownedSkills.forEach(sid=>{
             let sk = allSkills.find(s=>s.id===sid); if(!sk) return;
@@ -1113,6 +1349,54 @@
         };
     }
 
+    function renderEventShop() {
+        const container = document.getElementById('eventShopItems');
+        container.innerHTML = '';
+        const items = [
+            { name: '🔮 スキルのかけら(欠片) x1', price: 10, action: () => { gameState.shardFragments += 1; } },
+            { name: '🔮 スキルのかけら(欠片) x15', price: 100, action: () => { gameState.shardFragments += 15; } },
+            { name: '🍀 レプラコーン', price: 50, skillId: 'leprechaun', action: () => { 
+                if (!gameState.ownedSkills.includes('leprechaun')) gameState.ownedSkills.push('leprechaun'); 
+            }},
+            { name: '🔥 コンボ2.5倍', price: 50, skillId: 'combo25', action: () => { 
+                if (!gameState.ownedSkills.includes('combo25')) gameState.ownedSkills.push('combo25'); 
+            }},
+            { name: '🎲 ラッキーブロック', price: 350, skillId: 'luckyBlock', action: () => { 
+                if (!gameState.ownedSkills.includes('luckyBlock')) gameState.ownedSkills.push('luckyBlock'); 
+            }}
+        ];
+        
+        items.forEach(item => {
+            let div = document.createElement('div'); div.className = 'shop-item item-card';
+            div.innerHTML = `<div><span class="item-name">${item.name}</span></div><div class="shop-price">🍀 ${item.price}</div><button class="equip-btn">購入</button>`;
+            div.querySelector('button').onclick = () => {
+                if (gameState.clovers >= item.price) {
+                    gameState.clovers -= item.price;
+                    item.action();
+                    saveGameState();
+                    renderEventShop();
+                    alert(`${item.name} を購入しました！`);
+                } else {
+                    alert('クローバーが足りません');
+                }
+            };
+            container.appendChild(div);
+        });
+    }
+
+    function updateEventUI() {
+        const tasksDiv = document.getElementById('eventTasksList');
+        if (tasksDiv) {
+            tasksDiv.innerHTML = '';
+            gameState.eventTasks.forEach(t => {
+                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
+                let percent = Math.min(100, (t.current/t.target)*100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: 🍀 ${t.reward}</div>`;
+                tasksDiv.appendChild(d);
+            });
+        }
+    }
+
     function overlay(show){ document.getElementById('overlay').classList.toggle('active',show); }
     function switchScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
@@ -1142,11 +1426,36 @@
     document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'story'); });
     document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty, 'normal')));
 
+    // イベント関連
+    document.getElementById('eventBtn').addEventListener('click', () => {
+        if (!isEventActive()) { alert('イベント期間は終了しました'); return; }
+        switchScreen('eventMenuScreen');
+    });
+    document.getElementById('backFromEventBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('eventPlayBtn').addEventListener('click', () => {
+        startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'event');
+    });
+    document.getElementById('eventShopBtn').addEventListener('click', () => {
+        renderEventShop();
+        document.getElementById('eventShopPanel').classList.add('active');
+        overlay(true);
+    });
+    document.getElementById('eventShopCloseBtn').addEventListener('click', () => {
+        document.getElementById('eventShopPanel').classList.remove('active');
+        overlay(false);
+    });
+    document.getElementById('eventTaskBtn').addEventListener('click', () => {
+        updateEventUI();
+        switchScreen('eventTaskScreen');
+    });
+    document.getElementById('backFromEventTaskBtn').addEventListener('click', () => switchScreen('eventMenuScreen'));
+
     document.getElementById('giftBtn').addEventListener('click',showGiftDialog);
     document.getElementById('giftCloseBtn').addEventListener('click',()=>{ document.getElementById('giftDialog').classList.remove('active'); overlay(false); });
     document.getElementById('overlay').addEventListener('click',()=>{
         document.getElementById('sidePanel').classList.remove('active');
         document.getElementById('shopPanel').classList.remove('active');
+        document.getElementById('eventShopPanel').classList.remove('active');
         document.getElementById('giftDialog').classList.remove('active');
         document.getElementById('debugPanel').classList.remove('active');
         overlay(false);
@@ -1196,6 +1505,9 @@
     document.getElementById('skillTimeBtn').addEventListener('click',()=>useSkill('timeExtend'));
     document.getElementById('skillComboBtn').addEventListener('click',()=>useSkill('comboUp'));
     document.getElementById('skillComboPlusBtn').addEventListener('click',()=>useSkill('comboPlus'));
+    document.getElementById('skillLeprechaunBtn').addEventListener('click',()=>useSkill('leprechaun'));
+    document.getElementById('skillCombo25Btn').addEventListener('click',()=>useSkill('combo25'));
+    document.getElementById('skillLuckyBlockBtn').addEventListener('click',()=>useSkill('luckyBlock'));
 
     // タブ切り替え
     document.querySelectorAll('#invTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
@@ -1222,17 +1534,22 @@
             if(key===ex){ 
                 typedInput+=key; 
                 if(!skillAutoActive) { 
-                    currentCombo++; 
-                    currentScore+=5*currentCombo; 
+                    if (!leprechaunActive) {
+                        currentCombo++; 
+                    }
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                    currentScore += addScore; 
                 }
-                document.getElementById('scoreDisplay').textContent=currentScore; 
-                document.getElementById('comboDisplay').textContent=currentCombo; 
+                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
+                document.getElementById('comboDisplay').textContent = currentCombo; 
                 updateRomajiDisplay(); 
-                if(typedInput===currentRomaji) nextQuestion(); 
-                if (currentMode === 'story') updateStoryGoalBar();
+                if(typedInput === currentRomaji) nextQuestion(); 
+                if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
             } else { 
-                currentCombo=0; 
-                document.getElementById('comboDisplay').textContent='0'; 
+                if (!leprechaunActive) {
+                    currentCombo=0; 
+                }
+                document.getElementById('comboDisplay').textContent = currentCombo; 
                 updateRomajiDisplay(); 
             }
         }
