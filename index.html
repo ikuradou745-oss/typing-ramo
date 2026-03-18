@@ -35,7 +35,7 @@
         .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: flex-start; gap: 30px; padding: 20px 0; }
         .screen.active { display: flex; }
         .menu-title { font-size: 48px; font-weight: 800; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
-        .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; }
+        .menu-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; }
         .menu-btn { padding: 30px; border: 2px solid rgba(0,212,255,0.3); background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
         .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
         .menu-btn .icon { font-size: 32px; }
@@ -151,6 +151,87 @@
         .event-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #00aa00, #006600); padding: 15px 30px; border-radius: 60px; font-weight: 700; color: gold; border: 3px solid gold; z-index: 50; font-size: 24px; white-space: nowrap; box-shadow: 0 0 30px gold; }
         .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
         .clover-value { color: var(--accent-green-light); }
+        
+        /* サバイバルモード用スタイル */
+        #survivalGameScreen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .survival-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 30px;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 30px;
+            border-radius: 40px;
+            z-index: 10;
+            font-size: 24px;
+        }
+        .survival-player {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, var(--accent-blue), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            z-index: 20;
+            box-shadow: 0 0 30px var(--accent-blue);
+        }
+        .survival-enemy {
+            position: absolute;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #ff4444, #aa0000);
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 15;
+            box-shadow: 0 0 15px rgba(255,0,0,0.5);
+            transition: transform 0.1s;
+            white-space: nowrap;
+        }
+        .survival-enemy:hover {
+            transform: scale(1.1);
+        }
+        .survival-walls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--accent-blue);
+            box-shadow: inset 0 0 50px rgba(0,212,255,0.3);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .survival-heart {
+            color: #ff4444;
+            font-size: 30px;
+            margin-left: 10px;
+        }
+        .survival-kill-count {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 18px;
+            color: var(--accent-green);
+        }
     </style>
 </head>
 <body>
@@ -202,7 +283,7 @@
             <div class="cooldown-overlay" id="cooldownAutoBeta" style="width:0%;"></div>
             <span class="cooldown-text" id="cooldownAutoBetaText"></span>
         </div>
-        <!-- イベントスキル -->
+        <!-- イベントスキル（イベント終了後も保持） -->
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillLeprechaunBtn" style="background:linear-gradient(135deg,#00aa00,#006600);">🍀レプラコーン</button>
             <div class="cooldown-overlay" id="cooldownLeprechaun" style="width:0%;"></div>
@@ -230,8 +311,10 @@
                 <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
                 <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
+                <button class="menu-btn" id="survivalBtn"><div class="icon">⚔️</div><div>サバイバル</div></button>
             </div>
         </div>
+        
         <!-- 難易度選択 (通常) -->
         <div class="screen" id="difficultyScreen">
             <div style="font-size:36px; color:var(--accent-blue);">難易度</div>
@@ -242,6 +325,7 @@
             </div>
             <button class="back-btn" id="backBtn">戻る</button>
         </div>
+        
         <!-- ストーリーマップ (レベル10から解放) -->
         <div class="screen" id="storyMapScreen">
             <div class="menu-title">📖 ストーリーマップ</div>
@@ -252,6 +336,7 @@
                 <button class="back-btn" id="backFromStoryBtn" style="margin-left:20px;">戻る</button>
             </div>
         </div>
+        
         <!-- ランキングモード (ワールドのみ) -->
         <div class="screen" id="rankingModeScreen">
             <div class="menu-title">🏆 ランキング</div>
@@ -260,12 +345,14 @@
             <div class="ranking-update-timer" id="rankingUpdateTimer">次回更新まで: 00:00:00</div>
             <button class="back-btn" id="backFromRankingModeBtn">戻る</button>
         </div>
+        
         <!-- ランキング表示画面 -->
         <div class="screen" id="rankingViewScreen">
             <div class="menu-title" id="rankingViewTitle">ワールドランキング</div>
             <div class="ranking-list" id="rankingListContainer"></div>
             <button class="back-btn" id="backFromRankingViewBtn">戻る</button>
         </div>
+        
         <!-- ハイスコアランキングメニュー -->
         <div class="screen" id="highscoreMenuScreen">
             <div class="menu-title">📊 ハイスコアランキング</div>
@@ -279,12 +366,14 @@
             </div>
             <button class="back-btn" id="backFromHighscoreBtn">戻る</button>
         </div>
+        
         <!-- ハイスコア表示画面 -->
         <div class="screen" id="highscoreViewScreen">
             <div class="menu-title" id="highscoreViewTitle">ランキング</div>
             <div class="ranking-list" id="highscoreListContainer"></div>
             <button class="back-btn" id="backFromHighscoreViewBtn">戻る</button>
         </div>
+        
         <!-- イベントメニュー -->
         <div class="screen" id="eventMenuScreen">
             <div class="menu-title">🍀 セントパトリックデー</div>
@@ -296,13 +385,41 @@
             </div>
             <button class="back-btn" id="backFromEventBtn">戻る</button>
         </div>
+        
         <!-- イベントタスク画面 -->
         <div class="screen" id="eventTaskScreen">
             <div class="menu-title">🍀 イベントタスク</div>
             <div id="eventTasksList" class="item-grid" style="width:100%; max-width:500px;"></div>
             <button class="back-btn" id="backFromEventTaskBtn">戻る</button>
         </div>
-        <!-- ゲーム画面 -->
+        
+        <!-- サバイバルモードメニュー -->
+        <div class="screen" id="survivalMenuScreen">
+            <div class="menu-title">⚔️ サバイバルモード</div>
+            <div class="highscore-buttons">
+                <button class="ranking-mode-btn" id="survivalPlayBtn">🎮 サバイバルプレイ</button>
+                <button class="ranking-mode-btn" id="survivalRankingBtn">🏆 1日のランキング</button>
+                <button class="ranking-mode-btn" id="survivalTaskBtn">📋 タスク</button>
+            </div>
+            <div class="ranking-update-timer" id="survivalUpdateTimer">次回更新まで: 00:00:00</div>
+            <button class="back-btn" id="backFromSurvivalBtn">戻る</button>
+        </div>
+        
+        <!-- サバイバルランキング表示画面 -->
+        <div class="screen" id="survivalRankingViewScreen">
+            <div class="menu-title">🏆 サバイバルランキング</div>
+            <div class="ranking-list" id="survivalRankingListContainer"></div>
+            <button class="back-btn" id="backFromSurvivalRankingBtn">戻る</button>
+        </div>
+        
+        <!-- サバイバルタスク画面 -->
+        <div class="screen" id="survivalTaskScreen">
+            <div class="menu-title">📋 サバイバルタスク</div>
+            <div id="survivalTasksList" class="item-grid" style="width:100%; max-width:500px;"></div>
+            <button class="back-btn" id="backFromSurvivalTaskBtn">戻る</button>
+        </div>
+        
+        <!-- ゲーム画面 (通常) -->
         <div class="screen" id="gameScreen">
             <!-- ストーリーモード用目標バー -->
             <div id="storyGoalContainer" style="width:100%; display:flex; justify-content:center; margin-bottom:10px; display:none;">
@@ -319,6 +436,20 @@
             <div class="current-question" id="questionDisplay">準備中...</div>
             <div class="romaji-display" id="romajiDisplay"></div>
         </div>
+        
+        <!-- サバイバルゲーム画面 -->
+        <div class="screen" id="survivalGameScreen">
+            <div class="survival-stats">
+                <div>WAVE: <span id="survivalWave">1</span></div>
+                <div>LIFE: <span id="survivalLife">3</span> <span class="survival-heart">❤️</span></div>
+                <div>KILLS: <span id="survivalKills">0</span></div>
+            </div>
+            <div class="survival-walls"></div>
+            <div class="survival-player" id="player">⚔️</div>
+            <div id="survivalEnemiesContainer"></div>
+            <div class="survival-kill-count" id="survivalKillCount">倒した敵: 0</div>
+        </div>
+        
         <!-- 結果画面 -->
         <div class="screen" id="resultScreen">
             <div class="menu-title">結果</div>
@@ -327,6 +458,7 @@
                 <div id="finalScore" style="font-size:48px; color:var(--accent-green);">0</div>
                 <div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div>
                 <div id="eventReward" style="font-size:18px; margin-top:10px; color:var(--accent-green-light);"></div>
+                <div id="survivalReward" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div>
             </div>
             <button class="menu-btn" id="continueBtn">続ける</button>
         </div>
@@ -455,12 +587,20 @@
         shardFragments: 0,
         ownedSkills: [],
         equippedSkills: [],
-        claimedRankings: { world: null }, // ワールドランキング報酬受け取り日
+        claimedRankings: { world: null, survival: null }, // ワールド・サバイバルランキング報酬受け取り日
         claimedHighScoreRankings: { combo: null, playcount: null, xp: null }, // ハイスコア報酬受け取り日
         rankingHighScore: 0,
         highScoreCombo: 0,
         totalPlayCount: 0,
         totalXPEarned: 0,
+        // サバイバル関連
+        survivalHighWave: 0,
+        survivalTotalKills: 0,
+        survivalTasks: [
+            { id: 'survival1', title: '敵を500体倒す', current: 0, target: 500, reward: { fragments: 3 }, completed: false, lastReset: '' },
+            { id: 'survival2', title: '100wave生き残る', current: 0, target: 100, reward: { fragments: 3 }, completed: false, lastReset: '' },
+            { id: 'survival3', title: 'ライフ3つで50wave', current: 0, target: 50, reward: { shard: 1 }, completed: false, lastReset: '' }
+        ],
         // イベント関連
         clovers: 0,
         eventTasks: [
@@ -480,6 +620,7 @@
         ],
         lastDailyReset: '',
         lastWeeklyReset: '',
+        lastSurvivalTaskReset: ''
     };
 
     // スキルクールダウン管理
@@ -493,11 +634,15 @@
     let combo25Active = false;    // コンボ倍率2.5倍
     let comboMultiplier = 1;
 
-    // 自動入力の速度設定 (ms) - 64フレーム相当 (60fps基準で約16.67ms * 64 ≈ 1067ms? いや、16ms * 64 = 1024msなので1秒に1文字? ここでは16ms * 4 = 64msに設定)
-    const AUTO_INPUT_INTERVAL = 64; // 64ms (約15.6文字/秒)
+    // 自動入力の速度設定 (ms)
+    const AUTO_INPUT_INTERVAL = 64; // 64ms
 
     // 問題・変換
-    const questions = { easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], normal:['しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] };
+    const questions = { 
+        easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], 
+        normal:['しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], 
+        hard:['ごんごどうだん','こうとうむけい','いしんでんしん','ひゃっかりょうらん','しめんそか','がしんしょうたん','ゆうずうむげ','せいれんけっぱく','あんちゅうもさく','でんぱぼうえんきょう','さんぎょうかくめい','しゅうぎいんぎいん','こくりつきょうぎじょう','せいしんほけんしてい','じんこうちのうかいはつ','ふろうふし','せいぶつたようせい','じぞくかのうせい','ひはかいけんさ','ぎむきょういくしょがっこう','しんらばんしょう'] 
+    };
     
     const romajiMap = {
         'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
@@ -544,9 +689,22 @@
     }
 
     let worldRankings = [];
+    let survivalRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
-    let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event'
+    let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event', 'survival'
+
+    // サバイバルモード用変数
+    let survivalWave = 1;
+    let survivalLife = 3;
+    let survivalKills = 0;
+    let survivalWaveTimer = null;
+    let survivalEnemySpawnTimer = null;
+    let survivalEnemies = [];
+    let survivalEnemySpeed = 0.5; // 移動速度（ピクセル/フレーム）
+    let survivalSpawnInterval = 3000; // 初期3秒
+    let survivalAnimationFrame = null;
+    let survivalMaxWave = 0;
 
     // ========== ランキングリセット & 報酬処理 (毎日7時) ==========
     function checkRankingReset() {
@@ -559,27 +717,29 @@
         let todayStr = today7.toDateString();
         
         if (lastReset !== todayStr && now >= today7) {
-            // ランキングリセット実行
             console.log('ランキングリセット実行');
             
-            // ワールドランキングの報酬チェックとリセット
+            // サバイバルランキングの報酬チェック
+            if (survivalRankings.length > 0) {
+                localStorage.setItem('pendingSurvivalRankingRewards', JSON.stringify({
+                    date: todayStr,
+                    survivalRankings: survivalRankings
+                }));
+            }
+            
+            // ワールドランキングの報酬チェック
             if (worldRankings.length > 0) {
-                // 自分が10位以内なら報酬をギフトに追加 (オフライン対応のため、次回ログイン時に判定)
-                // 実際の報酬付与はギフトボタンを押したときに行うので、ここではフラグのみ設定
                 localStorage.setItem('pendingRankingRewards', JSON.stringify({
                     date: todayStr,
                     worldRankings: worldRankings
                 }));
             }
             
-            // ハイスコアランキングの報酬チェック
-            ['combo', 'playcount', 'xp'].forEach(type => {
-                // 非同期で取得する必要があるが、簡略化のため次回表示時に判定
-            });
-            
             // ランキングデータをクリア
             worldRankings = [];
+            survivalRankings = [];
             localStorage.removeItem('worldRankings');
+            localStorage.removeItem('survivalRankings');
             localStorage.removeItem('highScoreRankings');
             
             // リセット日時を保存
@@ -600,11 +760,6 @@
         const now = new Date();
         const eventEnd = new Date(now.getFullYear(), 2, 31); // 3月31日 (月は0-index)
         return now <= eventEnd;
-    }
-
-    // イベントバナー表示制御
-    if (!isEventActive()) {
-        document.getElementById('eventBanner').style.display = 'none';
     }
 
     // ========== デバッグモード関連 ==========
@@ -650,7 +805,11 @@
     });
 
     // ========== 永続化 ==========
-    function saveGameState() { localStorage.setItem('gameState',JSON.stringify(gameState)); syncFirebase(); }
+    function saveGameState() { 
+        localStorage.setItem('gameState',JSON.stringify(gameState)); 
+        syncFirebase(); 
+    }
+    
     function syncFirebase() { 
         if(db) set(ref(db,`users/${gameState.userId}`),{ 
             name:gameState.userName, 
@@ -662,9 +821,12 @@
             highScoreCombo: gameState.highScoreCombo,
             totalPlayCount: gameState.totalPlayCount,
             totalXPEarned: gameState.totalXPEarned,
-            clovers: gameState.clovers
+            clovers: gameState.clovers,
+            survivalHighWave: gameState.survivalHighWave,
+            survivalTotalKills: gameState.survivalTotalKills
         }).catch(()=>{}); 
     }
+    
     (function load(){ 
         const s=localStorage.getItem('gameState'); 
         if(s) Object.assign(gameState,JSON.parse(s)); 
@@ -673,12 +835,21 @@
         if(!gameState.equippedSkills) gameState.equippedSkills=[]; 
         if(!gameState.shards) gameState.shards=0; 
         if(!gameState.shardFragments) gameState.shardFragments=0;
-        if(!gameState.claimedRankings) gameState.claimedRankings={world:null};
+        if(!gameState.claimedRankings) gameState.claimedRankings={world:null, survival:null};
         if(!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings={combo:null,playcount:null,xp:null};
         if(!gameState.highScoreCombo) gameState.highScoreCombo=0;
         if(!gameState.totalPlayCount) gameState.totalPlayCount=0;
         if(!gameState.totalXPEarned) gameState.totalXPEarned=0;
         if(!gameState.clovers) gameState.clovers=0;
+        if(!gameState.survivalHighWave) gameState.survivalHighWave=0;
+        if(!gameState.survivalTotalKills) gameState.survivalTotalKills=0;
+        if(!gameState.survivalTasks) {
+            gameState.survivalTasks = [
+                { id: 'survival1', title: '敵を500体倒す', current: 0, target: 500, reward: { fragments: 3 }, completed: false, lastReset: '' },
+                { id: 'survival2', title: '100wave生き残る', current: 0, target: 100, reward: { fragments: 3 }, completed: false, lastReset: '' },
+                { id: 'survival3', title: 'ライフ3つで50wave', current: 0, target: 50, reward: { shard: 1 }, completed: false, lastReset: '' }
+            ];
+        }
         if(!gameState.eventTasks) {
             gameState.eventTasks = [
                 { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
@@ -687,10 +858,19 @@
             ];
         }
         if(!gameState.dailyTasks) { 
-            gameState.dailyTasks = [ { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } ];
-            gameState.weeklyTasks = [ { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } ];
+            gameState.dailyTasks = [ 
+                { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, 
+                { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, 
+                { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } 
+            ];
+            gameState.weeklyTasks = [ 
+                { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, 
+                { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, 
+                { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } 
+            ];
         }
         checkTaskReset();
+        checkSurvivalTaskReset();
         updateUI(); 
         updateSkillButtons();
         updateEventUI();
@@ -716,6 +896,18 @@
         }
     }
 
+    // サバイバルタスクリセット
+    function checkSurvivalTaskReset(){
+        const now = new Date();
+        const today7 = new Date(); today7.setHours(7,0,0,0);
+        if(now > today7) today7.setDate(today7.getDate()+1);
+        const todayStr = today7.toDateString();
+        if(gameState.lastSurvivalTaskReset !== todayStr){
+            gameState.survivalTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=todayStr; });
+            gameState.lastSurvivalTaskReset = todayStr;
+        }
+    }
+
     function updateUI(){
         document.getElementById('levelDisplay').textContent=gameState.level;
         document.getElementById('xpBarFill').style.width=(gameState.xp/gameState.maxXp*100)+'%';
@@ -728,6 +920,7 @@
         document.getElementById('nameChangeCount').textContent=`本日:${gameState.nameChangeCount}/3`;
         checkRankingRewards();
         updateTasksDisplay();
+        updateSurvivalTasksDisplay();
     }
 
     function updateTasksDisplay(){
@@ -749,6 +942,55 @@
                 weeklyDiv.appendChild(d);
             });
         }
+    }
+
+    function updateSurvivalTasksDisplay(){
+        const tasksDiv = document.getElementById('survivalTasksList');
+        if (tasksDiv) {
+            tasksDiv.innerHTML = '';
+            gameState.survivalTasks.forEach(t => {
+                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
+                let percent = Math.min(100, (t.current/t.target)*100);
+                let rewardText = t.reward.fragments ? `🔮 かけら(欠片) ${t.reward.fragments}個` : `🔮 かけら ${t.reward.shard}個`;
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: ${rewardText}</div>`;
+                tasksDiv.appendChild(d);
+            });
+        }
+    }
+
+    function updateSurvivalTaskProgress(kills, wave, life) {
+        let tasks = gameState.survivalTasks;
+        
+        // 敵を500体倒す
+        if (!tasks[0].completed) {
+            tasks[0].current = Math.min(tasks[0].current + kills, tasks[0].target);
+        }
+        
+        // 100wave生き残る
+        if (!tasks[1].completed) {
+            tasks[1].current = Math.max(tasks[1].current, wave);
+        }
+        
+        // ライフ3つで50wave
+        if (!tasks[2].completed && life >= 3) {
+            tasks[2].current = Math.max(tasks[2].current, wave);
+        }
+        
+        tasks.forEach(t => {
+            if (!t.completed && t.current >= t.target) {
+                t.completed = true;
+                if (t.reward.fragments) {
+                    gameState.shardFragments += t.reward.fragments;
+                }
+                if (t.reward.shard) {
+                    gameState.shards += t.reward.shard;
+                }
+                showTaskNotification(`サバイバルタスククリア！ ${t.title}`);
+            }
+        });
+        
+        saveGameState();
+        updateSurvivalTasksDisplay();
     }
 
     function updateTaskProgress(score, combo){
@@ -807,7 +1049,12 @@
     // ========== ランキング関連 ==========
     function getTodayString(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
     function getTimeUntil7AM(){ let n=new Date(); let n7=new Date(); n7.setHours(7,0,0,0); if(n>n7) n7.setDate(n7.getDate()+1); let d=n7-n; let h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
-    setInterval(()=>{ let t=document.getElementById('rankingUpdateTimer'); if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; },1000);
+    setInterval(()=>{ 
+        let t=document.getElementById('rankingUpdateTimer'); 
+        if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; 
+        let s=document.getElementById('survivalUpdateTimer');
+        if(s) s.innerText=`次回更新まで: ${getTimeUntil7AM()}`;
+    },1000);
 
     async function fetchWorldRankings(){
         if(!db) return [];
@@ -815,6 +1062,15 @@
             const snap = await get(ref(db,'users')); 
             const users = snap.val()||{}; 
             return Object.entries(users).map(([id,u])=>({ name:u.name||'名無し', score:u.score||0, id })).filter(u=>u.score>0).sort((a,b)=>b.score-a.score).slice(0,100);
+        } catch(e){ return []; }
+    }
+
+    async function fetchSurvivalRankings(){
+        if(!db) return [];
+        try { 
+            const snap = await get(ref(db,'users')); 
+            const users = snap.val()||{}; 
+            return Object.entries(users).map(([id,u])=>({ name:u.name||'名無し', wave:u.survivalHighWave||0, id })).filter(u=>u.wave>0).sort((a,b)=>b.wave-a.wave).slice(0,100);
         } catch(e){ return []; }
     }
 
@@ -833,35 +1089,97 @@
         checkRankingRewards();
     }
 
+    async function displaySurvivalRanking(){
+        switchScreen('survivalRankingViewScreen');
+        let container=document.getElementById('survivalRankingListContainer'); container.innerHTML='<div>読込中...</div>';
+        survivalRankings = await fetchSurvivalRankings();
+        localStorage.setItem('survivalRankings',JSON.stringify(survivalRankings));
+        container.innerHTML='';
+        survivalRankings.forEach((e,i)=>{
+            let d=document.createElement('div'); d.className='ranking-item';
+            d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">WAVE ${e.wave}</div>`;
+            container.appendChild(d);
+        });
+        if (survivalRankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
+        checkSurvivalRankingRewards();
+    }
+
     function checkRankingRewards(){
         const today = getTodayString();
         const claimed = gameState.claimedRankings.world;
         const myEntry = worldRankings.find(r=>r.id===gameState.userId);
         let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
         const hasReward = (claimed !== today && inRank);
-        document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
-        document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
+        
+        // サバイバルランキング報酬もチェック
+        const survivalHasReward = checkSurvivalRankingRewards(false);
+        
+        document.getElementById('giftBadge').textContent = (hasReward || survivalHasReward) ? '1' : '0';
+        document.getElementById('giftBadge').style.display = (hasReward || survivalHasReward) ? 'flex' : 'none';
+        return hasReward || survivalHasReward;
+    }
+
+    function checkSurvivalRankingRewards(updateBadge = true) {
+        const today = getTodayString();
+        const claimed = gameState.claimedRankings.survival;
+        const myEntry = survivalRankings.find(r=>r.id===gameState.userId);
+        let inRank = myEntry ? (survivalRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
+        const hasReward = (claimed !== today && inRank);
+        
+        if (updateBadge) {
+            document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
+            document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
+        }
         return hasReward;
     }
 
     function showGiftDialog(){
         const today = getTodayString();
-        if(gameState.claimedRankings.world === today){ alert('本日分は受取済みです'); return; }
-        const myEntry = worldRankings.find(r=>r.id===gameState.userId);
-        if(!myEntry) { alert('ランキング圏外です'); return; }
-        const rank = worldRankings.findIndex(r=>r.id===gameState.userId)+1;
-        if(rank>10){ alert('10位以内のみ報酬'); return; }
-        let reward = rank===1?{xp:5000,coins:10000}: (rank<=3?{xp:2000,coins:5000}:{xp:1000,coins:2000});
-        document.getElementById('giftContent').innerHTML = `ワールドランキング ${rank}位報酬<br>${reward.xp} XP / ${reward.coins.toLocaleString()} コイン`;
-        document.getElementById('giftDialog').classList.add('active'); overlay(true);
-        document.getElementById('claimRewardBtn').onclick = ()=>{
-            gameState.xp += reward.xp; gameState.coins += reward.coins;
-            while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
-            gameState.claimedRankings.world = today;
-            saveGameState(); updateUI();
-            document.getElementById('giftDialog').classList.remove('active'); overlay(false);
-            checkRankingRewards();
-        };
+        
+        // ワールドランキング報酬
+        if (gameState.claimedRankings.world !== today) {
+            const myEntry = worldRankings.find(r=>r.id===gameState.userId);
+            if (myEntry) {
+                const rank = worldRankings.findIndex(r=>r.id===gameState.userId)+1;
+                if (rank <= 10) {
+                    let reward = rank===1?{xp:5000,coins:10000}: (rank<=3?{xp:2000,coins:5000}:{xp:1000,coins:2000});
+                    document.getElementById('giftContent').innerHTML = `ワールドランキング ${rank}位報酬<br>${reward.xp} XP / ${reward.coins.toLocaleString()} コイン`;
+                    document.getElementById('giftDialog').classList.add('active'); overlay(true);
+                    document.getElementById('claimRewardBtn').onclick = ()=>{
+                        gameState.xp += reward.xp; gameState.coins += reward.coins;
+                        while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
+                        gameState.claimedRankings.world = today;
+                        saveGameState(); updateUI();
+                        document.getElementById('giftDialog').classList.remove('active'); overlay(false);
+                        checkRankingRewards();
+                    };
+                    return;
+                }
+            }
+        }
+        
+        // サバイバルランキング報酬
+        if (gameState.claimedRankings.survival !== today) {
+            const myEntry = survivalRankings.find(r=>r.id===gameState.userId);
+            if (myEntry) {
+                const rank = survivalRankings.findIndex(r=>r.id===gameState.userId)+1;
+                if (rank <= 10) {
+                    let rewardShards = rank===1 ? 3 : (rank<=3 ? 2 : 1);
+                    document.getElementById('giftContent').innerHTML = `サバイバルランキング ${rank}位報酬<br>🔮 スキルのかけら ${rewardShards}個`;
+                    document.getElementById('giftDialog').classList.add('active'); overlay(true);
+                    document.getElementById('claimRewardBtn').onclick = ()=>{
+                        gameState.shards += rewardShards;
+                        gameState.claimedRankings.survival = today;
+                        saveGameState(); updateUI();
+                        document.getElementById('giftDialog').classList.remove('active'); overlay(false);
+                        checkRankingRewards();
+                    };
+                    return;
+                }
+            }
+        }
+        
+        alert('受け取れる報酬はありません');
     }
 
     // ========== ハイスコアランキング ==========
@@ -891,7 +1209,6 @@
         container.innerHTML = '<div>読込中...</div>';
         
         let rankings = await fetchHighScoreRanking(type);
-        // ハイスコアランキングもリセット対象なので、表示時に最新を取得
         localStorage.setItem(`highScoreRankings_${type}`, JSON.stringify(rankings));
         
         container.innerHTML = '';
@@ -902,7 +1219,6 @@
         });
         if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
         
-        // ハイスコア報酬チェック
         checkHighScoreRewards(type, rankings);
     }
 
@@ -913,7 +1229,6 @@
         const isRank1 = myEntry && rankings.findIndex(r => r.id === gameState.userId) === 0;
         
         if (claimed !== today && isRank1) {
-            // 報酬があることをギフトバッジで通知 (簡略化のためワールドランキングと統合)
             document.getElementById('giftBadge').textContent = '1';
             document.getElementById('giftBadge').style.display = 'flex';
         }
@@ -1048,7 +1363,7 @@
                     }
                 }
             }, AUTO_INPUT_INTERVAL);
-            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 6500); // 6.5秒
+            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 6500);
         }
         else if(skillId === 'timeExtend'){
             showAnimation('⏳タイミングゲーム!');
@@ -1120,7 +1435,6 @@
         else if(skillId === 'leprechaun'){
             showAnimation('🍀 レプラコーンビーム!');
             leprechaunActive = true;
-            // エフェクト: 画面中央にビーム
             const beam = document.createElement('div'); 
             beam.style.position = 'fixed'; beam.style.top = '0'; beam.style.left = '50%'; 
             beam.style.width = '10px'; beam.style.height = '100%'; 
@@ -1129,7 +1443,6 @@
             beam.style.zIndex = '15000'; beam.style.animation = 'skillPop 0.5s';
             document.body.appendChild(beam);
             setTimeout(() => beam.remove(), 1000);
-            
             setTimeout(() => { leprechaunActive = false; }, 10000);
         }
         else if(skillId === 'combo25'){
@@ -1144,7 +1457,6 @@
             const selected = effects[Math.floor(Math.random() * effects.length)];
             
             if (selected === 'auto') {
-                // 1.5秒間自動入力
                 const oldAuto = skillAutoActive;
                 skillAutoActive = true;
                 if(autoInterval) clearInterval(autoInterval);
@@ -1242,6 +1554,197 @@
         }
     }
 
+    function startSurvivalGame(){
+        currentMode = 'survival';
+        gameActive = true;
+        survivalWave = 1;
+        survivalLife = 3;
+        survivalKills = 0;
+        survivalSpawnInterval = 3000; // 3秒
+        survivalEnemies = [];
+        
+        document.getElementById('survivalWave').textContent = survivalWave;
+        document.getElementById('survivalLife').textContent = survivalLife;
+        document.getElementById('survivalKills').textContent = survivalKills;
+        document.getElementById('survivalKillCount').textContent = '倒した敵: 0';
+        
+        switchScreen('survivalGameScreen');
+        
+        // Waveタイマー (15秒ごとにWaveアップ)
+        survivalWaveTimer = setInterval(() => {
+            survivalWave++;
+            document.getElementById('survivalWave').textContent = survivalWave;
+            // Waveが上がるごとに出現間隔を短縮 (最小0.5秒)
+            survivalSpawnInterval = Math.max(500, 3000 - (survivalWave * 25));
+        }, 15000);
+        
+        // 敵出現タイマー
+        survivalEnemySpawnTimer = setInterval(() => {
+            if (!gameActive) return;
+            spawnEnemy();
+        }, survivalSpawnInterval);
+        
+        // アニメーションループ開始
+        if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
+        updateSurvivalAnimation();
+    }
+
+    function spawnEnemy() {
+        if (!gameActive) return;
+        
+        const container = document.getElementById('survivalEnemiesContainer');
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight - 100; // ヘッダー分を考慮
+        
+        // 出現位置（画面外から）
+        let x, y;
+        const side = Math.floor(Math.random() * 4); // 0:左, 1:右, 2:上, 3:下
+        
+        switch(side) {
+            case 0: // 左
+                x = -100;
+                y = Math.random() * screenHeight;
+                break;
+            case 1: // 右
+                x = screenWidth + 100;
+                y = Math.random() * screenHeight;
+                break;
+            case 2: // 上
+                x = Math.random() * screenWidth;
+                y = -100;
+                break;
+            case 3: // 下
+                x = Math.random() * screenWidth;
+                y = screenHeight + 100;
+                break;
+        }
+        
+        // 敵の文字（簡単または中級からランダム）
+        const difficulty = Math.random() < 0.7 ? 'easy' : 'normal';
+        const word = questions[difficulty][Math.floor(Math.random() * questions[difficulty].length)];
+        const romaji = convertToRomaji(word).toLowerCase();
+        
+        const enemy = document.createElement('div');
+        enemy.className = 'survival-enemy';
+        enemy.textContent = word;
+        enemy.style.left = x + 'px';
+        enemy.style.top = y + 'px';
+        enemy.dataset.romaji = romaji;
+        enemy.dataset.typed = '';
+        enemy.dataset.id = 'enemy_' + Date.now() + '_' + Math.random();
+        
+        container.appendChild(enemy);
+        
+        survivalEnemies.push({
+            element: enemy,
+            x: x,
+            y: y,
+            romaji: romaji,
+            typed: '',
+            id: enemy.dataset.id,
+            speed: survivalEnemySpeed + (Math.random() * 0.3) // 速度にばらつき
+        });
+    }
+
+    function updateSurvivalAnimation() {
+        if (!gameActive) return;
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = (window.innerHeight - 100) / 2;
+        const playerRadius = 25; // プレイヤーの当たり判定半径
+        
+        // 各敵の位置を更新
+        survivalEnemies.forEach(enemy => {
+            // プレイヤー方向へのベクトル
+            const dx = centerX - enemy.x;
+            const dy = centerY - enemy.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            if (distance > 5) {
+                const moveX = (dx / distance) * enemy.speed;
+                const moveY = (dy / distance) * enemy.speed;
+                enemy.x += moveX;
+                enemy.y += moveY;
+            }
+            
+            // 要素の位置を更新
+            enemy.element.style.left = enemy.x + 'px';
+            enemy.element.style.top = enemy.y + 'px';
+            
+            // プレイヤーに到達したかチェック
+            if (distance < playerRadius + 30) {
+                // ライフ減少
+                survivalLife--;
+                document.getElementById('survivalLife').textContent = survivalLife;
+                
+                // 敵を削除
+                enemy.element.remove();
+                const index = survivalEnemies.indexOf(enemy);
+                if (index > -1) survivalEnemies.splice(index, 1);
+                
+                // ライフ0でゲームオーバー
+                if (survivalLife <= 0) {
+                    endSurvivalGame();
+                }
+            }
+        });
+        
+        survivalAnimationFrame = requestAnimationFrame(updateSurvivalAnimation);
+    }
+
+    function endSurvivalGame() {
+        gameActive = false;
+        clearInterval(survivalWaveTimer);
+        clearInterval(survivalEnemySpawnTimer);
+        if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
+        
+        // 敵を全て削除
+        survivalEnemies.forEach(enemy => enemy.element.remove());
+        survivalEnemies = [];
+        
+        // 報酬計算
+        let coins = Math.floor((survivalKills * survivalWave) / 10);
+        let xp = Math.floor((survivalKills * survivalWave) / 100);
+        
+        gameState.coins += coins;
+        gameState.xp += xp;
+        gameState.survivalTotalKills += survivalKills;
+        
+        // 最高Wave更新
+        if (survivalWave > gameState.survivalHighWave) {
+            gameState.survivalHighWave = survivalWave;
+        }
+        
+        // サバイバルタスク進捗更新
+        updateSurvivalTaskProgress(survivalKills, survivalWave, survivalLife);
+        
+        // レベルアップ処理
+        while(gameState.xp >= gameState.maxXp){ 
+            gameState.xp -= gameState.maxXp; 
+            gameState.level++; 
+            gameState.maxXp = Math.floor(gameState.maxXp*1.5); 
+        }
+        
+        // Firebaseにサバイバルデータを保存
+        if(db) {
+            set(ref(db,`users/${gameState.userId}/survivalHighWave`), gameState.survivalHighWave).catch(()=>{});
+            set(ref(db,`users/${gameState.userId}/survivalTotalKills`), gameState.survivalTotalKills).catch(()=>{});
+        }
+        
+        saveGameState();
+        
+        // 結果画面表示
+        document.getElementById('finalScore').textContent = survivalWave + ' Wave';
+        document.getElementById('earnedCoins').textContent = coins;
+        document.getElementById('earnedXP').textContent = xp;
+        document.getElementById('survivalReward').textContent = `倒した敵: ${survivalKills}体`;
+        document.getElementById('eventReward').textContent = '';
+        
+        switchScreen('resultScreen');
+        updateUI();
+        updateSkillButtons();
+    }
+
     function updateStoryGoalBar() {
         if (currentMode !== 'story' && currentMode !== 'event') return;
         let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
@@ -1264,7 +1767,10 @@
         updateRomajiDisplay(); 
         if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
     }
-    function updateRomajiDisplay(){ document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; }
+    
+    function updateRomajiDisplay(){ 
+        document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; 
+    }
 
     function endGame(){
         gameActive=false; 
@@ -1517,6 +2023,7 @@
     });
     document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
     document.getElementById('highscoreRankingBtn').addEventListener('click',()=>switchScreen('highscoreMenuScreen'));
+    document.getElementById('survivalBtn').addEventListener('click',()=>switchScreen('survivalMenuScreen'));
     
     document.getElementById('worldRankingViewBtn').addEventListener('click',displayRanking);
     document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'ranking'); });
@@ -1535,9 +2042,20 @@
     document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'story'); });
     document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty, 'normal')));
 
+    // サバイバル関連
+    document.getElementById('survivalPlayBtn').addEventListener('click', startSurvivalGame);
+    document.getElementById('survivalRankingBtn').addEventListener('click', displaySurvivalRanking);
+    document.getElementById('survivalTaskBtn').addEventListener('click', () => {
+        updateSurvivalTasksDisplay();
+        switchScreen('survivalTaskScreen');
+    });
+    document.getElementById('backFromSurvivalBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromSurvivalRankingBtn').addEventListener('click', () => switchScreen('survivalMenuScreen'));
+    document.getElementById('backFromSurvivalTaskBtn').addEventListener('click', () => switchScreen('survivalMenuScreen'));
+
     // イベント関連
     document.getElementById('eventBtn').addEventListener('click', () => {
-        if (!isEventActive()) { alert('イベント期間は終了しました'); return; }
+        if (!isEventActive()) { alert('イベント期間は終了しましたが、スキルは引き続き使用できます'); }
         switchScreen('eventMenuScreen');
     });
     document.getElementById('backFromEventBtn').addEventListener('click', () => switchScreen('menuScreen'));
@@ -1638,29 +2156,62 @@
 
     document.addEventListener('keydown',(e)=>{
         if(!gameActive) return;
-        let key=e.key.toLowerCase();
-        if(key.match(/[a-z]/)){
-            let ex = currentRomaji[typedInput.length];
-            if(key===ex){ 
-                typedInput+=key; 
-                if(!skillAutoActive) { 
-                    if (!leprechaunActive) {
-                        currentCombo++; 
+        
+        if (currentMode === 'survival') {
+            // サバイバルモードのキー入力
+            let key = e.key.toLowerCase();
+            if (key.match(/[a-z]/)) {
+                // 画面上の敵をチェック
+                let enemyHit = false;
+                for (let enemy of survivalEnemies) {
+                    let expected = enemy.romaji[enemy.typed.length];
+                    if (expected === key) {
+                        enemy.typed += key;
+                        enemy.element.textContent = enemy.typed === enemy.romaji ? '✓' : enemy.element.dataset.originalWord;
+                        
+                        if (enemy.typed === enemy.romaji) {
+                            // 敵を倒した
+                            enemy.element.remove();
+                            const index = survivalEnemies.indexOf(enemy);
+                            if (index > -1) survivalEnemies.splice(index, 1);
+                            survivalKills++;
+                            document.getElementById('survivalKills').textContent = survivalKills;
+                            document.getElementById('survivalKillCount').textContent = `倒した敵: ${survivalKills}`;
+                        }
+                        enemyHit = true;
+                        break;
                     }
-                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
-                    currentScore += addScore; 
                 }
-                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
-                document.getElementById('comboDisplay').textContent = currentCombo; 
-                updateRomajiDisplay(); 
-                if(typedInput === currentRomaji) nextQuestion(); 
-                if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
-            } else { 
-                if (!leprechaunActive) {
-                    currentCombo=0; 
+                if (!enemyHit && !leprechaunActive) {
+                    // ミス（何もしない）
                 }
-                document.getElementById('comboDisplay').textContent = currentCombo; 
-                updateRomajiDisplay(); 
+            }
+        } else {
+            // 通常モードのキー入力
+            let key=e.key.toLowerCase();
+            if(key.match(/[a-z]/)){
+                let ex = currentRomaji[typedInput.length];
+                if(key===ex){ 
+                    typedInput+=key; 
+                    if(!skillAutoActive) { 
+                        if (!leprechaunActive) {
+                            currentCombo++; 
+                        }
+                        let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                        currentScore += addScore; 
+                    }
+                    document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
+                    document.getElementById('comboDisplay').textContent = currentCombo; 
+                    updateRomajiDisplay(); 
+                    if(typedInput === currentRomaji) nextQuestion(); 
+                    if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
+                } else { 
+                    if (!leprechaunActive) {
+                        currentCombo=0; 
+                    }
+                    document.getElementById('comboDisplay').textContent = currentCombo; 
+                    updateRomajiDisplay(); 
+                }
             }
         }
     });
@@ -1669,6 +2220,7 @@
     setInterval(()=>updateSkillButtons(), 500);
     updateUI();
     fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
+    fetchSurvivalRankings().then(r=>{ survivalRankings=r; checkRankingRewards(); });
 </script>
 </body>
 </html>
