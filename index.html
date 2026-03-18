@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングストーリー・ランキングリセット版</title>
+    <title>⚡ タイピングクラフト・ランキングリセット版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -15,6 +15,8 @@
             --accent-pink: #ff006e; --accent-purple: #7c3aed; --accent-gold: #ffd700;
             --accent-green-light: #90EE90; --accent-green-dark: #006400;
             --text-white: #f0f0f0; --text-gray: #a0a0a0;
+            --item-stone: #808080; --item-fire: #ff4500; --item-thunder: #ffd700;
+            --item-dragon: #8a2be2; --item-crown: #ffd700;
         }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; }
         .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); }
@@ -81,19 +83,16 @@
         .gift-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-gray); font-size: 24px; cursor: pointer; }
         .ranking-update-timer { font-size: 14px; color: var(--accent-green); background: rgba(0,255,136,0.1); padding: 8px 20px; border-radius: 40px; }
         .hidden { display: none !important; }
-        /* ストーリーマップ */
         .story-map { display: grid; grid-template-columns: repeat(10,1fr); gap: 8px; max-width: 900px; max-height: 500px; overflow-y: auto; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 20px; }
         .story-node { aspect-ratio: 1/1; background: rgba(0,212,255,0.1); border: 2px solid var(--accent-blue); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; transition: 0.2s; }
         .story-node.clear { background: rgba(0,255,136,0.2); border-color: var(--accent-green); }
         .story-node.current { border-color: var(--accent-gold); transform: scale(1.05); box-shadow: 0 0 20px gold; }
         .story-node.locked { opacity: 0.3; border-color: gray; cursor: not-allowed; }
         .story-info { background: rgba(0,0,0,0.5); padding: 10px 30px; border-radius: 40px; font-size: 20px; }
-        /* デバフ演出 */
         .darkness-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: black; opacity:0; pointer-events: none; transition: opacity 0.5s; z-index: 10000; }
         .darkness-overlay.active { opacity:1; }
         .screen-crack { position: fixed; top:0; left:0; width:100%; height:100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.7"><path d="M20 20 L40 80 L70 30 L90 70" stroke="%23ff4444" stroke-width="8" fill="none"/><path d="M10 90 L50 10 L80 90" stroke="%23ffaa00" stroke-width="10" fill="none"/></svg>') center/cover; opacity:0; pointer-events: none; transition: opacity 1s; z-index: 10001; }
         .screen-crack.active { opacity:1; }
-        /* アイテムグリッド */
         .item-grid { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
         .item-card { background: rgba(0,212,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: space-between; }
         .item-card.skill { border-color: var(--accent-purple); }
@@ -106,7 +105,6 @@
         .shop-price { color: var(--accent-gold); font-weight: 700; }
         .firebase-status { position: fixed; bottom: 10px; right: 10px; padding: 10px 16px; font-size: 12px; border-radius: 6px; z-index: 999; }
         .firebase-status.connected { background: rgba(0,255,136,0.25); color: var(--accent-green); }
-        /* バーゲーム用 - 改良版 */
         .bar-game-container { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 20000; }
         .bar-game { width: 600px; height: 80px; background: #333; border-radius: 40px; position: relative; cursor: pointer; overflow: hidden; }
         .bar-fill { height: 100%; width: 10%; background: linear-gradient(90deg, cyan, blue); border-radius: 40px; transition: width 0.05s; }
@@ -115,13 +113,11 @@
         .zone { height:100%; border-right: 2px solid rgba(255,255,255,0.3); }
         .zone-label { position: absolute; bottom: -25px; color: white; font-size: 12px; transform: translateX(-50%); }
         .stop-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 40px; background: var(--accent-pink); border: none; border-radius: 40px; color: white; font-size: 20px; font-weight: 700; cursor: pointer; z-index: 20001; }
-        /* ストーリー目標バー */
         .story-goal-bar { width: 80%; max-width: 600px; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 10px; position: relative; }
         .story-goal-fill { height: 100%; background: linear-gradient(90deg, gold, orange); border-radius: 10px; transition: width 0.2s; }
         .story-goal-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: white; font-size: 12px; text-shadow: 1px 1px 2px black; }
         @keyframes skillPop { 0% { scale:0; opacity:0; } 100% { scale:1; opacity:1; } }
         .skill-animation { position: fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(124,58,237,0.9); padding:30px 60px; border-radius:60px; font-size:48px; color:white; z-index:20000; animation: skillPop 0.5s forwards; }
-        /* タスクUI */
         .task-item { background: rgba(0,212,255,0.07); border-left: 4px solid var(--accent-blue); padding: 18px; border-radius: 12px; margin-bottom: 15px; }
         .task-item.completed { opacity: 0.7; border-left-color: var(--accent-green); background: rgba(0,255,136,0.05); }
         .task-title { font-size: 16px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
@@ -131,155 +127,45 @@
         .task-reward { margin-top: 10px; font-size: 14px; color: var(--accent-gold); font-weight: 600; }
         .task-notify { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, gold, orange); color: black; padding: 16px 32px; border-radius: 60px; font-weight: 700; z-index: 3000; animation: fadeInOut 3s forwards; pointer-events: none; }
         @keyframes fadeInOut { 0% { opacity:0; top:0; } 15% { opacity:1; top:20px; } 85% { opacity:1; top:20px; } 100% { opacity:0; top:0; } }
-        /* スキルボタン */
         .skill-bar { position: fixed; bottom: 120px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
         .skill-use-btn { padding: 12px 24px; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); border: none; border-radius: 40px; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 0 20px var(--accent-purple); transition: 0.2s; position: relative; overflow: hidden; }
         .skill-use-btn:hover { transform: scale(1.05); }
         .skill-use-btn.disabled { opacity: 0.4; pointer-events: none; }
         .cooldown-overlay { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.6); border-radius: 40px; pointer-events: none; }
         .cooldown-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px black; z-index: 2; }
-        /* デバッグモードUI */
         .debug-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 3px solid var(--accent-pink); border-radius: 20px; padding: 30px; z-index: 10000; display: none; flex-direction: column; gap: 20px; min-width: 300px; }
         .debug-panel.active { display: flex; }
         .debug-title { font-size: 24px; color: var(--accent-pink); text-align: center; }
         .debug-input { padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--accent-blue); border-radius: 8px; color: white; font-size: 16px; }
         .debug-btn { padding: 10px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; }
         .debug-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-gray); font-size: 20px; cursor: pointer; }
-        /* ハイスコアランキング画面 */
         .highscore-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; }
-        /* イベント関連 */
         .event-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #00aa00, #006600); padding: 15px 30px; border-radius: 60px; font-weight: 700; color: gold; border: 3px solid gold; z-index: 50; font-size: 24px; white-space: nowrap; box-shadow: 0 0 30px gold; }
         .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
         .clover-value { color: var(--accent-green-light); }
         
-        /* サバイバルモード用スタイル - 修正版（初期非表示） */
-        #survivalGameScreen {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            /* display: flex; を削除 - 初期非表示のため */
-        }
-        #survivalGameScreen.active {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .survival-game-area {
-            position: relative;
-            width: 80%;
-            height: 80%;
-            background: rgba(0,0,0,0.3);
-            border: 4px solid var(--accent-blue);
-            border-radius: 20px;
-            box-shadow: 0 0 50px rgba(0,212,255,0.3);
-            overflow: hidden;
-        }
-        .survival-stats {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            gap: 30px;
-            background: rgba(0,0,0,0.7);
-            padding: 15px 30px;
-            border-radius: 40px;
-            z-index: 10;
-            font-size: 24px;
-            border: 2px solid var(--accent-blue);
-        }
-        .survival-player {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle, var(--accent-blue), var(--accent-purple));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
-            z-index: 20;
-            box-shadow: 0 0 30px var(--accent-blue);
-            border: 3px solid white;
-        }
-        .survival-enemy {
-            position: absolute;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #ff4444, #aa0000);
-            border-radius: 30px;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
-            z-index: 15;
-            box-shadow: 0 0 15px rgba(255,0,0,0.5);
-            transition: transform 0.1s;
-            white-space: nowrap;
-            text-align: center;
-            min-width: 80px;
-        }
-        .survival-enemy:hover {
-            transform: scale(1.1);
-        }
-        .enemy-word {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-        .enemy-romaji {
-            font-size: 14px;
-            color: #ffaa00;
-            letter-spacing: 2px;
-        }
-        .enemy-typed {
-            color: #ffff00;
-            font-weight: bold;
-        }
-        .enemy-remaining {
-            color: #ffffff;
-            opacity: 0.7;
-        }
-        .survival-walls {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 3px solid var(--accent-blue);
-            box-shadow: inset 0 0 50px rgba(0,212,255,0.3);
-            pointer-events: none;
-            z-index: 5;
-            border-radius: 16px;
-        }
-        .survival-heart {
-            color: #ff4444;
-            font-size: 30px;
-            margin-left: 10px;
-        }
-        .survival-kill-count {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-size: 18px;
-            color: var(--accent-green);
-            border: 2px solid var(--accent-green);
-            z-index: 10;
-        }
+        /* アイテム表示用スタイル */
+        .item-stone { color: var(--item-stone); }
+        .item-fire { color: var(--item-fire); }
+        .item-thunder { color: var(--item-thunder); }
+        .item-dragon { color: var(--item-dragon); }
+        .item-crown { color: var(--item-crown); }
+        .item-drop-rule { margin-top: 10px; font-size: 14px; color: var(--text-gray); }
+        .craft-recipe { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; border-left: 3px solid var(--accent-gold); }
+        .drop-item { display: inline-block; padding: 4px 8px; margin: 2px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+        .item-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 5px; }
+        .badge-stone { background: #808080; color: white; }
+        .badge-fire { background: #ff4500; color: white; }
+        .badge-thunder { background: #ffd700; color: black; }
+        .badge-dragon { background: #8a2be2; color: white; }
+        .badge-crown { background: #ffd700; color: black; }
     </style>
 </head>
 <body>
 <div class="game-container">
 
     <div class="header">
-        <div class="game-title">⚡ タイピング・ランキングリセット</div>
+        <div class="game-title">⚡ タイピングクラフト・ランキングリセット</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -292,6 +178,7 @@
                 <button class="icon-btn" id="inventoryBtn">🎒</button>
                 <button class="icon-btn" id="shopBtn">🏪</button>
                 <button class="icon-btn" id="profileBtn">👤</button>
+                <button class="icon-btn" id="dropRuleBtn">📜</button>
             </div>
         </div>
     </div>
@@ -300,59 +187,73 @@
     <div class="skill-bar" id="skillBar" style="display: none;">
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillAutoBtn" style="background:linear-gradient(135deg,#00aaff,#0066cc);">⚡自動入力</button>
-            <div class="cooldown-overlay" id="cooldownAuto" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownAutoText"></span>
+            <div class="cooldown-overlay" id="cooldownauto" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownautoText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillTimeBtn" style="background:linear-gradient(135deg,#ffaa00,#cc8800);">⏳時間伸ばし</button>
-            <div class="cooldown-overlay" id="cooldownTime" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownTimeText"></span>
+            <div class="cooldown-overlay" id="cooldowntimeExtend" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowntimeExtendText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillComboBtn" style="background:linear-gradient(135deg,#ff44aa,#aa2266);">🔥コンボアップ</button>
-            <div class="cooldown-overlay" id="cooldownCombo" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownComboText"></span>
+            <div class="cooldown-overlay" id="cooldowncomboUp" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowncomboUpText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillComboPlusBtn" style="background:linear-gradient(135deg,gold,orange);">✨コンボ+</button>
-            <div class="cooldown-overlay" id="cooldownComboPlus" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownComboPlusText"></span>
+            <div class="cooldown-overlay" id="cooldowncomboPlus" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowncomboPlusText"></span>
         </div>
-        <!-- 新スキル: 自動入力β -->
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillAutoBetaBtn" style="background:linear-gradient(135deg,#00aaff,#0044aa);">⚡自動入力β</button>
-            <div class="cooldown-overlay" id="cooldownAutoBeta" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownAutoBetaText"></span>
+            <div class="cooldown-overlay" id="cooldownautoBeta" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownautoBetaText"></span>
         </div>
-        <!-- イベントスキル（イベント終了後も保持） -->
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillLeprechaunBtn" style="background:linear-gradient(135deg,#00aa00,#006600);">🍀レプラコーン</button>
-            <div class="cooldown-overlay" id="cooldownLeprechaun" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownLeprechaunText"></span>
+            <div class="cooldown-overlay" id="cooldownleprechaun" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownleprechaunText"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillCombo25Btn" style="background:linear-gradient(135deg,#ffaa00,#886600);">🔥コンボ2.5倍</button>
-            <div class="cooldown-overlay" id="cooldownCombo25" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownCombo25Text"></span>
+            <div class="cooldown-overlay" id="cooldowncombo25" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowncombo25Text"></span>
         </div>
         <div style="position:relative;">
             <button class="skill-use-btn" id="skillLuckyBlockBtn" style="background:linear-gradient(135deg,gold,#aa8800);">🎲ラッキーブロック</button>
-            <div class="cooldown-overlay" id="cooldownLuckyBlock" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownLuckyBlockText"></span>
+            <div class="cooldown-overlay" id="cooldownluckyBlock" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownluckyBlockText"></span>
+        </div>
+        <!-- クラフトスキル -->
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillSigmaBtn" style="background:linear-gradient(135deg,#00aaff,#0088cc);">⚡自動入力Σ</button>
+            <div class="cooldown-overlay" id="cooldownsigma" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldownsigmaText"></span>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillDoubleScoreBtn" style="background:linear-gradient(135deg,#ffaa00,#ff8800);">💰スコア2倍</button>
+            <div class="cooldown-overlay" id="cooldowndoubleScore" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowndoubleScoreText"></span>
+        </div>
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillComboAlphaBtn" style="background:linear-gradient(135deg,gold,#ffaa00);">⚡×🔥自動入力×コンボα</button>
+            <div class="cooldown-overlay" id="cooldowncomboAlpha" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowncomboAlphaText"></span>
         </div>
     </div>
 
     <div class="main-content">
         <!-- メインメニュー（初期表示） -->
         <div class="screen active" id="menuScreen">
-            <div class="menu-title">⚔️ タイピングアドベンチャー</div>
+            <div class="menu-title">⚔️ タイピングクラフト</div>
             <div class="menu-buttons">
                 <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
                 <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
                 <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
                 <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
-                <button class="menu-btn" id="survivalBtn"><div class="icon">⚔️</div><div>サバイバル</div></button>
+                <button class="menu-btn" id="craftBtn"><div class="icon">🔨</div><div>クラフト</div></button>
             </div>
         </div>
         
@@ -434,30 +335,54 @@
             <button class="back-btn" id="backFromEventTaskBtn">戻る</button>
         </div>
         
-        <!-- サバイバルモードメニュー -->
-        <div class="screen" id="survivalMenuScreen">
-            <div class="menu-title">⚔️ サバイバルモード</div>
-            <div class="highscore-buttons">
-                <button class="ranking-mode-btn" id="survivalPlayBtn">🎮 サバイバルプレイ</button>
-                <button class="ranking-mode-btn" id="survivalRankingBtn">🏆 1日のランキング</button>
-                <button class="ranking-mode-btn" id="survivalTaskBtn">📋 タスク</button>
+        <!-- クラフト画面 -->
+        <div class="screen" id="craftScreen">
+            <div class="menu-title">🔨 クラフト</div>
+            <div class="item-grid" style="width:100%; max-width:600px;">
+                <div class="item-card craft-item">
+                    <div class="item-info">
+                        <span class="item-name">⚡自動入力Σ</span>
+                        <span class="item-desc">クールダウン30秒・1.5秒間自動入力(16Frame)</span>
+                        <div class="craft-recipe">レシピ: <span class="item-stone">石×1</span> + <span class="item-fire">火×2</span> + <span class="item-thunder">イナズマ×2</span></div>
+                    </div>
+                    <button class="equip-btn" id="craftSigmaBtn">作成</button>
+                </div>
+                <div class="item-card craft-item">
+                    <div class="item-info">
+                        <span class="item-name">💰スコア2倍</span>
+                        <span class="item-desc">クールダウン40秒・5秒間スコア2倍</span>
+                        <div class="craft-recipe">レシピ: <span class="item-fire">火×3</span> + <span class="item-thunder">イナズマ×1</span> + <span class="item-dragon">ミニドラゴン×2</span></div>
+                    </div>
+                    <button class="equip-btn" id="craftDoubleScoreBtn">作成</button>
+                </div>
+                <div class="item-card craft-item">
+                    <div class="item-info">
+                        <span class="item-name">⚡×🔥自動入力×コンボα</span>
+                        <span class="item-desc">クールダウン50秒・6秒間自動入力(64Frame) + 8秒間コンボ2.5倍</span>
+                        <div class="craft-recipe">レシピ: <span class="item-crown">王冠×5</span> + <span class="item-dragon">ミニドラゴン×3</span></div>
+                    </div>
+                    <button class="equip-btn" id="craftComboAlphaBtn">作成</button>
+                </div>
             </div>
-            <div class="ranking-update-timer" id="survivalUpdateTimer">次回更新まで: 00:00:00</div>
-            <button class="back-btn" id="backFromSurvivalBtn">戻る</button>
+            <div style="margin-top:20px; color:var(--text-gray); font-size:14px;">
+                <div>所持アイテム:</div>
+                <div><span class="item-stone">石: <span id="itemStoneCount">0</span></span> | <span class="item-fire">火: <span id="itemFireCount">0</span></span> | <span class="item-thunder">イナズマ: <span id="itemThunderCount">0</span></span> | <span class="item-dragon">ミニドラゴン: <span id="itemDragonCount">0</span></span> | <span class="item-crown">王冠: <span id="itemCrownCount">0</span></span></div>
+            </div>
+            <button class="back-btn" id="backFromCraftBtn" style="margin-top:20px;">戻る</button>
         </div>
         
-        <!-- サバイバルランキング表示画面 -->
-        <div class="screen" id="survivalRankingViewScreen">
-            <div class="menu-title">🏆 サバイバルランキング</div>
-            <div class="ranking-list" id="survivalRankingListContainer"></div>
-            <button class="back-btn" id="backFromSurvivalRankingBtn">戻る</button>
-        </div>
-        
-        <!-- サバイバルタスク画面 -->
-        <div class="screen" id="survivalTaskScreen">
-            <div class="menu-title">📋 サバイバルタスク</div>
-            <div id="survivalTasksList" class="item-grid" style="width:100%; max-width:500px;"></div>
-            <button class="back-btn" id="backFromSurvivalTaskBtn">戻る</button>
+        <!-- アイテムドロップルール画面 -->
+        <div class="screen" id="dropRuleScreen">
+            <div class="menu-title">📜 アイテムドロップ</div>
+            <div class="item-grid" style="width:100%; max-width:500px; background:rgba(0,0,0,0.3); padding:20px; border-radius:12px;">
+                <div style="font-size:20px; color:var(--accent-gold); margin-bottom:20px;">🎲 ドロップ確率 (5%)</div>
+                <div class="drop-item"><span class="item-stone">🪨 石</span> <span class="item-badge badge-stone">50%</span></div>
+                <div class="drop-item"><span class="item-fire">🔥 火</span> <span class="item-badge badge-fire">20%</span></div>
+                <div class="drop-item"><span class="item-thunder">⚡ イナズマ</span> <span class="item-badge badge-thunder">20%</span></div>
+                <div class="drop-item"><span class="item-dragon">🐉 ミニドラゴン</span> <span class="item-badge badge-dragon">9%</span></div>
+                <div class="drop-item"><span class="item-crown">👑 王冠</span> <span class="item-badge badge-crown">1%</span></div>
+            </div>
+            <button class="back-btn" id="backFromDropRuleBtn">戻る</button>
         </div>
         
         <!-- ゲーム画面 (通常) -->
@@ -478,21 +403,6 @@
             <div class="romaji-display" id="romajiDisplay"></div>
         </div>
         
-        <!-- サバイバルゲーム画面 - 修正版（初期非表示） -->
-        <div class="screen" id="survivalGameScreen">
-            <div class="survival-game-area">
-                <div class="survival-stats">
-                    <div>WAVE: <span id="survivalWave">1</span></div>
-                    <div>LIFE: <span id="survivalLife">3</span> <span class="survival-heart">❤️</span></div>
-                    <div>KILLS: <span id="survivalKills">0</span></div>
-                </div>
-                <div class="survival-walls"></div>
-                <div class="survival-player" id="player">⚔️</div>
-                <div id="survivalEnemiesContainer"></div>
-                <div class="survival-kill-count" id="survivalKillCount">倒した敵: 0</div>
-            </div>
-        </div>
-        
         <!-- 結果画面 -->
         <div class="screen" id="resultScreen">
             <div class="menu-title">結果</div>
@@ -500,8 +410,8 @@
                 <div style="font-size:14px;">FINAL SCORE</div>
                 <div id="finalScore" style="font-size:48px; color:var(--accent-green);">0</div>
                 <div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div>
+                <div id="itemDropResult" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div>
                 <div id="eventReward" style="font-size:18px; margin-top:10px; color:var(--accent-green-light);"></div>
-                <div id="survivalReward" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div>
             </div>
             <button class="menu-btn" id="continueBtn">続ける</button>
         </div>
@@ -601,7 +511,7 @@
 <script type="module">
     // ========== Firebase ==========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     const firebaseConfig = {
         apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
         authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -636,21 +546,21 @@
         highScoreCombo: 0,
         totalPlayCount: 0,
         totalXPEarned: 0,
-        // サバイバル関連
-        survivalHighWave: 0,
-        survivalTotalKills: 0,
-        survivalTasks: [
-            { id: 'survival1', title: '敵を500体倒す', current: 0, target: 500, reward: { fragments: 3 }, completed: false, lastReset: '' },
-            { id: 'survival2', title: '100wave生き残る', current: 0, target: 100, reward: { fragments: 3 }, completed: false, lastReset: '' },
-            { id: 'survival3', title: 'ライフ3つで50wave', current: 0, target: 50, reward: { shard: 1 }, completed: false, lastReset: '' }
-        ],
-        // イベント関連
         clovers: 0,
-        eventTasks: [
-            { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
-            { id: 'event2', title: 'イベントで50コンボ達成', current: 0, target: 1, reward: 5, completed: false },
-            { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false }
-        ],
+        // アイテム所持数
+        items: {
+            stone: 0,
+            fire: 0,
+            thunder: 0,
+            dragon: 0,
+            crown: 0
+        },
+        // クラフトスキル所持フラグ
+        craftedSkills: {
+            sigma: false,
+            doubleScore: false,
+            comboAlpha: false
+        },
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -661,23 +571,31 @@
             { id: 'weekly2', title: 'スコア5000以上を10回達成', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
             { id: 'weekly3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' }
         ],
+        eventTasks: [
+            { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
+            { id: 'event2', title: 'イベントで50コンボ達成', current: 0, target: 1, reward: 5, completed: false },
+            { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false }
+        ],
         lastDailyReset: '',
-        lastWeeklyReset: '',
-        lastSurvivalTaskReset: ''
+        lastWeeklyReset: ''
     };
 
     // スキルクールダウン管理
     const cooldowns = { 
         auto:0, autoBeta:0, timeExtend:0, comboUp:0, comboPlus:0,
-        leprechaun:0, combo25:0, luckyBlock:0 
+        leprechaun:0, combo25:0, luckyBlock:0,
+        sigma:0, doubleScore:0, comboAlpha:0 
     };
     let skillAutoActive = false;
     let autoInterval = null;
     let leprechaunActive = false;
     let combo25Active = false;
     let comboMultiplier = 1;
+    let doubleScoreActive = false;
 
     const AUTO_INPUT_INTERVAL = 64;
+    const SIGMA_AUTO_FRAMES = 16;
+    const ALPHA_AUTO_FRAMES = 64;
 
     const questions = { 
         easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], 
@@ -730,23 +648,9 @@
     }
 
     let worldRankings = [];
-    let survivalRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal';
-
-    // サバイバルモード用変数
-    let survivalWave = 1;
-    let survivalLife = 3;
-    let survivalKills = 0;
-    let survivalWaveTimer = null;
-    let survivalEnemySpawnTimer = null;
-    let survivalEnemies = [];
-    let survivalEnemySpeed = 2.0;
-    let survivalSpawnInterval = 2000;
-    let survivalAnimationFrame = null;
-    let survivalMaxWave = 0;
-    let gameAreaRect = null;
 
     // ========== ランキングリセット & 報酬処理 ==========
     function checkRankingReset() {
@@ -754,40 +658,207 @@
         const today7 = new Date();
         today7.setHours(7, 0, 0, 0);
         
-        let lastReset = localStorage.getItem('lastRankingReset');
-        let todayStr = today7.toDateString();
-        
-        if (lastReset !== todayStr && now >= today7) {
-            console.log('ランキングリセット実行');
+        if (now >= today7) {
+            const lastResetDate = localStorage.getItem('lastRankingResetDate');
+            const todayStr = today7.toDateString();
             
-            if (survivalRankings.length > 0) {
-                localStorage.setItem('pendingSurvivalRankingRewards', JSON.stringify({
-                    date: todayStr,
-                    survivalRankings: survivalRankings
-                }));
+            if (lastResetDate !== todayStr) {
+                console.log('ランキングリセット実行: 全ユーザーのスコアを削除');
+                
+                // Firebaseの全ユーザーのスコアをリセット
+                if (db) {
+                    get(ref(db, 'users')).then((snapshot) => {
+                        const users = snapshot.val() || {};
+                        Object.keys(users).forEach(userId => {
+                            set(ref(db, `users/${userId}/score`), 0).catch(() => {});
+                        });
+                    }).catch(() => {});
+                }
+                
+                // ローカルのランキングも削除
+                worldRankings = [];
+                localStorage.removeItem('worldRankings');
+                localStorage.removeItem('highScoreRankings');
+                localStorage.setItem('lastRankingResetDate', todayStr);
+                
+                // 報酬チェック
+                checkRankingRewards();
             }
-            
-            if (worldRankings.length > 0) {
-                localStorage.setItem('pendingRankingRewards', JSON.stringify({
-                    date: todayStr,
-                    worldRankings: worldRankings
-                }));
-            }
-            
-            worldRankings = [];
-            survivalRankings = [];
-            localStorage.removeItem('worldRankings');
-            localStorage.removeItem('survivalRankings');
-            localStorage.removeItem('highScoreRankings');
-            
-            localStorage.setItem('lastRankingReset', todayStr);
-            
-            checkRankingRewards();
         }
     }
     
     setInterval(checkRankingReset, 60000);
     setTimeout(checkRankingReset, 1000);
+
+    // ========== アイテムドロップ ==========
+    function rollItemDrop() {
+        const dropRate = 0.05; // 5%
+        if (Math.random() > dropRate) return null;
+        
+        const r = Math.random();
+        if (r < 0.5) return 'stone';      // 50% 石
+        else if (r < 0.7) return 'fire';   // 20% 火
+        else if (r < 0.9) return 'thunder'; // 20% イナズマ
+        else if (r < 0.99) return 'dragon'; // 9% ミニドラゴン
+        else return 'crown';                // 1% 王冠
+    }
+
+    function addItem(itemType, count = 1) {
+        if (!itemType) return false;
+        gameState.items[itemType] = (gameState.items[itemType] || 0) + count;
+        saveGameState();
+        updateItemCounts();
+        return true;
+    }
+
+    function removeItems(requirements) {
+        for (let [item, count] of Object.entries(requirements)) {
+            if ((gameState.items[item] || 0) < count) return false;
+        }
+        for (let [item, count] of Object.entries(requirements)) {
+            gameState.items[item] -= count;
+        }
+        saveGameState();
+        updateItemCounts();
+        return true;
+    }
+
+    function updateItemCounts() {
+        document.getElementById('itemStoneCount').textContent = gameState.items.stone || 0;
+        document.getElementById('itemFireCount').textContent = gameState.items.fire || 0;
+        document.getElementById('itemThunderCount').textContent = gameState.items.thunder || 0;
+        document.getElementById('itemDragonCount').textContent = gameState.items.dragon || 0;
+        document.getElementById('itemCrownCount').textContent = gameState.items.crown || 0;
+    }
+
+    // ========== クラフト ==========
+    function craftSigma() {
+        const requirements = { stone: 1, fire: 2, thunder: 2 };
+        if (removeItems(requirements)) {
+            if (!gameState.ownedSkills.includes('sigma')) {
+                gameState.ownedSkills.push('sigma');
+            }
+            gameState.craftedSkills.sigma = true;
+            saveGameState();
+            alert('⚡ 自動入力Σ を作成しました！');
+            renderInventory();
+            updateSkillButtons();
+        } else {
+            alert('アイテムが足りません');
+        }
+    }
+
+    function craftDoubleScore() {
+        const requirements = { fire: 3, thunder: 1, dragon: 2 };
+        if (removeItems(requirements)) {
+            if (!gameState.ownedSkills.includes('doubleScore')) {
+                gameState.ownedSkills.push('doubleScore');
+            }
+            gameState.craftedSkills.doubleScore = true;
+            saveGameState();
+            alert('💰 スコア2倍 を作成しました！');
+            renderInventory();
+            updateSkillButtons();
+        } else {
+            alert('アイテムが足りません');
+        }
+    }
+
+    function craftComboAlpha() {
+        const requirements = { crown: 5, dragon: 3 };
+        if (removeItems(requirements)) {
+            if (!gameState.ownedSkills.includes('comboAlpha')) {
+                gameState.ownedSkills.push('comboAlpha');
+            }
+            gameState.craftedSkills.comboAlpha = true;
+            saveGameState();
+            alert('⚡×🔥 自動入力×コンボα を作成しました！');
+            renderInventory();
+            updateSkillButtons();
+        } else {
+            alert('アイテムが足りません');
+        }
+    }
+
+    // ========== クラフトスキル使用 ==========
+    function useSkillSigma() {
+        if (!gameActive) return;
+        const now = Date.now();
+        if (cooldowns.sigma > now) return;
+        
+        cooldowns.sigma = now + 30000; // 30秒クールダウン
+        
+        skillAutoActive = true;
+        showAnimation('⚡自動入力Σ!');
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
+            let ex = currentRomaji[typedInput.length];
+            if (ex) {
+                typedInput += ex;
+                currentCombo++;
+                let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
+                currentScore += addScore;
+                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
+                document.getElementById('comboDisplay').textContent = currentCombo;
+                updateRomajiDisplay();
+                if (typedInput === currentRomaji) nextQuestion();
+            }
+        }, SIGMA_AUTO_FRAMES); // 16Frame
+        
+        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 1500); // 1.5秒
+        updateSkillButtons();
+    }
+
+    function useSkillDoubleScore() {
+        if (!gameActive) return;
+        const now = Date.now();
+        if (cooldowns.doubleScore > now) return;
+        
+        cooldowns.doubleScore = now + 40000; // 40秒クールダウン
+        doubleScoreActive = true;
+        showAnimation('💰 スコア2倍!');
+        
+        setTimeout(() => { doubleScoreActive = false; }, 5000); // 5秒間
+        updateSkillButtons();
+    }
+
+    function useSkillComboAlpha() {
+        if (!gameActive) return;
+        const now = Date.now();
+        if (cooldowns.comboAlpha > now) return;
+        
+        cooldowns.comboAlpha = now + 50000; // 50秒クールダウン
+        
+        // 自動入力 (64Frame)
+        skillAutoActive = true;
+        showAnimation('⚡×🔥 自動入力×コンボα!');
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
+            let ex = currentRomaji[typedInput.length];
+            if (ex) {
+                typedInput += ex;
+                currentCombo++;
+                let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
+                currentScore += addScore;
+                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
+                document.getElementById('comboDisplay').textContent = currentCombo;
+                updateRomajiDisplay();
+                if (typedInput === currentRomaji) nextQuestion();
+            }
+        }, ALPHA_AUTO_FRAMES);
+        
+        // 6秒間自動入力
+        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 6000);
+        
+        // コンボ2.5倍 (8秒間)
+        combo25Active = true;
+        comboMultiplier = 2.5;
+        setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 8000);
+        
+        updateSkillButtons();
+    }
 
     // ========== イベント期間チェック ==========
     function isEventActive() {
@@ -836,202 +907,139 @@
 
     // ========== 永続化 ==========
     function saveGameState() { 
-        localStorage.setItem('gameState',JSON.stringify(gameState)); 
+        localStorage.setItem('gameState', JSON.stringify(gameState)); 
         syncFirebase(); 
     }
     
     function syncFirebase() { 
-        if(db) set(ref(db,`users/${gameState.userId}`),{ 
-            name:gameState.userName, 
-            lastActive:Date.now(), 
-            level:gameState.level, 
-            xp:gameState.xp, 
-            coins:gameState.coins, 
-            score:gameState.rankingHighScore,
+        if (db) set(ref(db, `users/${gameState.userId}`), { 
+            name: gameState.userName, 
+            lastActive: Date.now(), 
+            level: gameState.level, 
+            xp: gameState.xp, 
+            coins: gameState.coins, 
+            score: gameState.rankingHighScore,
             highScoreCombo: gameState.highScoreCombo,
             totalPlayCount: gameState.totalPlayCount,
             totalXPEarned: gameState.totalXPEarned,
-            clovers: gameState.clovers,
-            survivalHighWave: gameState.survivalHighWave,
-            survivalTotalKills: gameState.survivalTotalKills
-        }).catch(()=>{}); 
+            clovers: gameState.clovers
+        }).catch(() => {}); 
     }
     
-    (function load(){ 
-        const s=localStorage.getItem('gameState'); 
-        if(s) Object.assign(gameState,JSON.parse(s)); 
-        if(!gameState.storyClears) gameState.storyClears=[]; 
-        if(!gameState.ownedSkills) gameState.ownedSkills=[]; 
-        if(!gameState.equippedSkills) gameState.equippedSkills=[]; 
-        if(!gameState.shards) gameState.shards=0; 
-        if(!gameState.shardFragments) gameState.shardFragments=0;
-        if(!gameState.claimedRankings) gameState.claimedRankings={world:null, survival:null};
-        if(!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings={combo:null,playcount:null,xp:null};
-        if(!gameState.highScoreCombo) gameState.highScoreCombo=0;
-        if(!gameState.totalPlayCount) gameState.totalPlayCount=0;
-        if(!gameState.totalXPEarned) gameState.totalXPEarned=0;
-        if(!gameState.clovers) gameState.clovers=0;
-        if(!gameState.survivalHighWave) gameState.survivalHighWave=0;
-        if(!gameState.survivalTotalKills) gameState.survivalTotalKills=0;
-        if(!gameState.survivalTasks) {
-            gameState.survivalTasks = [
-                { id: 'survival1', title: '敵を500体倒す', current: 0, target: 500, reward: { fragments: 3 }, completed: false, lastReset: '' },
-                { id: 'survival2', title: '100wave生き残る', current: 0, target: 100, reward: { fragments: 3 }, completed: false, lastReset: '' },
-                { id: 'survival3', title: 'ライフ3つで50wave', current: 0, target: 50, reward: { shard: 1 }, completed: false, lastReset: '' }
-            ];
-        }
-        if(!gameState.eventTasks) {
+    (function load() { 
+        const s = localStorage.getItem('gameState'); 
+        if (s) Object.assign(gameState, JSON.parse(s)); 
+        if (!gameState.storyClears) gameState.storyClears = []; 
+        if (!gameState.ownedSkills) gameState.ownedSkills = []; 
+        if (!gameState.equippedSkills) gameState.equippedSkills = []; 
+        if (!gameState.shards) gameState.shards = 0; 
+        if (!gameState.shardFragments) gameState.shardFragments = 0;
+        if (!gameState.claimedRankings) gameState.claimedRankings = { world: null, survival: null };
+        if (!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings = { combo: null, playcount: null, xp: null };
+        if (!gameState.highScoreCombo) gameState.highScoreCombo = 0;
+        if (!gameState.totalPlayCount) gameState.totalPlayCount = 0;
+        if (!gameState.totalXPEarned) gameState.totalXPEarned = 0;
+        if (!gameState.clovers) gameState.clovers = 0;
+        if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 };
+        if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false };
+        if (!gameState.eventTasks) {
             gameState.eventTasks = [
                 { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false },
                 { id: 'event2', title: 'イベントで50コンボ達成', current: 0, target: 1, reward: 5, completed: false },
                 { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false }
             ];
         }
-        if(!gameState.dailyTasks) { 
+        if (!gameState.dailyTasks) { 
             gameState.dailyTasks = [ 
-                { id:'daily1',title:'10回タイピングをプレイ',current:0,target:10,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, 
-                { id:'daily2',title:'スコア5000以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' }, 
-                { id:'daily3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:50,coins:1500},completed:false,lastReset:'' } 
+                { id:'daily1', title:'10回タイピングをプレイ', current:0, target:10, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, 
+                { id:'daily2', title:'スコア5000以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, 
+                { id:'daily3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' } 
             ];
             gameState.weeklyTasks = [ 
-                { id:'weekly1',title:'100回タイピングをプレイ',current:0,target:100,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, 
-                { id:'weekly2',title:'スコア5000以上を10回達成',current:0,target:10,reward:{xp:500,coins:15000},completed:false,lastReset:'' }, 
-                { id:'weekly3',title:'コンボ50以上を達成',current:0,target:1,reward:{xp:500,coins:15000},completed:false,lastReset:'' } 
+                { id:'weekly1', title:'100回タイピングをプレイ', current:0, target:100, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, 
+                { id:'weekly2', title:'スコア5000以上を10回達成', current:0, target:10, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, 
+                { id:'weekly3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' } 
             ];
         }
         checkTaskReset();
-        checkSurvivalTaskReset();
         updateUI(); 
         updateSkillButtons();
         updateEventUI();
+        updateItemCounts();
     })();
 
     // タスクリセット
-    function checkTaskReset(){
+    function checkTaskReset() {
         const now = new Date();
-        const today7 = new Date(); today7.setHours(7,0,0,0);
-        if(now > today7) today7.setDate(today7.getDate()+1);
+        const today7 = new Date(); 
+        today7.setHours(7, 0, 0, 0);
+        if (now > today7) today7.setDate(today7.getDate() + 1);
         const dayOfWeek = now.getDay();
-        const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1)); lastMon.setHours(7,0,0,0);
-        if(dayOfWeek===1 && now < lastMon) lastMon.setDate(lastMon.getDate()-7);
+        const lastMon = new Date(now); 
+        lastMon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); 
+        lastMon.setHours(7, 0, 0, 0);
+        if (dayOfWeek === 1 && now < lastMon) lastMon.setDate(lastMon.getDate() - 7);
         const todayStr = today7.toDateString();
         const weekStr = lastMon.toDateString();
-        if(gameState.lastDailyReset !== todayStr){
-            gameState.dailyTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=todayStr; });
+        if (gameState.lastDailyReset !== todayStr) {
+            gameState.dailyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; });
             gameState.lastDailyReset = todayStr;
         }
-        if(gameState.lastWeeklyReset !== weekStr){
-            gameState.weeklyTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=weekStr; });
+        if (gameState.lastWeeklyReset !== weekStr) {
+            gameState.weeklyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = weekStr; });
             gameState.lastWeeklyReset = weekStr;
         }
     }
 
-    // サバイバルタスクリセット
-    function checkSurvivalTaskReset(){
-        const now = new Date();
-        const today7 = new Date(); today7.setHours(7,0,0,0);
-        if(now > today7) today7.setDate(today7.getDate()+1);
-        const todayStr = today7.toDateString();
-        if(gameState.lastSurvivalTaskReset !== todayStr){
-            gameState.survivalTasks.forEach(t=>{ t.current=0; t.completed=false; t.lastReset=todayStr; });
-            gameState.lastSurvivalTaskReset = todayStr;
-        }
-    }
-
-    function updateUI(){
-        document.getElementById('levelDisplay').textContent=gameState.level;
-        document.getElementById('xpBarFill').style.width=(gameState.xp/gameState.maxXp*100)+'%';
-        document.getElementById('coinDisplay').textContent=gameState.coins.toLocaleString();
-        document.getElementById('cloverValue').textContent=gameState.clovers;
-        document.getElementById('displayName').textContent=gameState.userName;
-        document.getElementById('userId').textContent='ID: '+gameState.userId.slice(0,8);
-        let left = Math.max(0,3-gameState.nameChangeCount);
-        document.getElementById('nameChangeLeft').textContent=left;
-        document.getElementById('nameChangeCount').textContent=`本日:${gameState.nameChangeCount}/3`;
+    function updateUI() {
+        document.getElementById('levelDisplay').textContent = gameState.level;
+        document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp * 100) + '%';
+        document.getElementById('coinDisplay').textContent = gameState.coins.toLocaleString();
+        document.getElementById('cloverValue').textContent = gameState.clovers;
+        document.getElementById('displayName').textContent = gameState.userName;
+        document.getElementById('userId').textContent = 'ID: ' + gameState.userId.slice(0, 8);
+        let left = Math.max(0, 3 - gameState.nameChangeCount);
+        document.getElementById('nameChangeLeft').textContent = left;
+        document.getElementById('nameChangeCount').textContent = `本日:${gameState.nameChangeCount}/3`;
         checkRankingRewards();
         updateTasksDisplay();
-        updateSurvivalTasksDisplay();
     }
 
-    function updateTasksDisplay(){
-        const dailyDiv = document.getElementById('dailyTasksList'); if(dailyDiv){
+    function updateTasksDisplay() {
+        const dailyDiv = document.getElementById('dailyTasksList'); 
+        if (dailyDiv) {
             dailyDiv.innerHTML = '';
-            gameState.dailyTasks.forEach(t=>{
-                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
-                let percent = Math.min(100, (t.current/t.target)*100);
+            gameState.dailyTasks.forEach(t => {
+                let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
+                let percent = Math.min(100, (t.current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
                 dailyDiv.appendChild(d);
             });
         }
-        const weeklyDiv = document.getElementById('weeklyTasksList'); if(weeklyDiv){
+        const weeklyDiv = document.getElementById('weeklyTasksList'); 
+        if (weeklyDiv) {
             weeklyDiv.innerHTML = '';
-            gameState.weeklyTasks.forEach(t=>{
-                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
-                let percent = Math.min(100, (t.current/t.target)*100);
+            gameState.weeklyTasks.forEach(t => {
+                let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
+                let percent = Math.min(100, (t.current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
                 weeklyDiv.appendChild(d);
             });
         }
     }
 
-    function updateSurvivalTasksDisplay(){
-        const tasksDiv = document.getElementById('survivalTasksList');
-        if (tasksDiv) {
-            tasksDiv.innerHTML = '';
-            gameState.survivalTasks.forEach(t => {
-                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
-                let percent = Math.min(100, (t.current/t.target)*100);
-                let rewardText = t.reward.fragments ? `🔮 かけら(欠片) ${t.reward.fragments}個` : `🔮 かけら ${t.reward.shard}個`;
-                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: ${rewardText}</div>`;
-                tasksDiv.appendChild(d);
-            });
-        }
-    }
-
-    function updateSurvivalTaskProgress(kills, wave, life) {
-        let tasks = gameState.survivalTasks;
-        
-        if (!tasks[0].completed) {
-            tasks[0].current = Math.min(tasks[0].current + kills, tasks[0].target);
-        }
-        
-        if (!tasks[1].completed) {
-            tasks[1].current = Math.max(tasks[1].current, wave);
-        }
-        
-        if (!tasks[2].completed && life >= 3) {
-            tasks[2].current = Math.max(tasks[2].current, wave);
-        }
-        
-        tasks.forEach(t => {
-            if (!t.completed && t.current >= t.target) {
-                t.completed = true;
-                if (t.reward.fragments) {
-                    gameState.shardFragments += t.reward.fragments;
-                }
-                if (t.reward.shard) {
-                    gameState.shards += t.reward.shard;
-                }
-                showTaskNotification(`サバイバルタスククリア！ ${t.title}`);
-            }
-        });
-        
-        saveGameState();
-        updateSurvivalTasksDisplay();
-    }
-
-    function updateTaskProgress(score, combo){
+    function updateTaskProgress(score, combo) {
         let daily = gameState.dailyTasks;
         let weekly = gameState.weeklyTasks;
-        if(!daily[0].completed) { daily[0].current = Math.min(daily[0].current+1, daily[0].target); }
-        if(!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current+1, weekly[0].target); }
-        if(score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current+1, daily[1].target); }
-        if(score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current+1, weekly[1].target); }
-        if(combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current+1, daily[2].target); }
-        if(combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current+1, weekly[2].target); }
-        [daily, weekly].forEach(tasks=>{
-            tasks.forEach(t=>{
-                if(!t.completed && t.current >= t.target){
+        if (!daily[0].completed) { daily[0].current = Math.min(daily[0].current + 1, daily[0].target); }
+        if (!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current + 1, weekly[0].target); }
+        if (score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current + 1, daily[1].target); }
+        if (score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); }
+        if (combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current + 1, daily[2].target); }
+        if (combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); }
+        [daily, weekly].forEach(tasks => {
+            tasks.forEach(t => {
+                if (!t.completed && t.current >= t.target) {
                     t.completed = true;
                     gameState.xp += t.reward.xp;
                     gameState.coins += t.reward.coins;
@@ -1047,13 +1055,13 @@
         if (currentMode !== 'event') return;
         let tasks = gameState.eventTasks;
         if (!tasks[0].completed && score >= 10000) {
-            tasks[0].current = Math.min(tasks[0].current+1, tasks[0].target);
+            tasks[0].current = Math.min(tasks[0].current + 1, tasks[0].target);
         }
         if (!tasks[1].completed && combo >= 50) {
-            tasks[1].current = Math.min(tasks[1].current+1, tasks[1].target);
+            tasks[1].current = Math.min(tasks[1].current + 1, tasks[1].target);
         }
         if (!tasks[2].completed) {
-            tasks[2].current = Math.min(tasks[2].current+1, tasks[2].target);
+            tasks[2].current = Math.min(tasks[2].current + 1, tasks[2].target);
         }
         
         tasks.forEach(t => {
@@ -1066,136 +1074,102 @@
         saveGameState();
     }
 
-    function showTaskNotification(title){
+    function showTaskNotification(title) {
         let noti = document.getElementById('taskNotification');
         noti.textContent = `🎉 ${title}`;
         noti.classList.remove('hidden');
-        setTimeout(()=> noti.classList.add('hidden'), 3000);
+        setTimeout(() => noti.classList.add('hidden'), 3000);
     }
 
     // ========== ランキング関連 ==========
-    function getTodayString(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
-    function getTimeUntil7AM(){ let n=new Date(); let n7=new Date(); n7.setHours(7,0,0,0); if(n>n7) n7.setDate(n7.getDate()+1); let d=n7-n; let h=Math.floor(d/3600000), m=Math.floor((d%3600000)/60000), s=Math.floor((d%60000)/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
-    setInterval(()=>{ 
-        let t=document.getElementById('rankingUpdateTimer'); 
-        if(t) t.innerText=`次回更新まで: ${getTimeUntil7AM()}`; 
-        let s=document.getElementById('survivalUpdateTimer');
-        if(s) s.innerText=`次回更新まで: ${getTimeUntil7AM()}`;
-    },1000);
+    function getTodayString() { 
+        const d = new Date(); 
+        return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; 
+    }
+    
+    function getTimeUntil7AM() { 
+        let n = new Date(); 
+        let n7 = new Date(); 
+        n7.setHours(7, 0, 0, 0); 
+        if (n > n7) n7.setDate(n7.getDate() + 1); 
+        let d = n7 - n; 
+        let h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000), s = Math.floor((d % 60000) / 1000); 
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; 
+    }
+    
+    setInterval(() => { 
+        let t = document.getElementById('rankingUpdateTimer'); 
+        if (t) t.innerText = `次回更新まで: ${getTimeUntil7AM()}`; 
+    }, 1000);
 
-    async function fetchWorldRankings(){
-        if(!db) return [];
+    async function fetchWorldRankings() {
+        if (!db) return [];
         try { 
-            const snap = await get(ref(db,'users')); 
-            const users = snap.val()||{}; 
-            return Object.entries(users).map(([id,u])=>({ name:u.name||'名無し', score:u.score||0, id })).filter(u=>u.score>0).sort((a,b)=>b.score-a.score).slice(0,100);
-        } catch(e){ return []; }
+            const snap = await get(ref(db, 'users')); 
+            const users = snap.val() || {}; 
+            return Object.entries(users).map(([id, u]) => ({ 
+                name: u.name || '名無し', 
+                score: u.score || 0, 
+                id 
+            })).filter(u => u.score > 0).sort((a, b) => b.score - a.score).slice(0, 100);
+        } catch(e) { 
+            return []; 
+        }
     }
 
-    async function fetchSurvivalRankings(){
-        if(!db) return [];
-        try { 
-            const snap = await get(ref(db,'users')); 
-            const users = snap.val()||{}; 
-            return Object.entries(users).map(([id,u])=>({ name:u.name||'名無し', wave:u.survivalHighWave||0, id })).filter(u=>u.wave>0).sort((a,b)=>b.wave-a.wave).slice(0,100);
-        } catch(e){ return []; }
-    }
-
-    async function displayRanking(){
+    async function displayRanking() {
         switchScreen('rankingViewScreen');
-        document.getElementById('rankingViewTitle').textContent='ワールドランキング';
-        let container=document.getElementById('rankingListContainer'); container.innerHTML='<div>読込中...</div>';
+        document.getElementById('rankingViewTitle').textContent = 'ワールドランキング';
+        let container = document.getElementById('rankingListContainer'); 
+        container.innerHTML = '<div>読込中...</div>';
         worldRankings = await fetchWorldRankings();
-        localStorage.setItem('worldRankings',JSON.stringify(worldRankings));
-        container.innerHTML='';
-        worldRankings.forEach((e,i)=>{
-            let d=document.createElement('div'); d.className='ranking-item';
-            d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
+        localStorage.setItem('worldRankings', JSON.stringify(worldRankings));
+        container.innerHTML = '';
+        worldRankings.forEach((e, i) => {
+            let d = document.createElement('div'); d.className = 'ranking-item';
+            d.innerHTML = `<div class="ranking-rank">${i + 1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
             container.appendChild(d);
         });
         checkRankingRewards();
     }
 
-    async function displaySurvivalRanking(){
-        switchScreen('survivalRankingViewScreen');
-        let container=document.getElementById('survivalRankingListContainer'); container.innerHTML='<div>読込中...</div>';
-        survivalRankings = await fetchSurvivalRankings();
-        localStorage.setItem('survivalRankings',JSON.stringify(survivalRankings));
-        container.innerHTML='';
-        survivalRankings.forEach((e,i)=>{
-            let d=document.createElement('div'); d.className='ranking-item';
-            d.innerHTML=`<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">WAVE ${e.wave}</div>`;
-            container.appendChild(d);
-        });
-        if (survivalRankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
-        checkSurvivalRankingRewards();
-    }
-
-    function checkRankingRewards(){
+    function checkRankingRewards() {
         const today = getTodayString();
         const claimed = gameState.claimedRankings.world;
-        const myEntry = worldRankings.find(r=>r.id===gameState.userId);
-        let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
+        const myEntry = worldRankings.find(r => r.id === gameState.userId);
+        let inRank = myEntry ? (worldRankings.findIndex(r => r.id === gameState.userId) + 1) <= 10 : false;
         const hasReward = (claimed !== today && inRank);
         
-        const survivalHasReward = checkSurvivalRankingRewards(false);
-        
-        document.getElementById('giftBadge').textContent = (hasReward || survivalHasReward) ? '1' : '0';
-        document.getElementById('giftBadge').style.display = (hasReward || survivalHasReward) ? 'flex' : 'none';
-        return hasReward || survivalHasReward;
-    }
-
-    function checkSurvivalRankingRewards(updateBadge = true) {
-        const today = getTodayString();
-        const claimed = gameState.claimedRankings.survival;
-        const myEntry = survivalRankings.find(r=>r.id===gameState.userId);
-        let inRank = myEntry ? (survivalRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
-        const hasReward = (claimed !== today && inRank);
-        
-        if (updateBadge) {
-            document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
-            document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
-        }
+        document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
+        document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
         return hasReward;
     }
 
-    function showGiftDialog(){
+    function showGiftDialog() {
         const today = getTodayString();
         
         if (gameState.claimedRankings.world !== today) {
-            const myEntry = worldRankings.find(r=>r.id===gameState.userId);
+            const myEntry = worldRankings.find(r => r.id === gameState.userId);
             if (myEntry) {
-                const rank = worldRankings.findIndex(r=>r.id===gameState.userId)+1;
+                const rank = worldRankings.findIndex(r => r.id === gameState.userId) + 1;
                 if (rank <= 10) {
-                    let reward = rank===1?{xp:5000,coins:10000}: (rank<=3?{xp:2000,coins:5000}:{xp:1000,coins:2000});
+                    let reward = rank === 1 ? { xp: 5000, coins: 10000 } : (rank <= 3 ? { xp: 2000, coins: 5000 } : { xp: 1000, coins: 2000 });
                     document.getElementById('giftContent').innerHTML = `ワールドランキング ${rank}位報酬<br>${reward.xp} XP / ${reward.coins.toLocaleString()} コイン`;
-                    document.getElementById('giftDialog').classList.add('active'); overlay(true);
-                    document.getElementById('claimRewardBtn').onclick = ()=>{
-                        gameState.xp += reward.xp; gameState.coins += reward.coins;
-                        while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
+                    document.getElementById('giftDialog').classList.add('active'); 
+                    overlay(true);
+                    document.getElementById('claimRewardBtn').onclick = () => {
+                        gameState.xp += reward.xp; 
+                        gameState.coins += reward.coins;
+                        while (gameState.xp >= gameState.maxXp) { 
+                            gameState.xp -= gameState.maxXp; 
+                            gameState.level++; 
+                            gameState.maxXp = Math.floor(gameState.maxXp * 1.5); 
+                        }
                         gameState.claimedRankings.world = today;
-                        saveGameState(); updateUI();
-                        document.getElementById('giftDialog').classList.remove('active'); overlay(false);
-                        checkRankingRewards();
-                    };
-                    return;
-                }
-            }
-        }
-        
-        if (gameState.claimedRankings.survival !== today) {
-            const myEntry = survivalRankings.find(r=>r.id===gameState.userId);
-            if (myEntry) {
-                const rank = survivalRankings.findIndex(r=>r.id===gameState.userId)+1;
-                if (rank <= 10) {
-                    let rewardShards = rank===1 ? 3 : (rank<=3 ? 2 : 1);
-                    document.getElementById('giftContent').innerHTML = `サバイバルランキング ${rank}位報酬<br>🔮 スキルのかけら ${rewardShards}個`;
-                    document.getElementById('giftDialog').classList.add('active'); overlay(true);
-                    document.getElementById('claimRewardBtn').onclick = ()=>{
-                        gameState.shards += rewardShards;
-                        gameState.claimedRankings.survival = today;
-                        saveGameState(); updateUI();
-                        document.getElementById('giftDialog').classList.remove('active'); overlay(false);
+                        saveGameState(); 
+                        updateUI();
+                        document.getElementById('giftDialog').classList.remove('active'); 
+                        overlay(false);
                         checkRankingRewards();
                     };
                     return;
@@ -1208,18 +1182,20 @@
 
     // ========== ハイスコアランキング ==========
     async function fetchHighScoreRanking(type) {
-        if(!db) return [];
+        if (!db) return [];
         try {
-            const snap = await get(ref(db,'users'));
-            const users = snap.val()||{};
+            const snap = await get(ref(db, 'users'));
+            const users = snap.val() || {};
             let entries = [];
             Object.entries(users).forEach(([id, u]) => {
                 if (type === 'combo') entries.push({ name: u.name || '名無し', value: u.highScoreCombo || 0, id });
                 else if (type === 'playcount') entries.push({ name: u.name || '名無し', value: u.totalPlayCount || 0, id });
                 else if (type === 'xp') entries.push({ name: u.name || '名無し', value: u.totalXPEarned || 0, id });
             });
-            return entries.filter(e => e.value > 0).sort((a,b) => b.value - a.value).slice(0,100);
-        } catch(e) { return []; }
+            return entries.filter(e => e.value > 0).sort((a, b) => b.value - a.value).slice(0, 100);
+        } catch(e) { 
+            return []; 
+        }
     }
 
     async function displayHighScoreRanking(type) {
@@ -1238,7 +1214,7 @@
         container.innerHTML = '';
         rankings.forEach((e, i) => {
             let d = document.createElement('div'); d.className = 'ranking-item';
-            d.innerHTML = `<div class="ranking-rank">${i+1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.value.toLocaleString()}</div>`;
+            d.innerHTML = `<div class="ranking-rank">${i + 1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.value.toLocaleString()}</div>`;
             container.appendChild(d);
         });
         if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
@@ -1259,9 +1235,9 @@
     }
 
     // ========== スキルシステム ==========
-    function updateSkillButtons(){
+    function updateSkillButtons() {
         const skillBar = document.getElementById('skillBar');
-        if(gameActive) skillBar.style.display = 'flex';
+        if (gameActive) skillBar.style.display = 'flex';
         else skillBar.style.display = 'none';
         
         const autoBtn = document.getElementById('skillAutoBtn');
@@ -1272,6 +1248,9 @@
         const leprechaunBtn = document.getElementById('skillLeprechaunBtn');
         const combo25Btn = document.getElementById('skillCombo25Btn');
         const luckyBlockBtn = document.getElementById('skillLuckyBlockBtn');
+        const sigmaBtn = document.getElementById('skillSigmaBtn');
+        const doubleScoreBtn = document.getElementById('skillDoubleScoreBtn');
+        const comboAlphaBtn = document.getElementById('skillComboAlphaBtn');
         
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
         autoBetaBtn.style.display = gameState.ownedSkills.includes('autoBeta') && gameState.equippedSkills.includes('autoBeta') ? 'block' : 'none';
@@ -1282,6 +1261,11 @@
         combo25Btn.style.display = gameState.ownedSkills.includes('combo25') && gameState.equippedSkills.includes('combo25') ? 'block' : 'none';
         luckyBlockBtn.style.display = gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock') ? 'block' : 'none';
         
+        // クラフトスキル
+        sigmaBtn.style.display = gameState.ownedSkills.includes('sigma') && gameState.equippedSkills.includes('sigma') ? 'block' : 'none';
+        doubleScoreBtn.style.display = gameState.ownedSkills.includes('doubleScore') && gameState.equippedSkills.includes('doubleScore') ? 'block' : 'none';
+        comboAlphaBtn.style.display = gameState.ownedSkills.includes('comboAlpha') && gameState.equippedSkills.includes('comboAlpha') ? 'block' : 'none';
+        
         const now = Date.now();
         const skillDurations = {
             auto: 30000,
@@ -1291,12 +1275,15 @@
             comboPlus: 150000,
             leprechaun: 30000,
             combo25: 45000,
-            luckyBlock: 25000
+            luckyBlock: 25000,
+            sigma: 30000,
+            doubleScore: 40000,
+            comboAlpha: 50000
         };
         
-        ['auto','autoBeta','timeExtend','comboUp','comboPlus','leprechaun','combo25','luckyBlock'].forEach(id => {
-            let overlay = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}`);
-            let textEl = document.getElementById(`cooldown${id.charAt(0).toUpperCase()+id.slice(1)}Text`);
+        ['auto', 'autoBeta', 'timeExtend', 'comboUp', 'comboPlus', 'leprechaun', 'combo25', 'luckyBlock', 'sigma', 'doubleScore', 'comboAlpha'].forEach(id => {
+            let overlay = document.getElementById(`cooldown${id}`);
+            let textEl = document.getElementById(`cooldown${id}Text`);
             if (overlay && textEl) {
                 if (cooldowns[id] > now) {
                     let remain = cooldowns[id] - now;
@@ -1311,8 +1298,8 @@
         });
     }
 
-    function useSkill(skillId){
-        if(!gameActive) return;
+    function useSkill(skillId) {
+        if (!gameActive) return;
         const now = Date.now();
         
         if (cooldowns[skillId] > now) return;
@@ -1327,65 +1314,52 @@
             combo25: 45000,
             luckyBlock: 25000
         };
-        cooldowns[skillId] = now + cooldownTimes[skillId];
         
-        if(skillId === 'auto'){
+        if (cooldownTimes[skillId]) {
+            cooldowns[skillId] = now + cooldownTimes[skillId];
+        }
+        
+        if (skillId === 'auto') {
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
-            if(autoInterval) clearInterval(autoInterval);
-            autoInterval = setInterval(()=>{
-                if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+            if (autoInterval) clearInterval(autoInterval);
+            autoInterval = setInterval(() => {
+                if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
                 let ex = currentRomaji[typedInput.length];
-                if(ex){
+                if (ex) {
                     typedInput += ex;
                     currentCombo++;
-                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
                     currentScore += addScore;
                     document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
                     document.getElementById('comboDisplay').textContent = currentCombo;
                     updateRomajiDisplay();
-                    if(typedInput === currentRomaji) nextQuestion();
-                    if (currentMode === 'story' || currentMode === 'event') {
-                        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
-                        if (currentScore >= target) {
-                            clearInterval(gameTimer);
-                            endGame();
-                            return;
-                        }
-                    }
+                    if (typedInput === currentRomaji) nextQuestion();
                 }
             }, AUTO_INPUT_INTERVAL);
-            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 3500);
+            setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 3500);
         }
-        else if(skillId === 'autoBeta'){
+        else if (skillId === 'autoBeta') {
             skillAutoActive = true;
             showAnimation('⚡自動入力β!');
-            if(autoInterval) clearInterval(autoInterval);
-            autoInterval = setInterval(()=>{
-                if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+            if (autoInterval) clearInterval(autoInterval);
+            autoInterval = setInterval(() => {
+                if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
                 let ex = currentRomaji[typedInput.length];
-                if(ex){
+                if (ex) {
                     typedInput += ex;
                     currentCombo++;
-                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
                     currentScore += addScore;
                     document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
                     document.getElementById('comboDisplay').textContent = currentCombo;
                     updateRomajiDisplay();
-                    if(typedInput === currentRomaji) nextQuestion();
-                    if (currentMode === 'story' || currentMode === 'event') {
-                        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
-                        if (currentScore >= target) {
-                            clearInterval(gameTimer);
-                            endGame();
-                            return;
-                        }
-                    }
+                    if (typedInput === currentRomaji) nextQuestion();
                 }
             }, AUTO_INPUT_INTERVAL);
-            setTimeout(()=>{ skillAutoActive = false; clearInterval(autoInterval); }, 6500);
+            setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 6500);
         }
-        else if(skillId === 'timeExtend'){
+        else if (skillId === 'timeExtend') {
             showAnimation('⏳タイミングゲーム!');
             gameActive = false;
             clearInterval(gameTimer);
@@ -1431,28 +1405,27 @@
                 document.getElementById('timerDisplay').textContent = gameTime;
                 alert(`✨ ${gain}秒延びた! (ゾーン: ${pos.toFixed(1)}%)`);
                 gameActive = true;
-                gameTimer = setInterval(()=>{ 
+                gameTimer = setInterval(() => { 
                     gameTime--; 
-                    document.getElementById('timerDisplay').textContent=gameTime; 
-                    if(gameTime<=0) endGame(); 
-                    if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
-                },1000);
+                    document.getElementById('timerDisplay').textContent = gameTime; 
+                    if (gameTime <= 0) endGame(); 
+                }, 1000);
             };
             
             document.getElementById('stopBarBtn').addEventListener('click', stopHandler, { once: true });
         }
-        else if(skillId === 'comboUp'){
+        else if (skillId === 'comboUp') {
             showAnimation('🔥コンボ+40!');
             currentCombo += 40;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
-        else if(skillId === 'comboPlus'){
-            let add = Math.floor(Math.random()*36)+25;
+        else if (skillId === 'comboPlus') {
+            let add = Math.floor(Math.random() * 36) + 25;
             showAnimation(`✨コンボ+${add}!`);
             currentCombo += add;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
-        else if(skillId === 'leprechaun'){
+        else if (skillId === 'leprechaun') {
             showAnimation('🍀 レプラコーンビーム!');
             leprechaunActive = true;
             const beam = document.createElement('div'); 
@@ -1465,13 +1438,13 @@
             setTimeout(() => beam.remove(), 1000);
             setTimeout(() => { leprechaunActive = false; }, 10000);
         }
-        else if(skillId === 'combo25'){
+        else if (skillId === 'combo25') {
             showAnimation('🔥 コンボ2.5倍!');
             combo25Active = true;
             comboMultiplier = 2.5;
             setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 10000);
         }
-        else if(skillId === 'luckyBlock'){
+        else if (skillId === 'luckyBlock') {
             showAnimation('🎲 ラッキーブロック!');
             const effects = ['auto', 'combo', 'time'];
             const selected = effects[Math.floor(Math.random() * effects.length)];
@@ -1479,19 +1452,19 @@
             if (selected === 'auto') {
                 const oldAuto = skillAutoActive;
                 skillAutoActive = true;
-                if(autoInterval) clearInterval(autoInterval);
-                autoInterval = setInterval(()=>{
-                    if(!gameActive || !skillAutoActive){ clearInterval(autoInterval); return; }
+                if (autoInterval) clearInterval(autoInterval);
+                autoInterval = setInterval(() => {
+                    if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
                     let ex = currentRomaji[typedInput.length];
-                    if(ex){
+                    if (ex) {
                         typedInput += ex;
                         currentCombo++;
-                        let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
+                        let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
                         currentScore += addScore;
                         document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
                         document.getElementById('comboDisplay').textContent = currentCombo;
                         updateRomajiDisplay();
-                        if(typedInput === currentRomaji) nextQuestion();
+                        if (typedInput === currentRomaji) nextQuestion();
                     }
                 }, AUTO_INPUT_INTERVAL);
                 setTimeout(() => { skillAutoActive = oldAuto; clearInterval(autoInterval); }, 1500);
@@ -1511,23 +1484,29 @@
         updateSkillButtons();
     }
 
-    function showAnimation(text){
-        let anim = document.createElement('div'); anim.className='skill-animation'; anim.textContent=text;
+    function showAnimation(text) {
+        let anim = document.createElement('div'); anim.className = 'skill-animation'; anim.textContent = text;
         document.body.appendChild(anim);
-        setTimeout(()=> anim.remove(), 1000);
+        setTimeout(() => anim.remove(), 1000);
     }
 
     // ========== ゲーム制御 ==========
-    function startGame(difficulty, mode = 'normal'){
+    function startGame(difficulty, mode = 'normal') {
         currentMode = mode;
-        currentDifficulty = difficulty; currentScore=0; currentCombo=0; gameTime=60; gameActive=true; typedInput='';
+        currentDifficulty = difficulty; 
+        currentScore = 0; 
+        currentCombo = 0; 
+        gameTime = 60; 
+        gameActive = true; 
+        typedInput = '';
         comboMultiplier = 1;
         leprechaunActive = false;
         combo25Active = false;
+        doubleScoreActive = false;
         
-        document.getElementById('scoreDisplay').textContent='0'; 
-        document.getElementById('comboDisplay').textContent='0'; 
-        document.getElementById('timerDisplay').textContent='60';
+        document.getElementById('scoreDisplay').textContent = '0'; 
+        document.getElementById('comboDisplay').textContent = '0'; 
+        document.getElementById('timerDisplay').textContent = '60';
         
         const storyGoalContainer = document.getElementById('storyGoalContainer');
         if (mode === 'story') {
@@ -1543,249 +1522,50 @@
         
         switchScreen('gameScreen');
         nextQuestion();
-        gameTimer = setInterval(()=>{ 
+        gameTimer = setInterval(() => { 
             gameTime--; 
-            document.getElementById('timerDisplay').textContent=Math.floor(gameTime); 
+            document.getElementById('timerDisplay').textContent = Math.floor(gameTime); 
             if (gameTime <= 0) endGame(); 
             if (mode === 'story' || mode === 'event') updateStoryGoalBar();
         }, 1000);
         updateSkillButtons();
 
-        if(mode === 'story'){
+        if (mode === 'story') {
             let stage = gameState.storyStage;
-            if(stage>=25 && stage<50 && !storyDebuffActive){
-                setTimeout(()=>{
-                    if(!gameActive) return;
-                    storyDebuffActive=true;
+            if (stage >= 25 && stage < 50 && !storyDebuffActive) {
+                setTimeout(() => {
+                    if (!gameActive) return;
+                    storyDebuffActive = true;
                     document.getElementById('darknessOverlay').classList.add('active');
-                    setTimeout(()=>{ if(gameActive) document.getElementById('darknessOverlay').classList.remove('active'); storyDebuffActive=false; }, 1000);
-                }, Math.random()*20000+5000);
+                    setTimeout(() => { 
+                        if (gameActive) document.getElementById('darknessOverlay').classList.remove('active'); 
+                        storyDebuffActive = false; 
+                    }, 1000);
+                }, Math.random() * 20000 + 5000);
             }
-            if(stage>=50 && stage<75){ gameTime = Math.max(55, gameTime-5); document.getElementById('timerDisplay').textContent=gameTime; }
-            if(stage>=75 && stage<=100 && !storyCrackActive){
-                setTimeout(()=>{
-                    if(!gameActive) return;
-                    storyCrackActive=true;
+            if (stage >= 50 && stage < 75) { 
+                gameTime = Math.max(55, gameTime - 5); 
+                document.getElementById('timerDisplay').textContent = gameTime; 
+            }
+            if (stage >= 75 && stage <= 100 && !storyCrackActive) {
+                setTimeout(() => {
+                    if (!gameActive) return;
+                    storyCrackActive = true;
                     document.getElementById('screenCrack').classList.add('active');
-                    currentCombo=0; document.getElementById('comboDisplay').textContent='0';
-                    setTimeout(()=>{ document.getElementById('screenCrack').classList.remove('active'); storyCrackActive=false; }, 5000);
-                }, Math.random()*15000+5000);
+                    currentCombo = 0; 
+                    document.getElementById('comboDisplay').textContent = '0';
+                    setTimeout(() => { 
+                        document.getElementById('screenCrack').classList.remove('active'); 
+                        storyCrackActive = false; 
+                    }, 5000);
+                }, Math.random() * 15000 + 5000);
             }
         }
-    }
-
-    function startSurvivalGame(){
-        currentMode = 'survival';
-        gameActive = true;
-        survivalWave = 1;
-        survivalLife = 3;
-        survivalKills = 0;
-        survivalSpawnInterval = 2000;
-        survivalEnemies = [];
-        
-        setTimeout(() => {
-            const gameArea = document.querySelector('.survival-game-area');
-            if (gameArea) {
-                gameAreaRect = gameArea.getBoundingClientRect();
-            }
-        }, 100);
-        
-        document.getElementById('survivalWave').textContent = survivalWave;
-        document.getElementById('survivalLife').textContent = survivalLife;
-        document.getElementById('survivalKills').textContent = survivalKills;
-        document.getElementById('survivalKillCount').textContent = '倒した敵: 0';
-        
-        switchScreen('survivalGameScreen');
-        
-        survivalWaveTimer = setInterval(() => {
-            survivalWave++;
-            document.getElementById('survivalWave').textContent = survivalWave;
-            survivalSpawnInterval = Math.max(300, 2000 - (survivalWave * 25));
-            survivalEnemySpeed = 2.0 + (survivalWave * 0.15);
-        }, 15000);
-        
-        survivalEnemySpawnTimer = setInterval(() => {
-            if (!gameActive) return;
-            spawnEnemy();
-        }, survivalSpawnInterval);
-        
-        if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
-        updateSurvivalAnimation();
-    }
-
-    function spawnEnemy() {
-        if (!gameActive) return;
-        
-        const gameArea = document.querySelector('.survival-game-area');
-        if (!gameArea) return;
-        
-        const rect = gameArea.getBoundingClientRect();
-        const container = document.getElementById('survivalEnemiesContainer');
-        
-        let x, y;
-        const side = Math.floor(Math.random() * 4);
-        const padding = 50;
-        
-        switch(side) {
-            case 0:
-                x = -padding;
-                y = Math.random() * rect.height;
-                break;
-            case 1:
-                x = rect.width + padding;
-                y = Math.random() * rect.height;
-                break;
-            case 2:
-                x = Math.random() * rect.width;
-                y = -padding;
-                break;
-            case 3:
-                x = Math.random() * rect.width;
-                y = rect.height + padding;
-                break;
-        }
-        
-        const difficulty = Math.random() < 0.7 ? 'easy' : 'normal';
-        const word = questions[difficulty][Math.floor(Math.random() * questions[difficulty].length)];
-        const romaji = convertToRomaji(word).toLowerCase();
-        
-        const enemy = document.createElement('div');
-        enemy.className = 'survival-enemy';
-        enemy.innerHTML = `<div class="enemy-word">${word}</div><div class="enemy-romaji" id="romaji-${Date.now()}-${Math.random()}">${romaji}</div>`;
-        enemy.style.left = x + 'px';
-        enemy.style.top = y + 'px';
-        enemy.dataset.romaji = romaji;
-        enemy.dataset.typed = '';
-        enemy.dataset.word = word;
-        enemy.dataset.id = 'enemy_' + Date.now() + '_' + Math.random();
-        
-        container.appendChild(enemy);
-        
-        survivalEnemies.push({
-            element: enemy,
-            x: x,
-            y: y,
-            romaji: romaji,
-            typed: '',
-            word: word,
-            id: enemy.dataset.id,
-            speed: survivalEnemySpeed + (Math.random() * 0.5)
-        });
-    }
-
-    function updateSurvivalAnimation() {
-        if (!gameActive) return;
-        
-        const gameArea = document.querySelector('.survival-game-area');
-        if (!gameArea) {
-            survivalAnimationFrame = requestAnimationFrame(updateSurvivalAnimation);
-            return;
-        }
-        
-        const rect = gameArea.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const playerRadius = 30;
-        
-        survivalEnemies.forEach(enemy => {
-            const dx = centerX - enemy.x;
-            const dy = centerY - enemy.y;
-            const distance = Math.sqrt(dx*dx + dy*dy);
-            
-            if (distance > 5) {
-                const moveX = (dx / distance) * enemy.speed;
-                const moveY = (dy / distance) * enemy.speed;
-                enemy.x += moveX;
-                enemy.y += moveY;
-            }
-            
-            enemy.element.style.left = enemy.x + 'px';
-            enemy.element.style.top = enemy.y + 'px';
-            
-            if (distance < playerRadius + 40) {
-                survivalLife--;
-                document.getElementById('survivalLife').textContent = survivalLife;
-                
-                enemy.element.remove();
-                const index = survivalEnemies.indexOf(enemy);
-                if (index > -1) survivalEnemies.splice(index, 1);
-                
-                if (survivalLife <= 0) {
-                    endSurvivalGame();
-                }
-            }
-        });
-        
-        survivalAnimationFrame = requestAnimationFrame(updateSurvivalAnimation);
-    }
-
-    function updateEnemyDisplay(enemy) {
-        const romajiSpan = enemy.element.querySelector('.enemy-romaji');
-        if (!romajiSpan) return;
-        
-        const typed = enemy.typed;
-        const romaji = enemy.romaji;
-        
-        let html = '';
-        for (let i = 0; i < romaji.length; i++) {
-            if (i < typed.length) {
-                html += `<span class="enemy-typed">${romaji[i]}</span>`;
-            } else {
-                html += `<span class="enemy-remaining">${romaji[i]}</span>`;
-            }
-        }
-        romajiSpan.innerHTML = html;
-    }
-
-    function endSurvivalGame() {
-        gameActive = false;
-        clearInterval(survivalWaveTimer);
-        clearInterval(survivalEnemySpawnTimer);
-        if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
-        
-        survivalEnemies.forEach(enemy => enemy.element.remove());
-        survivalEnemies = [];
-        
-        let coins = Math.floor((survivalKills * survivalWave) / 10);
-        let xp = Math.floor((survivalKills * survivalWave) / 100);
-        
-        gameState.coins += coins;
-        gameState.xp += xp;
-        gameState.survivalTotalKills += survivalKills;
-        
-        if (survivalWave > gameState.survivalHighWave) {
-            gameState.survivalHighWave = survivalWave;
-        }
-        
-        updateSurvivalTaskProgress(survivalKills, survivalWave, survivalLife);
-        
-        while(gameState.xp >= gameState.maxXp){ 
-            gameState.xp -= gameState.maxXp; 
-            gameState.level++; 
-            gameState.maxXp = Math.floor(gameState.maxXp*1.5); 
-        }
-        
-        if(db) {
-            set(ref(db,`users/${gameState.userId}/survivalHighWave`), gameState.survivalHighWave).catch(()=>{});
-            set(ref(db,`users/${gameState.userId}/survivalTotalKills`), gameState.survivalTotalKills).catch(()=>{});
-        }
-        
-        saveGameState();
-        
-        document.getElementById('finalScore').textContent = survivalWave + ' Wave';
-        document.getElementById('earnedCoins').textContent = coins;
-        document.getElementById('earnedXP').textContent = xp;
-        document.getElementById('survivalReward').textContent = `倒した敵: ${survivalKills}体`;
-        document.getElementById('eventReward').textContent = '';
-        
-        switchScreen('resultScreen');
-        updateUI();
-        updateSkillButtons();
     }
 
     function updateStoryGoalBar() {
         if (currentMode !== 'story' && currentMode !== 'event') return;
-        let target = currentMode === 'story' ? 10000 + (gameState.storyStage-1)*1000 : 50000;
+        let target = currentMode === 'story' ? 10000 + (gameState.storyStage - 1) * 1000 : 50000;
         let percent = Math.min(100, (currentScore / target) * 100);
         document.getElementById('storyGoalFill').style.width = percent + '%';
         document.getElementById('storyGoalText').textContent = `${Math.floor(currentScore)}/${target}`;
@@ -1796,27 +1576,27 @@
         }
     }
 
-    function nextQuestion(){ 
+    function nextQuestion() { 
         let arr = questions[currentDifficulty]; 
-        currentQuestion = arr[Math.floor(Math.random()*arr.length)]; 
+        currentQuestion = arr[Math.floor(Math.random() * arr.length)]; 
         currentRomaji = convertToRomaji(currentQuestion).toLowerCase(); 
-        typedInput=''; 
-        document.getElementById('questionDisplay').textContent=currentQuestion; 
+        typedInput = ''; 
+        document.getElementById('questionDisplay').textContent = currentQuestion; 
         updateRomajiDisplay(); 
         if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
     }
     
-    function updateRomajiDisplay(){ 
-        document.getElementById('romajiDisplay').innerHTML=`<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; 
+    function updateRomajiDisplay() { 
+        document.getElementById('romajiDisplay').innerHTML = `<span class="romaji-typed">${typedInput}</span><span class="romaji-remaining">${currentRomaji.substring(typedInput.length)}</span>`; 
     }
 
-    function endGame(){
-        gameActive=false; 
+    function endGame() {
+        gameActive = false; 
         clearInterval(gameTimer);
-        if(autoInterval) clearInterval(autoInterval);
+        if (autoInterval) clearInterval(autoInterval);
         
-        let coins = Math.floor(currentScore/10); 
-        let xp = Math.floor(currentScore/100);
+        let coins = Math.floor(currentScore / 10); 
+        let xp = Math.floor(currentScore / 100);
         
         if (gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock')) {
             xp = Math.floor(xp * 1.5);
@@ -1831,6 +1611,15 @@
             if (currentCombo > gameState.highScoreCombo) gameState.highScoreCombo = currentCombo;
         }
         
+        // アイテムドロップ
+        const droppedItem = rollItemDrop();
+        let dropMessage = '';
+        if (droppedItem) {
+            addItem(droppedItem);
+            const itemNames = { stone: '🪨 石', fire: '🔥 火', thunder: '⚡ イナズマ', dragon: '🐉 ミニドラゴン', crown: '👑 王冠' };
+            dropMessage = `🎁 ${itemNames[droppedItem]} をゲット！`;
+        }
+        
         let earnedClovers = 0;
         if (currentMode === 'event') {
             earnedClovers = Math.floor(currentScore / 50000);
@@ -1838,39 +1627,49 @@
             updateEventTasks(currentScore, currentCombo);
         }
         
-        while(gameState.xp >= gameState.maxXp){ gameState.xp -= gameState.maxXp; gameState.level++; gameState.maxXp = Math.floor(gameState.maxXp*1.5); }
+        while (gameState.xp >= gameState.maxXp) { 
+            gameState.xp -= gameState.maxXp; 
+            gameState.level++; 
+            gameState.maxXp = Math.floor(gameState.maxXp * 1.5); 
+        }
 
         updateTaskProgress(currentScore, currentCombo);
 
-        if(currentMode === 'ranking'){
-            if(currentScore > gameState.rankingHighScore) gameState.rankingHighScore = currentScore;
-            if(db) set(ref(db,`users/${gameState.userId}/score`), gameState.rankingHighScore).catch(()=>{});
-        } else if(currentMode === 'story'){
+        if (currentMode === 'ranking') {
+            if (currentScore > gameState.rankingHighScore) gameState.rankingHighScore = currentScore;
+            if (db) set(ref(db, `users/${gameState.userId}/score`), gameState.rankingHighScore).catch(() => {});
+        } else if (currentMode === 'story') {
             let stage = gameState.storyStage;
-            let target = 10000 + (stage-1)*1000;
-            if(currentScore >= target && !gameState.storyClears.includes(stage)){
+            let target = 10000 + (stage - 1) * 1000;
+            if (currentScore >= target && !gameState.storyClears.includes(stage)) {
                 gameState.storyClears.push(stage);
-                if(stage===25||stage===50){ gameState.shards+=3; alert(`ステージクリア！ かけら+3`); }
-                if(stage===75){ gameState.shards+=5; alert(`かけら+5`); }
-                if(stage===100){ 
-                    gameState.shards+=8; 
-                    if(!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
+                if (stage === 25 || stage === 50) { 
+                    gameState.shards += 3; 
+                    alert(`ステージクリア！ かけら+3`); 
+                }
+                if (stage === 75) { 
+                    gameState.shards += 5; 
+                    alert(`かけら+5`); 
+                }
+                if (stage === 100) { 
+                    gameState.shards += 8; 
+                    if (!gameState.ownedSkills.includes('comboPlus')) gameState.ownedSkills.push('comboPlus'); 
                     alert(`✨ コンプリート！ スキル「コンボアップ+」入手`); 
                 }
-                if(stage<100) {
+                if (stage < 100) {
                     gameState.storyStage++;
                     alert(`ステージ${stage}クリア！ 次のステージは${gameState.storyStage}です`);
                 }
                 renderStoryMap();
-            } else if(gameState.storyClears.includes(stage)){
+            } else if (gameState.storyClears.includes(stage)) {
                 alert('このステージは既にクリア済みです');
             } else {
                 alert(`目標スコア ${target} に届きませんでした (現在 ${currentScore})`);
             }
         }
 
-        if(db && currentMode !== 'ranking') {
-            set(ref(db,`users/${gameState.userId}`), {
+        if (db && currentMode !== 'ranking') {
+            set(ref(db, `users/${gameState.userId}`), {
                 name: gameState.userName,
                 lastActive: Date.now(),
                 level: gameState.level,
@@ -1881,15 +1680,17 @@
                 totalPlayCount: gameState.totalPlayCount,
                 totalXPEarned: gameState.totalXPEarned,
                 clovers: gameState.clovers
-            }).catch(()=>{});
+            }).catch(() => {});
         } else {
             syncFirebase();
         }
 
         saveGameState();
-        document.getElementById('finalScore').textContent=Math.floor(currentScore);
-        document.getElementById('earnedCoins').textContent=coins;
-        document.getElementById('earnedXP').textContent=xp;
+        document.getElementById('finalScore').textContent = Math.floor(currentScore);
+        document.getElementById('earnedCoins').textContent = coins;
+        document.getElementById('earnedXP').textContent = xp;
+        document.getElementById('itemDropResult').textContent = dropMessage;
+        
         const eventRewardEl = document.getElementById('eventReward');
         if (currentMode === 'event') {
             eventRewardEl.textContent = `+${earnedClovers}🍀 獲得!`;
@@ -1906,17 +1707,18 @@
         updateSkillButtons();
     }
 
-    function renderStoryMap(){
-        let container = document.getElementById('storyMapContainer'); container.innerHTML='';
-        for(let i=1;i<=100;i++){
-            let node = document.createElement('div'); node.className='story-node';
-            if(gameState.storyClears.includes(i)) node.classList.add('clear');
-            if(i===gameState.storyStage) node.classList.add('current');
-            if(i>1 && !gameState.storyClears.includes(i-1) && i!==gameState.storyStage) node.classList.add('locked');
-            node.innerHTML = `${i}<br>${(10000+(i-1)*1000).toLocaleString()}`;
-            if(i===25||i===50||i===75||i===100) node.innerHTML += '<br>🎁';
-            node.onclick = ()=>{ 
-                if(!node.classList.contains('locked') && !gameState.storyClears.includes(i)){
+    function renderStoryMap() {
+        let container = document.getElementById('storyMapContainer'); 
+        container.innerHTML = '';
+        for (let i = 1; i <= 100; i++) {
+            let node = document.createElement('div'); node.className = 'story-node';
+            if (gameState.storyClears.includes(i)) node.classList.add('clear');
+            if (i === gameState.storyStage) node.classList.add('current');
+            if (i > 1 && !gameState.storyClears.includes(i - 1) && i !== gameState.storyStage) node.classList.add('locked');
+            node.innerHTML = `${i}<br>${(10000 + (i - 1) * 1000).toLocaleString()}`;
+            if (i === 25 || i === 50 || i === 75 || i === 100) node.innerHTML += '<br>🎁';
+            node.onclick = () => { 
+                if (!node.classList.contains('locked') && !gameState.storyClears.includes(i)) {
                     gameState.storyStage = i; 
                     renderStoryMap();
                 }
@@ -1926,28 +1728,35 @@
         document.getElementById('currentStoryStage').textContent = gameState.storyStage;
     }
 
-    function renderInventory(){
-        let skillsDiv = document.getElementById('skillsList'); skillsDiv.innerHTML='';
+    function renderInventory() {
+        let skillsDiv = document.getElementById('skillsList'); 
+        skillsDiv.innerHTML = '';
         let itemsDiv = document.getElementById('itemsList'); 
         itemsDiv.innerHTML = `<div class="item-card">🔮 スキルのかけら <span class="item-count">${gameState.shards}</span></div>
                               <div class="item-card">🔮 スキルのかけら(欠片) <span class="item-count">${gameState.shardFragments}</span></div>`;
+        
         const allSkills = [
-            {id:'auto',name:'⚡自動入力',desc:'30秒:超高速自動入力'},
-            {id:'autoBeta',name:'⚡自動入力β',desc:'30秒:6.5秒間自動入力'},
-            {id:'timeExtend',name:'⏳時間伸ばし',desc:'45秒:バーストップ(色付き)'},
-            {id:'comboUp',name:'🔥コンボアップ',desc:'30秒:コンボ+40'},
-            {id:'comboPlus',name:'✨コンボアップ+',desc:'150秒:コンボ25~60'},
-            {id:'leprechaun',name:'🍀レプラコーン (スキル)',desc:'30秒:10秒間ミスってもコンボ継続'},
-            {id:'combo25',name:'🔥コンボ2.5倍 (スキル)',desc:'45秒:10秒間コンボ倍率2.5倍'},
-            {id:'luckyBlock',name:'🎲ラッキーブロック (スキル)',desc:'パッシブ:XP1.5倍/25秒:ランダム効果'}
+            { id:'auto', name:'⚡自動入力', desc:'30秒:超高速自動入力' },
+            { id:'autoBeta', name:'⚡自動入力β', desc:'30秒:6.5秒間自動入力' },
+            { id:'timeExtend', name:'⏳時間伸ばし', desc:'45秒:バーストップ(色付き)' },
+            { id:'comboUp', name:'🔥コンボアップ', desc:'30秒:コンボ+40' },
+            { id:'comboPlus', name:'✨コンボアップ+', desc:'150秒:コンボ25~60' },
+            { id:'leprechaun', name:'🍀レプラコーン (スキル)', desc:'30秒:10秒間ミスってもコンボ継続' },
+            { id:'combo25', name:'🔥コンボ2.5倍 (スキル)', desc:'45秒:10秒間コンボ倍率2.5倍' },
+            { id:'luckyBlock', name:'🎲ラッキーブロック (スキル)', desc:'パッシブ:XP1.5倍/25秒:ランダム効果' },
+            { id:'sigma', name:'⚡自動入力Σ', desc:'30秒:1.5秒間自動入力(16Frame)' },
+            { id:'doubleScore', name:'💰スコア2倍', desc:'40秒:5秒間スコア2倍' },
+            { id:'comboAlpha', name:'⚡×🔥自動入力×コンボα', desc:'50秒:6秒間自動入力(64Frame)+8秒間コンボ2.5倍' }
         ];
-        gameState.ownedSkills.forEach(sid=>{
-            let sk = allSkills.find(s=>s.id===sid); if(!sk) return;
-            let div = document.createElement('div'); div.className='item-card skill';
+        
+        gameState.ownedSkills.forEach(sid => {
+            let sk = allSkills.find(s => s.id === sid); 
+            if (!sk) return;
+            let div = document.createElement('div'); div.className = 'item-card skill';
             let equipped = gameState.equippedSkills.includes(sid);
-            div.innerHTML = `<div class="item-info"><span class="item-name">${sk.name}</span><span class="item-desc">${sk.desc}</span></div><button class="equip-btn">${equipped?'装備中':'装備'}</button>`;
-            div.querySelector('.equip-btn').onclick=()=>{
-                if(equipped) {
+            div.innerHTML = `<div class="item-info"><span class="item-name">${sk.name}</span><span class="item-desc">${sk.desc}</span></div><button class="equip-btn">${equipped ? '装備中' : '装備'}</button>`;
+            div.querySelector('.equip-btn').onclick = () => {
+                if (equipped) {
                     gameState.equippedSkills = [];
                 } else {
                     if (gameState.equippedSkills.length >= 1) {
@@ -1956,38 +1765,50 @@
                     }
                     gameState.equippedSkills = [sid];
                 }
-                saveGameState(); renderInventory(); updateSkillButtons();
+                saveGameState(); 
+                renderInventory(); 
+                updateSkillButtons();
             };
             skillsDiv.appendChild(div);
         });
     }
 
-    function renderShop(){
-        let skillsDiv = document.getElementById('shopSkillsPanel'); skillsDiv.innerHTML='';
+    function renderShop() {
+        let skillsDiv = document.getElementById('shopSkillsPanel'); 
+        skillsDiv.innerHTML = '';
         const shopSkills = [
-            {id:'auto',name:'自動入力',desc:'かけら5',price:5},
-            {id:'autoBeta',name:'自動入力β',desc:'かけら50',price:50},
-            {id:'timeExtend',name:'時間伸ばし',desc:'かけら5',price:5},
-            {id:'comboUp',name:'コンボアップ',desc:'かけら5',price:5}
+            { id:'auto', name:'自動入力', desc:'かけら5', price:5 },
+            { id:'autoBeta', name:'自動入力β', desc:'かけら50', price:50 },
+            { id:'timeExtend', name:'時間伸ばし', desc:'かけら5', price:5 },
+            { id:'comboUp', name:'コンボアップ', desc:'かけら5', price:5 }
         ];
-        shopSkills.forEach(sk=>{
-            let div = document.createElement('div'); div.className='shop-item item-card';
+        shopSkills.forEach(sk => {
+            let div = document.createElement('div'); div.className = 'shop-item item-card';
             div.innerHTML = `<div><span class="item-name">${sk.name}</span><div>${sk.desc}</div></div><button class="equip-btn" data-id="${sk.id}">購入 (🔮${sk.price})</button>`;
-            div.querySelector('button').onclick=()=>{
-                if(gameState.shards >= sk.price){
-                    if(!gameState.ownedSkills.includes(sk.id)) gameState.ownedSkills.push(sk.id);
+            div.querySelector('button').onclick = () => {
+                if (gameState.shards >= sk.price) {
+                    if (!gameState.ownedSkills.includes(sk.id)) gameState.ownedSkills.push(sk.id);
                     gameState.shards -= sk.price; 
-                    saveGameState(); renderShop(); alert(`${sk.name}入手`);
+                    saveGameState(); 
+                    renderShop(); 
+                    alert(`${sk.name}入手`);
                 } else alert('かけら不足');
             };
             skillsDiv.appendChild(div);
         });
-        document.getElementById('exchangeShardBtn').onclick=()=>{
-            if(gameState.coins >= 10000000){ gameState.coins -= 10000000; gameState.shards += 1; saveGameState(); renderShop(); alert('交換完了'); } 
-            else alert('コイン不足');
+        document.getElementById('exchangeShardBtn').onclick = () => {
+            if (gameState.coins >= 10000000) { 
+                gameState.coins -= 10000000; 
+                gameState.shards += 1; 
+                saveGameState(); 
+                renderShop(); 
+                alert('交換完了'); 
+            } else { 
+                alert('コイン不足');
+            }
         };
-        document.getElementById('exchangeFragmentBtn').onclick=()=>{
-            if(gameState.shardFragments >= 5){ 
+        document.getElementById('exchangeFragmentBtn').onclick = () => {
+            if (gameState.shardFragments >= 5) { 
                 gameState.shardFragments -= 5; 
                 gameState.shards += 1; 
                 saveGameState(); 
@@ -2039,63 +1860,74 @@
         if (tasksDiv) {
             tasksDiv.innerHTML = '';
             gameState.eventTasks.forEach(t => {
-                let d = document.createElement('div'); d.className = `task-item ${t.completed?'completed':''}`;
-                let percent = Math.min(100, (t.current/t.target)*100);
+                let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
+                let percent = Math.min(100, (t.current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: 🍀 ${t.reward}</div>`;
                 tasksDiv.appendChild(d);
             });
         }
     }
 
-    function overlay(show){ document.getElementById('overlay').classList.toggle('active',show); }
-    function switchScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function overlay(show) { 
+        document.getElementById('overlay').classList.toggle('active', show); 
+    }
+    
+    function switchScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+    }
 
     // イベントリスナー
-    document.getElementById('playBtn').addEventListener('click',()=>switchScreen('difficultyScreen'));
-    document.getElementById('storyBtn').addEventListener('click',()=>{
-        if(gameState.level < 10){ alert('ストーリーはレベル10から解放'); return; }
-        renderStoryMap(); switchScreen('storyMapScreen');
+    document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
+    document.getElementById('storyBtn').addEventListener('click', () => {
+        if (gameState.level < 10) { 
+            alert('ストーリーはレベル10から解放'); 
+            return; 
+        }
+        renderStoryMap(); 
+        switchScreen('storyMapScreen');
     });
-    document.getElementById('rankingBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
-    document.getElementById('highscoreRankingBtn').addEventListener('click',()=>switchScreen('highscoreMenuScreen'));
-    document.getElementById('survivalBtn').addEventListener('click',()=>switchScreen('survivalMenuScreen'));
-    
-    document.getElementById('worldRankingViewBtn').addEventListener('click',displayRanking);
-    document.getElementById('worldRankingPlayBtn').addEventListener('click',()=>{ startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'ranking'); });
-    document.getElementById('backFromRankingModeBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('backFromRankingViewBtn').addEventListener('click',()=>switchScreen('rankingModeScreen'));
-    document.getElementById('backFromHighscoreBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('backFromHighscoreViewBtn').addEventListener('click',()=>switchScreen('highscoreMenuScreen'));
-    
-    document.getElementById('viewComboRankingBtn').addEventListener('click',()=>displayHighScoreRanking('combo'));
-    document.getElementById('viewPlayCountRankingBtn').addEventListener('click',()=>displayHighScoreRanking('playcount'));
-    document.getElementById('viewXPRankingBtn').addEventListener('click',()=>displayHighScoreRanking('xp'));
-    
-    document.getElementById('backBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('continueBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('backFromStoryBtn').addEventListener('click',()=>switchScreen('menuScreen'));
-    document.getElementById('startStoryBtn').addEventListener('click',()=>{ if(gameState.storyStage<=100) startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'story'); });
-    document.querySelectorAll('.difficulty-btn').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty, 'normal')));
-
-    // サバイバル関連
-    document.getElementById('survivalPlayBtn').addEventListener('click', startSurvivalGame);
-    document.getElementById('survivalRankingBtn').addEventListener('click', displaySurvivalRanking);
-    document.getElementById('survivalTaskBtn').addEventListener('click', () => {
-        updateSurvivalTasksDisplay();
-        switchScreen('survivalTaskScreen');
+    document.getElementById('rankingBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
+    document.getElementById('highscoreRankingBtn').addEventListener('click', () => switchScreen('highscoreMenuScreen'));
+    document.getElementById('craftBtn').addEventListener('click', () => {
+        updateItemCounts();
+        switchScreen('craftScreen');
     });
-    document.getElementById('backFromSurvivalBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromSurvivalRankingBtn').addEventListener('click', () => switchScreen('survivalMenuScreen'));
-    document.getElementById('backFromSurvivalTaskBtn').addEventListener('click', () => switchScreen('survivalMenuScreen'));
+    document.getElementById('dropRuleBtn').addEventListener('click', () => switchScreen('dropRuleScreen'));
+    
+    document.getElementById('worldRankingViewBtn').addEventListener('click', displayRanking);
+    document.getElementById('worldRankingPlayBtn').addEventListener('click', () => { 
+        startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'ranking'); 
+    });
+    document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromRankingViewBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
+    document.getElementById('backFromHighscoreBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromHighscoreViewBtn').addEventListener('click', () => switchScreen('highscoreMenuScreen'));
+    document.getElementById('backFromCraftBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromDropRuleBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    
+    document.getElementById('viewComboRankingBtn').addEventListener('click', () => displayHighScoreRanking('combo'));
+    document.getElementById('viewPlayCountRankingBtn').addEventListener('click', () => displayHighScoreRanking('playcount'));
+    document.getElementById('viewXPRankingBtn').addEventListener('click', () => displayHighScoreRanking('xp'));
+    
+    document.getElementById('backBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('continueBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromStoryBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('startStoryBtn').addEventListener('click', () => { 
+        if (gameState.storyStage <= 100) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'story'); 
+    });
+    document.querySelectorAll('.difficulty-btn').forEach(b => b.addEventListener('click', () => startGame(b.dataset.difficulty, 'normal')));
 
     // イベント関連
     document.getElementById('eventBtn').addEventListener('click', () => {
-        if (!isEventActive()) { alert('イベント期間は終了しましたが、スキルは引き続き使用できます'); }
+        if (!isEventActive()) { 
+            alert('イベント期間は終了しましたが、スキルは引き続き使用できます'); 
+        }
         switchScreen('eventMenuScreen');
     });
     document.getElementById('backFromEventBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('eventPlayBtn').addEventListener('click', () => {
-        startGame(['easy','normal','hard'][Math.floor(Math.random()*3)], 'event');
+        startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'event');
     });
     document.getElementById('eventShopBtn').addEventListener('click', () => {
         renderEventShop();
@@ -2112,9 +1944,18 @@
     });
     document.getElementById('backFromEventTaskBtn').addEventListener('click', () => switchScreen('eventMenuScreen'));
 
-    document.getElementById('giftBtn').addEventListener('click',showGiftDialog);
-    document.getElementById('giftCloseBtn').addEventListener('click',()=>{ document.getElementById('giftDialog').classList.remove('active'); overlay(false); });
-    document.getElementById('overlay').addEventListener('click',()=>{
+    // クラフトボタン
+    document.getElementById('craftSigmaBtn').addEventListener('click', craftSigma);
+    document.getElementById('craftDoubleScoreBtn').addEventListener('click', craftDoubleScore);
+    document.getElementById('craftComboAlphaBtn').addEventListener('click', craftComboAlpha);
+
+    // ギフト関連
+    document.getElementById('giftBtn').addEventListener('click', showGiftDialog);
+    document.getElementById('giftCloseBtn').addEventListener('click', () => { 
+        document.getElementById('giftDialog').classList.remove('active'); 
+        overlay(false); 
+    });
+    document.getElementById('overlay').addEventListener('click', () => {
         document.getElementById('sidePanel').classList.remove('active');
         document.getElementById('shopPanel').classList.remove('active');
         document.getElementById('eventShopPanel').classList.remove('active');
@@ -2123,134 +1964,148 @@
         overlay(false);
     });
 
-    document.getElementById('taskBtn').addEventListener('click',()=>{
-        document.getElementById('panelTitle').textContent='タスク';
+    // サイドパネル
+    document.getElementById('taskBtn').addEventListener('click', () => {
+        document.getElementById('panelTitle').textContent = 'タスク';
         document.getElementById('profilePanel').classList.add('hidden');
         document.getElementById('inventoryPanel').classList.add('hidden');
         document.getElementById('taskPanel').classList.remove('hidden');
         updateTasksDisplay();
-        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+        document.getElementById('sidePanel').classList.add('active'); 
+        overlay(true);
     });
 
-    document.getElementById('profileBtn').addEventListener('click',()=>{
-        document.getElementById('panelTitle').textContent='プロフィール';
+    document.getElementById('profileBtn').addEventListener('click', () => {
+        document.getElementById('panelTitle').textContent = 'プロフィール';
         document.getElementById('profilePanel').classList.remove('hidden');
         document.getElementById('inventoryPanel').classList.add('hidden');
         document.getElementById('taskPanel').classList.add('hidden');
-        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+        document.getElementById('sidePanel').classList.add('active'); 
+        overlay(true);
     });
-    document.getElementById('inventoryBtn').addEventListener('click',()=>{
-        document.getElementById('panelTitle').textContent='持ち物';
+    
+    document.getElementById('inventoryBtn').addEventListener('click', () => {
+        document.getElementById('panelTitle').textContent = '持ち物';
         document.getElementById('profilePanel').classList.add('hidden');
         document.getElementById('inventoryPanel').classList.remove('hidden');
         document.getElementById('taskPanel').classList.add('hidden');
         renderInventory();
-        document.getElementById('sidePanel').classList.add('active'); overlay(true);
+        document.getElementById('sidePanel').classList.add('active'); 
+        overlay(true);
     });
-    document.getElementById('shopBtn').addEventListener('click',()=>{
+    
+    document.getElementById('shopBtn').addEventListener('click', () => {
         renderShop();
-        document.getElementById('shopPanel').classList.add('active'); overlay(true);
+        document.getElementById('shopPanel').classList.add('active'); 
+        overlay(true);
     });
-    document.getElementById('panelCloseBtn').addEventListener('click',()=>{ document.getElementById('sidePanel').classList.remove('active'); overlay(false); });
-    document.getElementById('shopCloseBtn').addEventListener('click',()=>{ document.getElementById('shopPanel').classList.remove('active'); overlay(false); });
+    
+    document.getElementById('panelCloseBtn').addEventListener('click', () => { 
+        document.getElementById('sidePanel').classList.remove('active'); 
+        overlay(false); 
+    });
+    
+    document.getElementById('shopCloseBtn').addEventListener('click', () => { 
+        document.getElementById('shopPanel').classList.remove('active'); 
+        overlay(false); 
+    });
 
-    document.getElementById('changeNameBtn').addEventListener('click',()=>{
+    document.getElementById('changeNameBtn').addEventListener('click', () => {
         let newName = document.getElementById('newNameInput').value.trim();
-        if(newName && gameState.nameChangeCount<3){
-            gameState.userName = newName; gameState.nameChangeCount++;
-            if(db) set(ref(db,`users/${gameState.userId}/name`), newName).catch(()=>{});
-            saveGameState(); updateUI(); document.getElementById('newNameInput').value=''; alert('名前変更完了');
-        } else if(gameState.nameChangeCount>=3) alert('変更回数上限');
+        if (newName && gameState.nameChangeCount < 3) {
+            gameState.userName = newName; 
+            gameState.nameChangeCount++;
+            if (db) set(ref(db, `users/${gameState.userId}/name`), newName).catch(() => {});
+            saveGameState(); 
+            updateUI(); 
+            document.getElementById('newNameInput').value = ''; 
+            alert('名前変更完了');
+        } else if (gameState.nameChangeCount >= 3) alert('変更回数上限');
     });
 
-    document.getElementById('skillAutoBtn').addEventListener('click',()=>useSkill('auto'));
-    document.getElementById('skillAutoBetaBtn').addEventListener('click',()=>useSkill('autoBeta'));
-    document.getElementById('skillTimeBtn').addEventListener('click',()=>useSkill('timeExtend'));
-    document.getElementById('skillComboBtn').addEventListener('click',()=>useSkill('comboUp'));
-    document.getElementById('skillComboPlusBtn').addEventListener('click',()=>useSkill('comboPlus'));
-    document.getElementById('skillLeprechaunBtn').addEventListener('click',()=>useSkill('leprechaun'));
-    document.getElementById('skillCombo25Btn').addEventListener('click',()=>useSkill('combo25'));
-    document.getElementById('skillLuckyBlockBtn').addEventListener('click',()=>useSkill('luckyBlock'));
+    // スキル使用ボタン
+    document.getElementById('skillAutoBtn').addEventListener('click', () => useSkill('auto'));
+    document.getElementById('skillAutoBetaBtn').addEventListener('click', () => useSkill('autoBeta'));
+    document.getElementById('skillTimeBtn').addEventListener('click', () => useSkill('timeExtend'));
+    document.getElementById('skillComboBtn').addEventListener('click', () => useSkill('comboUp'));
+    document.getElementById('skillComboPlusBtn').addEventListener('click', () => useSkill('comboPlus'));
+    document.getElementById('skillLeprechaunBtn').addEventListener('click', () => useSkill('leprechaun'));
+    document.getElementById('skillCombo25Btn').addEventListener('click', () => useSkill('combo25'));
+    document.getElementById('skillLuckyBlockBtn').addEventListener('click', () => useSkill('luckyBlock'));
+    document.getElementById('skillSigmaBtn').addEventListener('click', useSkillSigma);
+    document.getElementById('skillDoubleScoreBtn').addEventListener('click', useSkillDoubleScore);
+    document.getElementById('skillComboAlphaBtn').addEventListener('click', useSkillComboAlpha);
 
     // タブ切り替え
-    document.querySelectorAll('#invTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
-        document.querySelectorAll('#invTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
-        if(this.dataset.inv==='skills'){ document.getElementById('skillsList').classList.remove('hidden'); document.getElementById('itemsList').classList.add('hidden'); }
-        else { document.getElementById('skillsList').classList.add('hidden'); document.getElementById('itemsList').classList.remove('hidden'); }
+    document.querySelectorAll('#invTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('#invTabs .tab-btn').forEach(tt => tt.classList.remove('active')); 
+        this.classList.add('active');
+        if (this.dataset.inv === 'skills') { 
+            document.getElementById('skillsList').classList.remove('hidden'); 
+            document.getElementById('itemsList').classList.add('hidden'); 
+        } else { 
+            document.getElementById('skillsList').classList.add('hidden'); 
+            document.getElementById('itemsList').classList.remove('hidden'); 
+        }
     }));
-    document.querySelectorAll('#taskTabs .tab-btn').forEach(t=>t.addEventListener('click',function(){
-        document.querySelectorAll('#taskTabs .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
-        if(this.dataset.tab==='daily'){ document.getElementById('dailyTasksList').classList.remove('hidden'); document.getElementById('weeklyTasksList').classList.add('hidden'); }
-        else { document.getElementById('dailyTasksList').classList.add('hidden'); document.getElementById('weeklyTasksList').classList.remove('hidden'); }
+    
+    document.querySelectorAll('#taskTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('#taskTabs .tab-btn').forEach(tt => tt.classList.remove('active')); 
+        this.classList.add('active');
+        if (this.dataset.tab === 'daily') { 
+            document.getElementById('dailyTasksList').classList.remove('hidden'); 
+            document.getElementById('weeklyTasksList').classList.add('hidden'); 
+        } else { 
+            document.getElementById('dailyTasksList').classList.add('hidden'); 
+            document.getElementById('weeklyTasksList').classList.remove('hidden'); 
+        }
     }));
-    document.querySelectorAll('#shopPanel .tab-btn').forEach(t=>t.addEventListener('click',function(){
-        document.querySelectorAll('#shopPanel .tab-btn').forEach(tt=>tt.classList.remove('active')); this.classList.add('active');
-        document.getElementById('shopSkillsPanel').classList.toggle('hidden',this.dataset.shop!=='skills');
-        document.getElementById('shopCreditPanel').classList.toggle('hidden',this.dataset.shop==='skills');
+    
+    document.querySelectorAll('#shopPanel .tab-btn').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('#shopPanel .tab-btn').forEach(tt => tt.classList.remove('active')); 
+        this.classList.add('active');
+        document.getElementById('shopSkillsPanel').classList.toggle('hidden', this.dataset.shop !== 'skills');
+        document.getElementById('shopCreditPanel').classList.toggle('hidden', this.dataset.shop === 'skills');
     }));
 
-    document.addEventListener('keydown',(e)=>{
-        if(!gameActive) return;
+    // キーボード入力
+    document.addEventListener('keydown', (e) => {
+        if (!gameActive) return;
         
-        if (currentMode === 'survival') {
-            let key = e.key.toLowerCase();
-            if (key.match(/[a-z]/)) {
-                let enemyHit = false;
-                for (let enemy of survivalEnemies) {
-                    let expected = enemy.romaji[enemy.typed.length];
-                    if (expected === key) {
-                        enemy.typed += key;
-                        updateEnemyDisplay(enemy);
-                        
-                        if (enemy.typed === enemy.romaji) {
-                            enemy.element.remove();
-                            const index = survivalEnemies.indexOf(enemy);
-                            if (index > -1) survivalEnemies.splice(index, 1);
-                            survivalKills++;
-                            document.getElementById('survivalKills').textContent = survivalKills;
-                            document.getElementById('survivalKillCount').textContent = `倒した敵: ${survivalKills}`;
-                        }
-                        enemyHit = true;
-                        break;
-                    }
-                }
-                if (!enemyHit && !leprechaunActive) {
-                }
-            }
-        } else {
-            let key=e.key.toLowerCase();
-            if(key.match(/[a-z]/)){
-                let ex = currentRomaji[typedInput.length];
-                if(key===ex){ 
-                    typedInput+=key; 
-                    if(!skillAutoActive) { 
-                        if (!leprechaunActive) {
-                            currentCombo++; 
-                        }
-                        let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1);
-                        currentScore += addScore; 
-                    }
-                    document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
-                    document.getElementById('comboDisplay').textContent = currentCombo; 
-                    updateRomajiDisplay(); 
-                    if(typedInput === currentRomaji) nextQuestion(); 
-                    if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
-                } else { 
+        let key = e.key.toLowerCase();
+        if (key.match(/[a-z]/)) {
+            let ex = currentRomaji[typedInput.length];
+            if (key === ex) { 
+                typedInput += key; 
+                if (!skillAutoActive) { 
                     if (!leprechaunActive) {
-                        currentCombo=0; 
+                        currentCombo++; 
                     }
-                    document.getElementById('comboDisplay').textContent = currentCombo; 
-                    updateRomajiDisplay(); 
+                    let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
+                    currentScore += addScore; 
                 }
+                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
+                document.getElementById('comboDisplay').textContent = currentCombo; 
+                updateRomajiDisplay(); 
+                if (typedInput === currentRomaji) nextQuestion(); 
+                if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
+            } else { 
+                if (!leprechaunActive) {
+                    currentCombo = 0; 
+                }
+                document.getElementById('comboDisplay').textContent = currentCombo; 
+                updateRomajiDisplay(); 
             }
         }
     });
 
-    setInterval(()=>checkRankingRewards(), 20000);
-    setInterval(()=>updateSkillButtons(), 500);
+    setInterval(() => checkRankingRewards(), 20000);
+    setInterval(() => updateSkillButtons(), 500);
     updateUI();
-    fetchWorldRankings().then(r=>{ worldRankings=r; checkRankingRewards(); });
-    fetchSurvivalRankings().then(r=>{ survivalRankings=r; checkRankingRewards(); });
+    fetchWorldRankings().then(r => { 
+        worldRankings = r; 
+        checkRankingRewards(); 
+    });
 </script>
 </body>
 </html>
