@@ -152,11 +152,24 @@
         .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
         .clover-value { color: var(--accent-green-light); }
         
-        /* サバイバルモード用スタイル */
+        /* サバイバルモード用スタイル - 改善版 */
         #survivalGameScreen {
             position: relative;
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .survival-game-area {
+            position: relative;
+            width: 80%;
+            height: 80%;
+            background: rgba(0,0,0,0.3);
+            border: 4px solid var(--accent-blue);
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0,212,255,0.3);
             overflow: hidden;
         }
         .survival-stats {
@@ -165,19 +178,20 @@
             left: 20px;
             display: flex;
             gap: 30px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.7);
             padding: 15px 30px;
             border-radius: 40px;
             z-index: 10;
             font-size: 24px;
+            border: 2px solid var(--accent-blue);
         }
         .survival-player {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             background: radial-gradient(circle, var(--accent-blue), var(--accent-purple));
             border-radius: 50%;
             display: flex;
@@ -185,8 +199,10 @@
             justify-content: center;
             color: white;
             font-weight: bold;
+            font-size: 24px;
             z-index: 20;
             box-shadow: 0 0 30px var(--accent-blue);
+            border: 3px solid white;
         }
         .survival-enemy {
             position: absolute;
@@ -201,9 +217,28 @@
             box-shadow: 0 0 15px rgba(255,0,0,0.5);
             transition: transform 0.1s;
             white-space: nowrap;
+            text-align: center;
+            min-width: 80px;
         }
         .survival-enemy:hover {
             transform: scale(1.1);
+        }
+        .enemy-word {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .enemy-romaji {
+            font-size: 14px;
+            color: #ffaa00;
+            letter-spacing: 2px;
+        }
+        .enemy-typed {
+            color: #ffff00;
+            font-weight: bold;
+        }
+        .enemy-remaining {
+            color: #ffffff;
+            opacity: 0.7;
         }
         .survival-walls {
             position: absolute;
@@ -215,6 +250,7 @@
             box-shadow: inset 0 0 50px rgba(0,212,255,0.3);
             pointer-events: none;
             z-index: 5;
+            border-radius: 16px;
         }
         .survival-heart {
             color: #ff4444;
@@ -226,11 +262,13 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.7);
             padding: 10px 20px;
             border-radius: 40px;
             font-size: 18px;
             color: var(--accent-green);
+            border: 2px solid var(--accent-green);
+            z-index: 10;
         }
     </style>
 </head>
@@ -437,17 +475,19 @@
             <div class="romaji-display" id="romajiDisplay"></div>
         </div>
         
-        <!-- サバイバルゲーム画面 -->
+        <!-- サバイバルゲーム画面 - 改善版 -->
         <div class="screen" id="survivalGameScreen">
-            <div class="survival-stats">
-                <div>WAVE: <span id="survivalWave">1</span></div>
-                <div>LIFE: <span id="survivalLife">3</span> <span class="survival-heart">❤️</span></div>
-                <div>KILLS: <span id="survivalKills">0</span></div>
+            <div class="survival-game-area">
+                <div class="survival-stats">
+                    <div>WAVE: <span id="survivalWave">1</span></div>
+                    <div>LIFE: <span id="survivalLife">3</span> <span class="survival-heart">❤️</span></div>
+                    <div>KILLS: <span id="survivalKills">0</span></div>
+                </div>
+                <div class="survival-walls"></div>
+                <div class="survival-player" id="player">⚔️</div>
+                <div id="survivalEnemiesContainer"></div>
+                <div class="survival-kill-count" id="survivalKillCount">倒した敵: 0</div>
             </div>
-            <div class="survival-walls"></div>
-            <div class="survival-player" id="player">⚔️</div>
-            <div id="survivalEnemiesContainer"></div>
-            <div class="survival-kill-count" id="survivalKillCount">倒した敵: 0</div>
         </div>
         
         <!-- 結果画面 -->
@@ -694,17 +734,18 @@
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event', 'survival'
 
-    // サバイバルモード用変数
+    // サバイバルモード用変数 - 改善
     let survivalWave = 1;
     let survivalLife = 3;
     let survivalKills = 0;
     let survivalWaveTimer = null;
     let survivalEnemySpawnTimer = null;
     let survivalEnemies = [];
-    let survivalEnemySpeed = 0.5; // 移動速度（ピクセル/フレーム）
-    let survivalSpawnInterval = 3000; // 初期3秒
+    let survivalEnemySpeed = 2.0; // 速度を向上 (0.5 → 2.0)
+    let survivalSpawnInterval = 2000; // 初期2秒 (3秒から短縮)
     let survivalAnimationFrame = null;
     let survivalMaxWave = 0;
+    let gameAreaRect = null;
 
     // ========== ランキングリセット & 報酬処理 (毎日7時) ==========
     function checkRankingReset() {
@@ -1560,8 +1601,16 @@
         survivalWave = 1;
         survivalLife = 3;
         survivalKills = 0;
-        survivalSpawnInterval = 3000; // 3秒
+        survivalSpawnInterval = 2000; // 2秒
         survivalEnemies = [];
+        
+        // ゲームエリアのサイズを取得
+        setTimeout(() => {
+            const gameArea = document.querySelector('.survival-game-area');
+            if (gameArea) {
+                gameAreaRect = gameArea.getBoundingClientRect();
+            }
+        }, 100);
         
         document.getElementById('survivalWave').textContent = survivalWave;
         document.getElementById('survivalLife').textContent = survivalLife;
@@ -1574,8 +1623,10 @@
         survivalWaveTimer = setInterval(() => {
             survivalWave++;
             document.getElementById('survivalWave').textContent = survivalWave;
-            // Waveが上がるごとに出現間隔を短縮 (最小0.5秒)
-            survivalSpawnInterval = Math.max(500, 3000 - (survivalWave * 25));
+            // Waveが上がるごとに出現間隔を短縮 (最小0.3秒)
+            survivalSpawnInterval = Math.max(300, 2000 - (survivalWave * 25));
+            // 速度も増加
+            survivalEnemySpeed = 2.0 + (survivalWave * 0.15);
         }, 15000);
         
         // 敵出現タイマー
@@ -1592,30 +1643,33 @@
     function spawnEnemy() {
         if (!gameActive) return;
         
-        const container = document.getElementById('survivalEnemiesContainer');
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight - 100; // ヘッダー分を考慮
+        const gameArea = document.querySelector('.survival-game-area');
+        if (!gameArea) return;
         
-        // 出現位置（画面外から）
+        const rect = gameArea.getBoundingClientRect();
+        const container = document.getElementById('survivalEnemiesContainer');
+        
+        // 出現位置（ゲームエリアの外側から）
         let x, y;
         const side = Math.floor(Math.random() * 4); // 0:左, 1:右, 2:上, 3:下
+        const padding = 50;
         
         switch(side) {
             case 0: // 左
-                x = -100;
-                y = Math.random() * screenHeight;
+                x = -padding;
+                y = Math.random() * rect.height;
                 break;
             case 1: // 右
-                x = screenWidth + 100;
-                y = Math.random() * screenHeight;
+                x = rect.width + padding;
+                y = Math.random() * rect.height;
                 break;
             case 2: // 上
-                x = Math.random() * screenWidth;
-                y = -100;
+                x = Math.random() * rect.width;
+                y = -padding;
                 break;
             case 3: // 下
-                x = Math.random() * screenWidth;
-                y = screenHeight + 100;
+                x = Math.random() * rect.width;
+                y = rect.height + padding;
                 break;
         }
         
@@ -1626,11 +1680,12 @@
         
         const enemy = document.createElement('div');
         enemy.className = 'survival-enemy';
-        enemy.textContent = word;
+        enemy.innerHTML = `<div class="enemy-word">${word}</div><div class="enemy-romaji" id="romaji-${Date.now()}-${Math.random()}">${romaji}</div>`;
         enemy.style.left = x + 'px';
         enemy.style.top = y + 'px';
         enemy.dataset.romaji = romaji;
         enemy.dataset.typed = '';
+        enemy.dataset.word = word;
         enemy.dataset.id = 'enemy_' + Date.now() + '_' + Math.random();
         
         container.appendChild(enemy);
@@ -1641,17 +1696,25 @@
             y: y,
             romaji: romaji,
             typed: '',
+            word: word,
             id: enemy.dataset.id,
-            speed: survivalEnemySpeed + (Math.random() * 0.3) // 速度にばらつき
+            speed: survivalEnemySpeed + (Math.random() * 0.5) // 速度にばらつき
         });
     }
 
     function updateSurvivalAnimation() {
         if (!gameActive) return;
         
-        const centerX = window.innerWidth / 2;
-        const centerY = (window.innerHeight - 100) / 2;
-        const playerRadius = 25; // プレイヤーの当たり判定半径
+        const gameArea = document.querySelector('.survival-game-area');
+        if (!gameArea) {
+            survivalAnimationFrame = requestAnimationFrame(updateSurvivalAnimation);
+            return;
+        }
+        
+        const rect = gameArea.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const playerRadius = 30; // プレイヤーの当たり判定半径
         
         // 各敵の位置を更新
         survivalEnemies.forEach(enemy => {
@@ -1667,12 +1730,12 @@
                 enemy.y += moveY;
             }
             
-            // 要素の位置を更新
+            // 要素の位置を更新（ゲームエリア内の相対座標）
             enemy.element.style.left = enemy.x + 'px';
             enemy.element.style.top = enemy.y + 'px';
             
             // プレイヤーに到達したかチェック
-            if (distance < playerRadius + 30) {
+            if (distance < playerRadius + 40) {
                 // ライフ減少
                 survivalLife--;
                 document.getElementById('survivalLife').textContent = survivalLife;
@@ -1690,6 +1753,24 @@
         });
         
         survivalAnimationFrame = requestAnimationFrame(updateSurvivalAnimation);
+    }
+
+    function updateEnemyDisplay(enemy) {
+        const romajiSpan = enemy.element.querySelector('.enemy-romaji');
+        if (!romajiSpan) return;
+        
+        const typed = enemy.typed;
+        const romaji = enemy.romaji;
+        
+        let html = '';
+        for (let i = 0; i < romaji.length; i++) {
+            if (i < typed.length) {
+                html += `<span class="enemy-typed">${romaji[i]}</span>`;
+            } else {
+                html += `<span class="enemy-remaining">${romaji[i]}</span>`;
+            }
+        }
+        romajiSpan.innerHTML = html;
     }
 
     function endSurvivalGame() {
@@ -2167,7 +2248,9 @@
                     let expected = enemy.romaji[enemy.typed.length];
                     if (expected === key) {
                         enemy.typed += key;
-                        enemy.element.textContent = enemy.typed === enemy.romaji ? '✓' : enemy.element.dataset.originalWord;
+                        
+                        // ローマ字表示を更新
+                        updateEnemyDisplay(enemy);
                         
                         if (enemy.typed === enemy.romaji) {
                             // 敵を倒した
