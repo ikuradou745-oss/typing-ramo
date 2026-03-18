@@ -152,12 +152,15 @@
         .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
         .clover-value { color: var(--accent-green-light); }
         
-        /* サバイバルモード用スタイル - 改善版 */
+        /* サバイバルモード用スタイル - 修正版（初期非表示） */
         #survivalGameScreen {
             position: relative;
             width: 100%;
             height: 100%;
             overflow: hidden;
+            /* display: flex; を削除 - 初期非表示のため */
+        }
+        #survivalGameScreen.active {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -475,7 +478,20 @@
             <div class="romaji-display" id="romajiDisplay"></div>
         </div>
         
-
+        <!-- サバイバルゲーム画面 - 修正版（初期非表示） -->
+        <div class="screen" id="survivalGameScreen">
+            <div class="survival-game-area">
+                <div class="survival-stats">
+                    <div>WAVE: <span id="survivalWave">1</span></div>
+                    <div>LIFE: <span id="survivalLife">3</span> <span class="survival-heart">❤️</span></div>
+                    <div>KILLS: <span id="survivalKills">0</span></div>
+                </div>
+                <div class="survival-walls"></div>
+                <div class="survival-player" id="player">⚔️</div>
+                <div id="survivalEnemiesContainer"></div>
+                <div class="survival-kill-count" id="survivalKillCount">倒した敵: 0</div>
+            </div>
+        </div>
         
         <!-- 結果画面 -->
         <div class="screen" id="resultScreen">
