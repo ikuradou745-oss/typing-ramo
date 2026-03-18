@@ -627,8 +627,8 @@
         shardFragments: 0,
         ownedSkills: [],
         equippedSkills: [],
-        claimedRankings: { world: null, survival: null }, // ワールド・サバイバルランキング報酬受け取り日
-        claimedHighScoreRankings: { combo: null, playcount: null, xp: null }, // ハイスコア報酬受け取り日
+        claimedRankings: { world: null, survival: null },
+        claimedHighScoreRankings: { combo: null, playcount: null, xp: null },
         rankingHighScore: 0,
         highScoreCombo: 0,
         totalPlayCount: 0,
@@ -670,14 +670,12 @@
     };
     let skillAutoActive = false;
     let autoInterval = null;
-    let leprechaunActive = false; // ミスってもコンボ継続
-    let combo25Active = false;    // コンボ倍率2.5倍
+    let leprechaunActive = false;
+    let combo25Active = false;
     let comboMultiplier = 1;
 
-    // 自動入力の速度設定 (ms)
-    const AUTO_INPUT_INTERVAL = 64; // 64ms
+    const AUTO_INPUT_INTERVAL = 64;
 
-    // 問題・変換
     const questions = { 
         easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], 
         normal:['しこうさくご','せっさたくま','おんこちしん','いちごいちえ','しんきいってん','りんきおうへん','としょかん','しんかんせん','すいへいせん','てんたいかんそく','しんりんよく','りょうりきょうしつ','しょくぶつえん','はくぶつかん','うちゅうひこうし','つうしんきょういく','ちきゅうおんだんか','じこしょうかい','こうきょうしせつ'], 
@@ -732,35 +730,33 @@
     let survivalRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
-    let currentMode = 'normal'; // 'normal', 'ranking', 'story', 'event', 'survival'
+    let currentMode = 'normal';
 
-    // サバイバルモード用変数 - 改善
+    // サバイバルモード用変数
     let survivalWave = 1;
     let survivalLife = 3;
     let survivalKills = 0;
     let survivalWaveTimer = null;
     let survivalEnemySpawnTimer = null;
     let survivalEnemies = [];
-    let survivalEnemySpeed = 2.0; // 速度を向上 (0.5 → 2.0)
-    let survivalSpawnInterval = 2000; // 初期2秒 (3秒から短縮)
+    let survivalEnemySpeed = 2.0;
+    let survivalSpawnInterval = 2000;
     let survivalAnimationFrame = null;
     let survivalMaxWave = 0;
     let gameAreaRect = null;
 
-    // ========== ランキングリセット & 報酬処理 (毎日7時) ==========
+    // ========== ランキングリセット & 報酬処理 ==========
     function checkRankingReset() {
         const now = new Date();
         const today7 = new Date();
         today7.setHours(7, 0, 0, 0);
         
-        // 前回のリセット日時をローカルストレージから取得
         let lastReset = localStorage.getItem('lastRankingReset');
         let todayStr = today7.toDateString();
         
         if (lastReset !== todayStr && now >= today7) {
             console.log('ランキングリセット実行');
             
-            // サバイバルランキングの報酬チェック
             if (survivalRankings.length > 0) {
                 localStorage.setItem('pendingSurvivalRankingRewards', JSON.stringify({
                     date: todayStr,
@@ -768,7 +764,6 @@
                 }));
             }
             
-            // ワールドランキングの報酬チェック
             if (worldRankings.length > 0) {
                 localStorage.setItem('pendingRankingRewards', JSON.stringify({
                     date: todayStr,
@@ -776,37 +771,30 @@
                 }));
             }
             
-            // ランキングデータをクリア
             worldRankings = [];
             survivalRankings = [];
             localStorage.removeItem('worldRankings');
             localStorage.removeItem('survivalRankings');
             localStorage.removeItem('highScoreRankings');
             
-            // リセット日時を保存
             localStorage.setItem('lastRankingReset', todayStr);
             
-            // ギフトバッジ更新
             checkRankingRewards();
         }
     }
     
-    // 1分ごとにチェック
     setInterval(checkRankingReset, 60000);
-    // 起動時にもチェック
     setTimeout(checkRankingReset, 1000);
 
     // ========== イベント期間チェック ==========
     function isEventActive() {
         const now = new Date();
-        const eventEnd = new Date(now.getFullYear(), 2, 31); // 3月31日 (月は0-index)
+        const eventEnd = new Date(now.getFullYear(), 2, 31);
         return now <= eventEnd;
     }
 
     // ========== デバッグモード関連 ==========
     let debugKeys = { '6': false, 'ArrowLeft': false, 'Enter': false };
-    let debugCodeInput = '';
-    let debugModeActive = false;
 
     document.addEventListener('keydown', (e) => {
         if (e.key === '6') debugKeys['6'] = true;
@@ -814,10 +802,8 @@
         if (e.key === 'Enter') debugKeys['Enter'] = true;
         
         if (debugKeys['6'] && debugKeys['ArrowLeft'] && debugKeys['Enter']) {
-            console.log('デバッグコードを入力してください');
             let code = prompt('デバッグコードを入力:');
             if (code === '1x4x5f') {
-                debugModeActive = true;
                 document.getElementById('debugPanel').classList.add('active');
                 document.getElementById('overlay').classList.add('active');
             }
@@ -1002,17 +988,14 @@
     function updateSurvivalTaskProgress(kills, wave, life) {
         let tasks = gameState.survivalTasks;
         
-        // 敵を500体倒す
         if (!tasks[0].completed) {
             tasks[0].current = Math.min(tasks[0].current + kills, tasks[0].target);
         }
         
-        // 100wave生き残る
         if (!tasks[1].completed) {
             tasks[1].current = Math.max(tasks[1].current, wave);
         }
         
-        // ライフ3つで50wave
         if (!tasks[2].completed && life >= 3) {
             tasks[2].current = Math.max(tasks[2].current, wave);
         }
@@ -1152,7 +1135,6 @@
         let inRank = myEntry ? (worldRankings.findIndex(r=>r.id===gameState.userId)+1) <= 10 : false;
         const hasReward = (claimed !== today && inRank);
         
-        // サバイバルランキング報酬もチェック
         const survivalHasReward = checkSurvivalRankingRewards(false);
         
         document.getElementById('giftBadge').textContent = (hasReward || survivalHasReward) ? '1' : '0';
@@ -1177,7 +1159,6 @@
     function showGiftDialog(){
         const today = getTodayString();
         
-        // ワールドランキング報酬
         if (gameState.claimedRankings.world !== today) {
             const myEntry = worldRankings.find(r=>r.id===gameState.userId);
             if (myEntry) {
@@ -1199,7 +1180,6 @@
             }
         }
         
-        // サバイバルランキング報酬
         if (gameState.claimedRankings.survival !== today) {
             const myEntry = survivalRankings.find(r=>r.id===gameState.userId);
             if (myEntry) {
@@ -1299,7 +1279,6 @@
         combo25Btn.style.display = gameState.ownedSkills.includes('combo25') && gameState.equippedSkills.includes('combo25') ? 'block' : 'none';
         luckyBlockBtn.style.display = gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock') ? 'block' : 'none';
         
-        // クールダウン表示更新
         const now = Date.now();
         const skillDurations = {
             auto: 30000,
@@ -1333,10 +1312,8 @@
         if(!gameActive) return;
         const now = Date.now();
         
-        // 共通: クールダウン中なら使用不可
         if (cooldowns[skillId] > now) return;
         
-        // クールダウン設定
         const cooldownTimes = {
             auto: 30000,
             autoBeta: 30000,
@@ -1349,7 +1326,6 @@
         };
         cooldowns[skillId] = now + cooldownTimes[skillId];
         
-        // スキル効果発動
         if(skillId === 'auto'){
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
@@ -1601,10 +1577,9 @@
         survivalWave = 1;
         survivalLife = 3;
         survivalKills = 0;
-        survivalSpawnInterval = 2000; // 2秒
+        survivalSpawnInterval = 2000;
         survivalEnemies = [];
         
-        // ゲームエリアのサイズを取得
         setTimeout(() => {
             const gameArea = document.querySelector('.survival-game-area');
             if (gameArea) {
@@ -1619,23 +1594,18 @@
         
         switchScreen('survivalGameScreen');
         
-        // Waveタイマー (15秒ごとにWaveアップ)
         survivalWaveTimer = setInterval(() => {
             survivalWave++;
             document.getElementById('survivalWave').textContent = survivalWave;
-            // Waveが上がるごとに出現間隔を短縮 (最小0.3秒)
             survivalSpawnInterval = Math.max(300, 2000 - (survivalWave * 25));
-            // 速度も増加
             survivalEnemySpeed = 2.0 + (survivalWave * 0.15);
         }, 15000);
         
-        // 敵出現タイマー
         survivalEnemySpawnTimer = setInterval(() => {
             if (!gameActive) return;
             spawnEnemy();
         }, survivalSpawnInterval);
         
-        // アニメーションループ開始
         if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
         updateSurvivalAnimation();
     }
@@ -1649,31 +1619,29 @@
         const rect = gameArea.getBoundingClientRect();
         const container = document.getElementById('survivalEnemiesContainer');
         
-        // 出現位置（ゲームエリアの外側から）
         let x, y;
-        const side = Math.floor(Math.random() * 4); // 0:左, 1:右, 2:上, 3:下
+        const side = Math.floor(Math.random() * 4);
         const padding = 50;
         
         switch(side) {
-            case 0: // 左
+            case 0:
                 x = -padding;
                 y = Math.random() * rect.height;
                 break;
-            case 1: // 右
+            case 1:
                 x = rect.width + padding;
                 y = Math.random() * rect.height;
                 break;
-            case 2: // 上
+            case 2:
                 x = Math.random() * rect.width;
                 y = -padding;
                 break;
-            case 3: // 下
+            case 3:
                 x = Math.random() * rect.width;
                 y = rect.height + padding;
                 break;
         }
         
-        // 敵の文字（簡単または中級からランダム）
         const difficulty = Math.random() < 0.7 ? 'easy' : 'normal';
         const word = questions[difficulty][Math.floor(Math.random() * questions[difficulty].length)];
         const romaji = convertToRomaji(word).toLowerCase();
@@ -1698,7 +1666,7 @@
             typed: '',
             word: word,
             id: enemy.dataset.id,
-            speed: survivalEnemySpeed + (Math.random() * 0.5) // 速度にばらつき
+            speed: survivalEnemySpeed + (Math.random() * 0.5)
         });
     }
 
@@ -1714,11 +1682,9 @@
         const rect = gameArea.getBoundingClientRect();
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-        const playerRadius = 30; // プレイヤーの当たり判定半径
+        const playerRadius = 30;
         
-        // 各敵の位置を更新
         survivalEnemies.forEach(enemy => {
-            // プレイヤー方向へのベクトル
             const dx = centerX - enemy.x;
             const dy = centerY - enemy.y;
             const distance = Math.sqrt(dx*dx + dy*dy);
@@ -1730,22 +1696,17 @@
                 enemy.y += moveY;
             }
             
-            // 要素の位置を更新（ゲームエリア内の相対座標）
             enemy.element.style.left = enemy.x + 'px';
             enemy.element.style.top = enemy.y + 'px';
             
-            // プレイヤーに到達したかチェック
             if (distance < playerRadius + 40) {
-                // ライフ減少
                 survivalLife--;
                 document.getElementById('survivalLife').textContent = survivalLife;
                 
-                // 敵を削除
                 enemy.element.remove();
                 const index = survivalEnemies.indexOf(enemy);
                 if (index > -1) survivalEnemies.splice(index, 1);
                 
-                // ライフ0でゲームオーバー
                 if (survivalLife <= 0) {
                     endSurvivalGame();
                 }
@@ -1779,11 +1740,9 @@
         clearInterval(survivalEnemySpawnTimer);
         if (survivalAnimationFrame) cancelAnimationFrame(survivalAnimationFrame);
         
-        // 敵を全て削除
         survivalEnemies.forEach(enemy => enemy.element.remove());
         survivalEnemies = [];
         
-        // 報酬計算
         let coins = Math.floor((survivalKills * survivalWave) / 10);
         let xp = Math.floor((survivalKills * survivalWave) / 100);
         
@@ -1791,22 +1750,18 @@
         gameState.xp += xp;
         gameState.survivalTotalKills += survivalKills;
         
-        // 最高Wave更新
         if (survivalWave > gameState.survivalHighWave) {
             gameState.survivalHighWave = survivalWave;
         }
         
-        // サバイバルタスク進捗更新
         updateSurvivalTaskProgress(survivalKills, survivalWave, survivalLife);
         
-        // レベルアップ処理
         while(gameState.xp >= gameState.maxXp){ 
             gameState.xp -= gameState.maxXp; 
             gameState.level++; 
             gameState.maxXp = Math.floor(gameState.maxXp*1.5); 
         }
         
-        // Firebaseにサバイバルデータを保存
         if(db) {
             set(ref(db,`users/${gameState.userId}/survivalHighWave`), gameState.survivalHighWave).catch(()=>{});
             set(ref(db,`users/${gameState.userId}/survivalTotalKills`), gameState.survivalTotalKills).catch(()=>{});
@@ -1814,7 +1769,6 @@
         
         saveGameState();
         
-        // 結果画面表示
         document.getElementById('finalScore').textContent = survivalWave + ' Wave';
         document.getElementById('earnedCoins').textContent = coins;
         document.getElementById('earnedXP').textContent = xp;
@@ -1861,7 +1815,6 @@
         let coins = Math.floor(currentScore/10); 
         let xp = Math.floor(currentScore/100);
         
-        // ラッキーブロックのパッシブ効果: XP1.5倍
         if (gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock')) {
             xp = Math.floor(xp * 1.5);
         }
@@ -1875,7 +1828,6 @@
             if (currentCombo > gameState.highScoreCombo) gameState.highScoreCombo = currentCombo;
         }
         
-        // イベントモードの場合、クローバー獲得
         let earnedClovers = 0;
         if (currentMode === 'event') {
             earnedClovers = Math.floor(currentScore / 50000);
@@ -1942,7 +1894,6 @@
             eventRewardEl.textContent = '';
         }
         
-        // クールダウンリセット
         for (let key in cooldowns) {
             cooldowns[key] = 0;
         }
@@ -2239,21 +2190,16 @@
         if(!gameActive) return;
         
         if (currentMode === 'survival') {
-            // サバイバルモードのキー入力
             let key = e.key.toLowerCase();
             if (key.match(/[a-z]/)) {
-                // 画面上の敵をチェック
                 let enemyHit = false;
                 for (let enemy of survivalEnemies) {
                     let expected = enemy.romaji[enemy.typed.length];
                     if (expected === key) {
                         enemy.typed += key;
-                        
-                        // ローマ字表示を更新
                         updateEnemyDisplay(enemy);
                         
                         if (enemy.typed === enemy.romaji) {
-                            // 敵を倒した
                             enemy.element.remove();
                             const index = survivalEnemies.indexOf(enemy);
                             if (index > -1) survivalEnemies.splice(index, 1);
@@ -2266,11 +2212,9 @@
                     }
                 }
                 if (!enemyHit && !leprechaunActive) {
-                    // ミス（何もしない）
                 }
             }
         } else {
-            // 通常モードのキー入力
             let key=e.key.toLowerCase();
             if(key.match(/[a-z]/)){
                 let ex = currentRomaji[typedInput.length];
