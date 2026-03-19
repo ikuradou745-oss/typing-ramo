@@ -145,8 +145,8 @@
         .admin-btn.secondary { background: linear-gradient(135deg, #666, #333); }
         .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .admin-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-gray); font-size: 20px; cursor: pointer; }
-        .bug-report-container { max-height: 300px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); }
-        .bug-message { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+        .bug-report-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); width: 100%; }
+        .bug-message { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; word-wrap: break-word; }
         .bug-name { color: var(--accent-blue); font-weight: bold; }
         .user-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 10px; border-radius: 8px; }
         .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -184,6 +184,11 @@
         .tap-button { width: 200px; height: 200px; background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; animation: pulse 1s infinite; margin: 20px auto; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .tap-count { font-size: 32px; color: var(--accent-gold); text-align: center; }
+        
+        /* バグ報告板専用画面 */
+        .bug-board { width: 100%; max-width: 800px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
+        .bug-board .admin-input { width: 100%; padding: 15px; font-size: 16px; margin-bottom: 15px; }
+        .bug-board .bug-report-container { max-height: 500px; min-height: 300px; }
     </style>
 </head>
 <body>
@@ -425,7 +430,7 @@
         
         <!-- 修行モード画面 -->
         <div class="screen" id="trainingScreen">
-            <div class="menu-title">🧘 修行モード (Lv25~)</div>
+            <div class="menu-title">🧘 修行モード (Lv15~)</div>
             <div class="training-type">
                 <button class="training-btn" id="trainingProbabilityBtn">🎲 確率の修行</button>
                 <button class="training-btn" id="trainingScoreBtn">💰 スコアの修行</button>
@@ -458,6 +463,18 @@
                 <div class="drop-item"><span class="item-crown">👑 王冠</span> <span class="item-badge badge-crown">1%</span></div>
             </div>
             <button class="back-btn" id="backFromDropRuleBtn">戻る</button>
+        </div>
+        
+        <!-- バグ報告板画面 -->
+        <div class="screen" id="bugBoardScreen">
+            <div class="menu-title">📝 バグ報告板</div>
+            <div class="bug-board">
+                <div class="admin-warning">⚠️ メッセージのやり取りをしたらBANされる可能性があります。厳禁です。</div>
+                <input type="text" class="admin-input" id="bugBoardMessageInput" placeholder="メッセージを入力（名前が自動付与されます）">
+                <button class="admin-btn" id="postBugBoardBtn">投稿</button>
+                <div class="bug-report-container" id="bugBoardList"></div>
+            </div>
+            <button class="back-btn" id="backFromBugBoardBtn">戻る</button>
         </div>
         
         <!-- ゲーム画面 (通常) -->
@@ -573,11 +590,8 @@
         <button class="admin-close" id="adminCloseBtn">✕</button>
         <div class="admin-title">👑 管理者専用モード</div>
         
-        <div class="admin-subtitle">📝 バグ報告板</div>
-        <div class="admin-warning">⚠️ メッセージのやり取りをしたらBANされる可能性があります。厳禁です。</div>
-        <input type="text" class="admin-input" id="bugMessageInput" placeholder="メッセージを入力">
-        <button class="admin-btn" id="postBugBtn">投稿</button>
-        <div class="bug-report-container" id="bugReportList"></div>
+        <div class="admin-subtitle">📋 管理メニュー</div>
+        <button class="admin-btn" id="goToBugBoardBtn">📝 バグ報告板へ</button>
         
         <div class="admin-subtitle">🗑️ データリセット</div>
         <button class="admin-btn secondary" id="refreshUserListBtn">🔄 ユーザー一覧更新</button>
@@ -1133,15 +1147,32 @@
         document.getElementById('overlay').classList.remove('active');
     });
     
+    document.getElementById('goToBugBoardBtn').addEventListener('click', () => {
+        document.getElementById('adminPanel').classList.remove('active');
+        switchScreen('bugBoardScreen');
+        loadBugBoardMessages();
+    });
+    
     async function loadBugReports() {
         if (!db) return;
         try {
             const snap = await get(ref(db, 'bugReports'));
             bugReports = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
             bugReports.sort((a, b) => b.timestamp - a.timestamp);
+        } catch(e) {
+            console.error(e);
+        }
+    }
+    
+    async function loadBugBoardMessages() {
+        if (!db) return;
+        try {
+            const snap = await get(ref(db, 'bugReports'));
+            const reports = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
+            reports.sort((a, b) => b.timestamp - a.timestamp);
             
-            const list = document.getElementById('bugReportList');
-            list.innerHTML = bugReports.map(r => 
+            const list = document.getElementById('bugBoardList');
+            list.innerHTML = reports.map(r => 
                 `<div class="bug-message"><span class="bug-name">${r.name}:</span> ${r.message}</div>`
             ).join('');
         } catch(e) {
@@ -1149,8 +1180,8 @@
         }
     }
     
-    document.getElementById('postBugBtn').addEventListener('click', async () => {
-        const message = document.getElementById('bugMessageInput').value.trim();
+    document.getElementById('postBugBoardBtn').addEventListener('click', async () => {
+        const message = document.getElementById('bugBoardMessageInput').value.trim();
         if (!message) return;
         
         if (db) {
@@ -1160,12 +1191,16 @@
                     message: message,
                     timestamp: Date.now()
                 });
-                document.getElementById('bugMessageInput').value = '';
-                loadBugReports();
+                document.getElementById('bugBoardMessageInput').value = '';
+                loadBugBoardMessages();
             } catch(e) {
                 console.error(e);
             }
         }
+    });
+    
+    document.getElementById('backFromBugBoardBtn').addEventListener('click', () => {
+        switchScreen('menuScreen');
     });
     
     document.getElementById('refreshUserListBtn').addEventListener('click', loadUserList);
@@ -1934,8 +1969,8 @@
     }
 
     function startTraining(type) {
-        if (gameState.level < 25) {
-            alert('修行モードはレベル25以上から解放されます');
+        if (gameState.level < 15) { // 修正: レベル15から
+            alert('修行モードはレベル15以上から解放されます');
             return;
         }
         
@@ -2397,8 +2432,8 @@
         switchScreen('craftScreen');
     });
     document.getElementById('trainingBtn').addEventListener('click', () => {
-        if (gameState.level < 25) {
-            alert('修行モードはレベル25以上から解放されます');
+        if (gameState.level < 15) { // 修正: レベル15から
+            alert('修行モードはレベル15以上から解放されます');
             return;
         }
         switchScreen('trainingScreen');
@@ -2416,6 +2451,7 @@
     document.getElementById('backFromCraftBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('backFromTrainingBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('backFromDropRuleBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromBugBoardBtn').addEventListener('click', () => switchScreen('menuScreen'));
     
     document.getElementById('viewComboRankingBtn').addEventListener('click', () => displayHighScoreRanking('combo'));
     document.getElementById('viewPlayCountRankingBtn').addEventListener('click', () => displayHighScoreRanking('playcount'));
