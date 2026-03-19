@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングクラフト・ランキングリセット</title>
+    <title>⚡ タイピングクラフト・完全版</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -21,9 +21,11 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; }
         .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); position: relative; }
         .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
-        .header-right { display: flex; align-items: center; gap: 20px; }
+        .debug-corner { position: absolute; top: 20px; left: 20px; }
+        .debug-corner .icon-btn { width: 35px; height: 35px; font-size: 16px; }
+        .header-right { display: flex; align-items: center; gap: 20px; margin-left: auto; }
         .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0,212,255,0.1); padding: 12px 20px; border-radius: 8px; }
         .level-value { font-size: 20px; font-weight: 700; color: var(--accent-blue); }
         .xp-bar { width: 150px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
@@ -43,6 +45,8 @@
         .menu-btn { padding: 30px; border: 2px solid rgba(0,212,255,0.3); background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
         .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
         .menu-btn .icon { font-size: 32px; }
+        .menu-btn.small { padding: 20px; }
+        .menu-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26,31,58,0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
         .difficulty-btn.easy { border-color: var(--accent-green); color: var(--accent-green); }
         .difficulty-btn.normal { border-color: var(--accent-blue); color: var(--accent-blue); }
@@ -198,6 +202,9 @@
 <div class="game-container">
 
     <div class="header">
+        <div class="debug-corner">
+            <button class="icon-btn" id="adminBtn">🚫</button>
+        </div>
         <div class="game-title">⚡ タイピングクラフト</div>
         <div class="header-right">
             <div class="level-display">
@@ -208,11 +215,6 @@
             <div class="top-buttons">
                 <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">0</span></button>
                 <button class="icon-btn" id="taskBtn">📋</button>
-                <button class="icon-btn" id="inventoryBtn">🎒</button>
-                <button class="icon-btn" id="shopBtn">🏪</button>
-                <button class="icon-btn" id="profileBtn">👤</button>
-                <button class="icon-btn" id="dropRuleBtn">📜</button>
-                <button class="icon-btn" id="adminBtn">🚫</button>
                 <button class="icon-btn" id="playerInfoBtn">👥</button>
             </div>
         </div>
@@ -295,6 +297,12 @@
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
                 <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
                 <button class="menu-btn" id="craftBtn"><div class="icon">🔨</div><div>クラフト</div></button>
+            </div>
+            <div class="menu-row">
+                <button class="menu-btn small" id="inventoryBtn">🎒 持ち物</button>
+                <button class="menu-btn small" id="shopBtn">🏪 ショップ</button>
+                <button class="menu-btn small" id="profileBtn">👤 プロフィール</button>
+                <button class="menu-btn small" id="dropRuleBtn">📜 ドロップルール</button>
             </div>
         </div>
         
@@ -537,9 +545,11 @@
             <div class="tab-bar" id="taskTabs">
                 <button class="tab-btn active" data-tab="daily">毎日</button>
                 <button class="tab-btn" data-tab="weekly">週間</button>
+                <button class="tab-btn" data-tab="monthly">月間</button>
             </div>
             <div id="dailyTasksList" class="item-grid"></div>
             <div id="weeklyTasksList" class="item-grid hidden"></div>
+            <div id="monthlyTasksList" class="item-grid hidden"></div>
         </div>
     </div>
 
@@ -645,15 +655,35 @@
             comboAlpha: false,
             dragonSummers: false
         },
+        // タスクカウンター
+        taskCounters: {
+            craftItemsCollected: 0,
+            levelUps: 0,
+            combo200to300: 0,
+            score100k: 0,
+            combo150plus: 0
+        },
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
-            { id: 'daily3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' }
+            { id: 'daily3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
+            { id: 'daily4', title: 'クラフトアイテムを3つ集める', current: 0, target: 3, reward: { xp: 100, coins: 3000 }, completed: false, lastReset: '' },
+            { id: 'daily5', title: '1レベルを上げる', current: 0, target: 1, reward: { xp: 200, coins: 5000 }, completed: false, lastReset: '' }
         ],
         weeklyTasks: [
             { id: 'weekly1', title: '100回タイピングをプレイ', current: 0, target: 100, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
             { id: 'weekly2', title: 'スコア5000以上を10回達成', current: 0, target: 10, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
-            { id: 'weekly3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' }
+            { id: 'weekly3', title: 'コンボ50以上を達成', current: 0, target: 1, reward: { xp: 500, coins: 15000 }, completed: false, lastReset: '' },
+            { id: 'weekly4', title: 'クラフトアイテムを20つ集める', current: 0, target: 20, reward: { xp: 1000, coins: 30000 }, completed: false, lastReset: '' },
+            { id: 'weekly5', title: '5レベルを上げる', current: 0, target: 5, reward: { xp: 2000, coins: 50000 }, completed: false, lastReset: '' },
+            { id: 'weekly6', title: 'コンボ200~300を2回達成', current: 0, target: 2, reward: { xp: 1500, coins: 40000 }, completed: false, lastReset: '' },
+            { id: 'weekly7', title: 'スコア100000を2回達成', current: 0, target: 2, reward: { xp: 1500, coins: 40000 }, completed: false, lastReset: '' }
+        ],
+        monthlyTasks: [
+            { id: 'monthly1', title: '1000回タイピングをプレイ', current: 0, target: 1000, reward: { xp: 10000, coins: 300000 }, completed: false, lastReset: '' },
+            { id: 'monthly2', title: '150個クラフトアイテムを集める', current: 0, target: 150, reward: { xp: 8000, coins: 250000 }, completed: false, lastReset: '' },
+            { id: 'monthly3', title: 'コンボ150以上を20回達成', current: 0, target: 20, reward: { xp: 12000, coins: 350000 }, completed: false, lastReset: '' },
+            { id: 'monthly4', title: '20レベルを上げる', current: 0, target: 20, reward: { xp: 15000, coins: 400000 }, completed: false, lastReset: '' }
         ],
         eventTasks: [
             { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false, lastReset: '' },
@@ -662,7 +692,9 @@
         ],
         lastDailyReset: '',
         lastWeeklyReset: '',
-        lastEventReset: ''
+        lastMonthlyReset: '',
+        lastEventReset: '',
+        previousLevel: 0
     };
 
     // スキルクールダウン管理
@@ -796,6 +828,10 @@
     function addItem(itemType, count = 1) {
         if (!itemType) return false;
         gameState.items[itemType] = (gameState.items[itemType] || 0) + count;
+        
+        // クラフトアイテム収集カウンター
+        gameState.taskCounters.craftItemsCollected += count;
+        
         saveGameState();
         updateItemCounts();
         return true;
@@ -1283,6 +1319,14 @@
         if (!gameState.clovers) gameState.clovers = 0;
         if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 };
         if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false };
+        if (!gameState.taskCounters) gameState.taskCounters = {
+            craftItemsCollected: 0,
+            levelUps: 0,
+            combo200to300: 0,
+            score100k: 0,
+            combo150plus: 0
+        };
+        gameState.previousLevel = gameState.level;
         
         if (!gameState.eventTasks) {
             gameState.eventTasks = [
@@ -1295,12 +1339,24 @@
             gameState.dailyTasks = [ 
                 { id:'daily1', title:'10回タイピングをプレイ', current:0, target:10, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, 
                 { id:'daily2', title:'スコア5000以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, 
-                { id:'daily3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' } 
+                { id:'daily3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' },
+                { id:'daily4', title:'クラフトアイテムを3つ集める', current:0, target:3, reward:{ xp:100, coins:3000 }, completed:false, lastReset:'' },
+                { id:'daily5', title:'1レベルを上げる', current:0, target:1, reward:{ xp:200, coins:5000 }, completed:false, lastReset:'' }
             ];
             gameState.weeklyTasks = [ 
                 { id:'weekly1', title:'100回タイピングをプレイ', current:0, target:100, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, 
                 { id:'weekly2', title:'スコア5000以上を10回達成', current:0, target:10, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, 
-                { id:'weekly3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' } 
+                { id:'weekly3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' },
+                { id:'weekly4', title:'クラフトアイテムを20つ集める', current:0, target:20, reward:{ xp:1000, coins:30000 }, completed:false, lastReset:'' },
+                { id:'weekly5', title:'5レベルを上げる', current:0, target:5, reward:{ xp:2000, coins:50000 }, completed:false, lastReset:'' },
+                { id:'weekly6', title:'コンボ200~300を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' },
+                { id:'weekly7', title:'スコア100000を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' }
+            ];
+            gameState.monthlyTasks = [
+                { id:'monthly1', title:'1000回タイピングをプレイ', current:0, target:1000, reward:{ xp:10000, coins:300000 }, completed:false, lastReset:'' },
+                { id:'monthly2', title:'150個クラフトアイテムを集める', current:0, target:150, reward:{ xp:8000, coins:250000 }, completed:false, lastReset:'' },
+                { id:'monthly3', title:'コンボ150以上を20回達成', current:0, target:20, reward:{ xp:12000, coins:350000 }, completed:false, lastReset:'' },
+                { id:'monthly4', title:'20レベルを上げる', current:0, target:20, reward:{ xp:15000, coins:400000 }, completed:false, lastReset:'' }
             ];
         }
         checkTaskReset();
@@ -1321,8 +1377,18 @@
         lastMon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); 
         lastMon.setHours(7, 0, 0, 0);
         if (dayOfWeek === 1 && now < lastMon) lastMon.setDate(lastMon.getDate() - 7);
+        
+        // 月間タスクリセット（毎月最初の月曜日の朝7時）
+        const firstMonday = new Date(now.getFullYear(), now.getMonth(), 1);
+        while (firstMonday.getDay() !== 1) {
+            firstMonday.setDate(firstMonday.getDate() + 1);
+        }
+        firstMonday.setHours(7, 0, 0, 0);
+        const monthResetTime = firstMonday.getTime();
+        
         const todayStr = today7.toDateString();
         const weekStr = lastMon.toDateString();
+        const monthStr = `${now.getFullYear()}-${now.getMonth()}`;
         
         // 毎日タスク
         if (gameState.lastDailyReset !== todayStr) {
@@ -1334,6 +1400,12 @@
         if (gameState.lastWeeklyReset !== weekStr) {
             gameState.weeklyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = weekStr; });
             gameState.lastWeeklyReset = weekStr;
+        }
+        
+        // 月間タスク
+        if (gameState.lastMonthlyReset !== monthStr && now.getTime() >= monthResetTime) {
+            gameState.monthlyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = monthStr; });
+            gameState.lastMonthlyReset = monthStr;
         }
         
         // イベントタスク（毎日更新）
@@ -1362,9 +1434,13 @@
         if (dailyDiv) {
             dailyDiv.innerHTML = '';
             gameState.dailyTasks.forEach(t => {
+                let current = t.current;
+                if (t.id === 'daily4') current = gameState.taskCounters.craftItemsCollected;
+                if (t.id === 'daily5') current = gameState.taskCounters.levelUps;
+                
                 let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
-                let percent = Math.min(100, (t.current / t.target) * 100);
-                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
+                let percent = Math.min(100, (current / t.target) * 100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
                 dailyDiv.appendChild(d);
             });
         }
@@ -1372,10 +1448,32 @@
         if (weeklyDiv) {
             weeklyDiv.innerHTML = '';
             gameState.weeklyTasks.forEach(t => {
+                let current = t.current;
+                if (t.id === 'weekly4') current = gameState.taskCounters.craftItemsCollected;
+                if (t.id === 'weekly5') current = gameState.taskCounters.levelUps;
+                if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300;
+                if (t.id === 'weekly7') current = gameState.taskCounters.score100k;
+                
                 let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
-                let percent = Math.min(100, (t.current / t.target) * 100);
-                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
+                let percent = Math.min(100, (current / t.target) * 100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
                 weeklyDiv.appendChild(d);
+            });
+        }
+        const monthlyDiv = document.getElementById('monthlyTasksList'); 
+        if (monthlyDiv) {
+            monthlyDiv.innerHTML = '';
+            gameState.monthlyTasks.forEach(t => {
+                let current = t.current;
+                if (t.id === 'monthly1') current = gameState.totalPlayCount;
+                if (t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected;
+                if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus;
+                if (t.id === 'monthly4') current = gameState.taskCounters.levelUps;
+                
+                let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
+                let percent = Math.min(100, (current / t.target) * 100);
+                d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
+                monthlyDiv.appendChild(d);
             });
         }
     }
@@ -1383,15 +1481,61 @@
     function updateTaskProgress(score, combo) {
         let daily = gameState.dailyTasks;
         let weekly = gameState.weeklyTasks;
+        let monthly = gameState.monthlyTasks;
+        
+        // プレイ回数
         if (!daily[0].completed) { daily[0].current = Math.min(daily[0].current + 1, daily[0].target); }
         if (!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current + 1, weekly[0].target); }
-        if (score >= 5000 && !daily[1].completed) { daily[1].current = Math.min(daily[1].current + 1, daily[1].target); }
-        if (score >= 5000 && !weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); }
-        if (combo >= 50 && !daily[2].completed) { daily[2].current = Math.min(daily[2].current + 1, daily[2].target); }
-        if (combo >= 50 && !weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); }
-        [daily, weekly].forEach(tasks => {
+        
+        // スコア5000以上
+        if (score >= 5000) {
+            if (!daily[1].completed) { daily[1].current = Math.min(daily[1].current + 1, daily[1].target); }
+            if (!weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); }
+        }
+        
+        // コンボ50以上
+        if (combo >= 50) {
+            if (!daily[2].completed) { daily[2].current = Math.min(daily[2].current + 1, daily[2].target); }
+            if (!weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); }
+        }
+        
+        // コンボ200-300
+        if (combo >= 200 && combo <= 300) {
+            gameState.taskCounters.combo200to300++;
+            if (!weekly[5].completed) { weekly[5].current = Math.min(weekly[5].current + 1, weekly[5].target); }
+        }
+        
+        // スコア100000
+        if (score >= 100000) {
+            gameState.taskCounters.score100k++;
+            if (!weekly[6].completed) { weekly[6].current = Math.min(weekly[6].current + 1, weekly[6].target); }
+        }
+        
+        // コンボ150以上
+        if (combo >= 150) {
+            gameState.taskCounters.combo150plus++;
+        }
+        
+        // レベルアップチェック
+        if (gameState.level > gameState.previousLevel) {
+            const levelDiff = gameState.level - gameState.previousLevel;
+            gameState.taskCounters.levelUps += levelDiff;
+            gameState.previousLevel = gameState.level;
+        }
+        
+        // クラフトアイテム収集はaddItemでカウント
+        
+        [daily, weekly, monthly].forEach(tasks => {
             tasks.forEach(t => {
-                if (!t.completed && t.current >= t.target) {
+                let current = t.current;
+                if (t.id === 'daily4' || t.id === 'weekly4' || t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected;
+                if (t.id === 'daily5' || t.id === 'weekly5' || t.id === 'monthly4') current = gameState.taskCounters.levelUps;
+                if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300;
+                if (t.id === 'weekly7') current = gameState.taskCounters.score100k;
+                if (t.id === 'monthly1') current = gameState.totalPlayCount;
+                if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus;
+                
+                if (!t.completed && current >= t.target) {
                     t.completed = true;
                     gameState.xp += t.reward.xp;
                     gameState.coins += t.reward.coins;
@@ -1399,6 +1543,7 @@
                 }
             });
         });
+        
         saveGameState();
         updateTasksDisplay();
     }
@@ -2425,9 +2570,15 @@
         if (this.dataset.tab === 'daily') { 
             document.getElementById('dailyTasksList').classList.remove('hidden'); 
             document.getElementById('weeklyTasksList').classList.add('hidden'); 
-        } else { 
+            document.getElementById('monthlyTasksList').classList.add('hidden');
+        } else if (this.dataset.tab === 'weekly') { 
             document.getElementById('dailyTasksList').classList.add('hidden'); 
             document.getElementById('weeklyTasksList').classList.remove('hidden'); 
+            document.getElementById('monthlyTasksList').classList.add('hidden');
+        } else { 
+            document.getElementById('dailyTasksList').classList.add('hidden'); 
+            document.getElementById('weeklyTasksList').classList.add('hidden'); 
+            document.getElementById('monthlyTasksList').classList.remove('hidden');
         }
     }));
     
