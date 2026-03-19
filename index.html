@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピング修行・管理者モード</title>
+    <title>⚡ タイピングクラフト・ランキングリセット</title>
     <!-- Firebase 10.8.0 -->
     <script type="importmap">
         { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
@@ -174,13 +174,7 @@
         .badge-dragon { background: #8a2be2; color: white; }
         .badge-crown { background: #ffd700; color: black; }
         
-        /* 修行モード */
-        .training-type { display: flex; gap: 10px; margin-bottom: 20px; }
-        .training-btn { padding: 15px 25px; border: 2px solid var(--accent-blue); background: rgba(0,212,255,0.1); border-radius: 10px; color: white; cursor: pointer; transition: 0.3s; }
-        .training-btn:hover { background: rgba(0,212,255,0.3); }
-        .training-btn.active { background: rgba(0,212,255,0.5); border-color: var(--accent-gold); }
-        .training-info { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
-        .training-reward { color: var(--accent-gold); font-weight: bold; }
+        /* タップボタン */
         .tap-button { width: 200px; height: 200px; background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; animation: pulse 1s infinite; margin: 20px auto; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .tap-count { font-size: 32px; color: var(--accent-gold); text-align: center; }
@@ -189,13 +183,22 @@
         .bug-board { width: 100%; max-width: 800px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
         .bug-board .admin-input { width: 100%; padding: 15px; font-size: 16px; margin-bottom: 15px; }
         .bug-board .bug-report-container { max-height: 500px; min-height: 300px; }
+        
+        /* プレイヤー情報画面 */
+        .player-info-panel { width: 100%; max-width: 600px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
+        .player-info-section { margin-bottom: 30px; }
+        .player-info-title { font-size: 20px; color: var(--accent-blue); margin-bottom: 15px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px; }
+        .player-list { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+        .player-list-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-white); }
+        .player-list-item:last-child { border-bottom: none; }
+        .player-count { font-size: 14px; color: var(--accent-green); margin-top: 5px; }
     </style>
 </head>
 <body>
 <div class="game-container">
 
     <div class="header">
-        <div class="game-title">⚡ タイピング修行・管理者モード</div>
+        <div class="game-title">⚡ タイピングクラフト</div>
         <div class="header-right">
             <div class="level-display">
                 <div style="font-size:12px;">Lv</div>
@@ -210,6 +213,7 @@
                 <button class="icon-btn" id="profileBtn">👤</button>
                 <button class="icon-btn" id="dropRuleBtn">📜</button>
                 <button class="icon-btn" id="adminBtn">🚫</button>
+                <button class="icon-btn" id="playerInfoBtn">👥</button>
             </div>
         </div>
     </div>
@@ -278,23 +282,12 @@
             <div class="cooldown-overlay" id="cooldowndragonSummers" style="width:0%;"></div>
             <span class="cooldown-text" id="cooldowndragonSummersText"></span>
         </div>
-        <!-- 修行スキル -->
-        <div style="position:relative;">
-            <button class="skill-use-btn" id="skillAutoDeltaBtn" style="background:linear-gradient(135deg,#00aaff,#0066aa);">⚡自動入力Δ</button>
-            <div class="cooldown-overlay" id="cooldownautoDelta" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldownautoDeltaText"></span>
-        </div>
-        <div style="position:relative;">
-            <button class="skill-use-btn" id="skillComboDeltaBtn" style="background:linear-gradient(135deg,#ffaa00,#cc8800);">🔥コンボアップΔ</button>
-            <div class="cooldown-overlay" id="cooldowncomboDelta" style="width:0%;"></div>
-            <span class="cooldown-text" id="cooldowncomboDeltaText"></span>
-        </div>
     </div>
 
     <div class="main-content">
         <!-- メインメニュー（初期表示） -->
         <div class="screen active" id="menuScreen">
-            <div class="menu-title">⚔️ タイピング修行</div>
+            <div class="menu-title">⚔️ タイピングクラフト</div>
             <div class="menu-buttons">
                 <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
                 <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
@@ -302,7 +295,6 @@
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
                 <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
                 <button class="menu-btn" id="craftBtn"><div class="icon">🔨</div><div>クラフト</div></button>
-                <button class="menu-btn" id="trainingBtn"><div class="icon">🧘</div><div>修行</div></button>
             </div>
         </div>
         
@@ -428,29 +420,6 @@
             <button class="back-btn" id="backFromCraftBtn" style="margin-top:20px;">戻る</button>
         </div>
         
-        <!-- 修行モード画面 -->
-        <div class="screen" id="trainingScreen">
-            <div class="menu-title">🧘 修行モード (Lv15~)</div>
-            <div class="training-type">
-                <button class="training-btn" id="trainingProbabilityBtn">🎲 確率の修行</button>
-                <button class="training-btn" id="trainingScoreBtn">💰 スコアの修行</button>
-                <button class="training-btn" id="trainingEffectBtn">👻 エフェクトの修行</button>
-            </div>
-            <div id="trainingInfo" class="training-info">
-                修行を選択してください
-            </div>
-            <div id="trainingGoalBar" style="width:80%; max-width:600px; height:20px; background:rgba(255,255,255,0.1); border-radius:10px; margin-bottom:10px; display:none;">
-                <div id="trainingGoalFill" style="height:100%; background:linear-gradient(90deg, gold, orange); border-radius:10px; width:0%;"></div>
-            </div>
-            <div id="trainingTimer" class="timer" style="font-size:36px;">60</div>
-            <button class="back-btn" id="backFromTrainingBtn">戻る</button>
-            <div id="trainingRewardInfo" style="margin-top:20px; color:var(--accent-gold); font-size:14px; text-align:center;">
-                <div>🎲 確率の修行: 60秒で100,000スコア達成で1%で「自動入力Δ」</div>
-                <div>💰 スコアの修行: 制限なしで100,000,000スコア達成で「コンボアップΔ」</div>
-                <div>👻 エフェクトの修行: 60秒で100,000スコア達成(3~5秒毎暗転)で「アイテムドロップγ」</div>
-            </div>
-        </div>
-        
         <!-- アイテムドロップルール画面 -->
         <div class="screen" id="dropRuleScreen">
             <div class="menu-title">📜 アイテムドロップ</div>
@@ -475,6 +444,24 @@
                 <div class="bug-report-container" id="bugBoardList"></div>
             </div>
             <button class="back-btn" id="backFromBugBoardBtn">戻る</button>
+        </div>
+        
+        <!-- プレイヤー情報画面 -->
+        <div class="screen" id="playerInfoScreen">
+            <div class="menu-title">👥 プレイヤー情報</div>
+            <div class="player-info-panel">
+                <div class="player-info-section">
+                    <div class="player-info-title">🟢 現在プレイ中 (過去5分)</div>
+                    <div class="player-list" id="onlinePlayersList"></div>
+                    <div class="player-count" id="onlinePlayersCount">0人</div>
+                </div>
+                <div class="player-info-section">
+                    <div class="player-info-title">📅 今日ログイン</div>
+                    <div class="player-list" id="todayPlayersList"></div>
+                    <div class="player-count" id="todayPlayersCount">0人</div>
+                </div>
+            </div>
+            <button class="back-btn" id="backFromPlayerInfoBtn">戻る</button>
         </div>
         
         <!-- ゲーム画面 (通常) -->
@@ -504,7 +491,6 @@
                 <div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div>
                 <div id="itemDropResult" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div>
                 <div id="eventReward" style="font-size:18px; margin-top:10px; color:var(--accent-green-light);"></div>
-                <div id="trainingReward" style="font-size:18px; margin-top:10px; color:var(--accent-purple);"></div>
             </div>
             <button class="menu-btn" id="continueBtn">続ける</button>
         </div>
@@ -608,7 +594,7 @@
 <script type="module">
     // ========== Firebase ==========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, remove, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, remove, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     const firebaseConfig = {
         apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
         authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -659,12 +645,6 @@
             comboAlpha: false,
             dragonSummers: false
         },
-        // 修行スキル
-        trainingSkills: {
-            autoDelta: false,
-            comboDelta: false,
-            itemDropGamma: false
-        },
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -689,8 +669,7 @@
     const cooldowns = { 
         auto:0, autoBeta:0, timeExtend:0, comboUp:0, comboPlus:0,
         leprechaun:0, combo25:0, luckyBlock:0,
-        sigma:0, doubleScore:0, comboAlpha:0, dragonSummers:0,
-        autoDelta:0, comboDelta:0
+        sigma:0, doubleScore:0, comboAlpha:0, dragonSummers:0
     };
     let skillAutoActive = false;
     let autoInterval = null;
@@ -698,7 +677,6 @@
     let combo25Active = false;
     let comboMultiplier = 1;
     let doubleScoreActive = false;
-    let itemDropGammaActive = false; // 修行スキル: ドロップ確率5倍
 
     // 連打モード用
     let tapModeActive = false;
@@ -706,9 +684,8 @@
     let tapInterval = null;
 
     const AUTO_INPUT_INTERVAL = 64;
-    const SIGMA_AUTO_FRAMES = 36; // 修正: 36Frame
+    const SIGMA_AUTO_FRAMES = 36;
     const ALPHA_AUTO_FRAMES = 64;
-    const DELTA_AUTO_FRAMES = 55; // 自動入力Δ用
 
     const questions = { 
         easy:['そら','うみ','えがお','へいわ','きずな','きぼう','ひかり','かぜ','みらい','じゆう','ゆうき','かんしゃ','とけい','たいよう','けしき','まほう','こきゅう','ほうせき','きおく','ぼうけん'], 
@@ -764,8 +741,6 @@
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal';
-    let trainingType = null; // 'probability', 'score', 'effect'
-    let effectDebuffInterval = null;
 
     // ========== ランキングリセット & 報酬処理 ==========
     function checkRankingReset() {
@@ -807,9 +782,7 @@
 
     // ========== アイテムドロップ ==========
     function rollItemDrop() {
-        let dropRate = 0.05; // 5%
-        if (itemDropGammaActive) dropRate *= 5; // アイテムドロップγ: 確率5倍
-        
+        const dropRate = 0.05; // 5%
         if (Math.random() > dropRate) return null;
         
         const r = Math.random();
@@ -1067,59 +1040,6 @@
         updateSkillButtons();
     }
 
-    // 修行スキル
-    function useSkillAutoDelta() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.autoDelta > now) return;
-        
-        cooldowns.autoDelta = now + 30000; // 30秒クールダウン
-        
-        // 時間延長
-        gameTime += 3;
-        document.getElementById('timerDisplay').textContent = gameTime;
-        
-        // 自動入力 (55Frame)
-        skillAutoActive = true;
-        showAnimation('⚡自動入力Δ!');
-        if (autoInterval) clearInterval(autoInterval);
-        autoInterval = setInterval(() => {
-            if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
-            let ex = currentRomaji[typedInput.length];
-            if (ex) {
-                typedInput += ex;
-                currentCombo++;
-                let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
-                currentScore += addScore;
-                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
-                document.getElementById('comboDisplay').textContent = currentCombo;
-                updateRomajiDisplay();
-                if (typedInput === currentRomaji) nextQuestion();
-            }
-        }, DELTA_AUTO_FRAMES);
-        
-        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 5000); // 5秒間
-        
-        updateSkillButtons();
-    }
-
-    function useSkillComboDelta() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.comboDelta > now) return;
-        
-        cooldowns.comboDelta = now + 50000; // 50秒クールダウン
-        
-        // コンボ倍率1.45倍
-        const oldMultiplier = comboMultiplier;
-        comboMultiplier = 1.45;
-        showAnimation('🔥コンボアップΔ!');
-        
-        setTimeout(() => { comboMultiplier = oldMultiplier; }, 30000); // 30秒間
-        
-        updateSkillButtons();
-    }
-
     // ========== イベント期間チェック ==========
     function isEventActive() {
         const now = new Date();
@@ -1271,6 +1191,61 @@
         }
     }
 
+    // ========== プレイヤー情報 ==========
+    function updatePlayerInfo() {
+        if (!db) return;
+        
+        const now = Date.now();
+        const fiveMinutesAgo = now - 5 * 60 * 1000;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStart = today.getTime();
+        
+        onValue(ref(db, 'users'), (snapshot) => {
+            const users = snapshot.val() || {};
+            const onlinePlayers = [];
+            const todayPlayers = [];
+            
+            Object.entries(users).forEach(([id, user]) => {
+                const lastActive = user.lastActive || 0;
+                const userName = user.name || '名無し';
+                
+                // 現在プレイ中（過去5分以内）
+                if (lastActive > fiveMinutesAgo) {
+                    onlinePlayers.push(userName);
+                }
+                
+                // 今日ログイン（今日0時以降）
+                if (lastActive > todayStart) {
+                    todayPlayers.push(userName);
+                }
+            });
+            
+            // オンラインプレイヤー表示
+            const onlineList = document.getElementById('onlinePlayersList');
+            onlineList.innerHTML = onlinePlayers.length > 0 
+                ? onlinePlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
+                : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>';
+            document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`;
+            
+            // 今日ログインプレイヤー表示
+            const todayList = document.getElementById('todayPlayersList');
+            todayList.innerHTML = todayPlayers.length > 0
+                ? todayPlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
+                : '<div class="player-list-item">今日ログインしたプレイヤーはいません</div>';
+            document.getElementById('todayPlayersCount').textContent = `${todayPlayers.length}人`;
+        });
+    }
+    
+    document.getElementById('playerInfoBtn').addEventListener('click', () => {
+        switchScreen('playerInfoScreen');
+        updatePlayerInfo();
+    });
+    
+    document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => {
+        switchScreen('menuScreen');
+    });
+
     // ========== 永続化 ==========
     function saveGameState() { 
         localStorage.setItem('gameState', JSON.stringify(gameState)); 
@@ -1308,18 +1283,6 @@
         if (!gameState.clovers) gameState.clovers = 0;
         if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 };
         if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false };
-        if (!gameState.trainingSkills) gameState.trainingSkills = { autoDelta: false, comboDelta: false, itemDropGamma: false };
-        
-        // 修行スキルを所有スキルに追加
-        if (gameState.trainingSkills.autoDelta && !gameState.ownedSkills.includes('autoDelta')) {
-            gameState.ownedSkills.push('autoDelta');
-        }
-        if (gameState.trainingSkills.comboDelta && !gameState.ownedSkills.includes('comboDelta')) {
-            gameState.ownedSkills.push('comboDelta');
-        }
-        
-        // アイテムドロップγのアクティブ化
-        itemDropGammaActive = gameState.trainingSkills.itemDropGamma;
         
         if (!gameState.eventTasks) {
             gameState.eventTasks = [
@@ -1641,8 +1604,6 @@
         const doubleScoreBtn = document.getElementById('skillDoubleScoreBtn');
         const comboAlphaBtn = document.getElementById('skillComboAlphaBtn');
         const dragonSummersBtn = document.getElementById('skillDragonSummersBtn');
-        const autoDeltaBtn = document.getElementById('skillAutoDeltaBtn');
-        const comboDeltaBtn = document.getElementById('skillComboDeltaBtn');
         
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
         autoBetaBtn.style.display = gameState.ownedSkills.includes('autoBeta') && gameState.equippedSkills.includes('autoBeta') ? 'block' : 'none';
@@ -1659,10 +1620,6 @@
         comboAlphaBtn.style.display = gameState.ownedSkills.includes('comboAlpha') && gameState.equippedSkills.includes('comboAlpha') ? 'block' : 'none';
         dragonSummersBtn.style.display = gameState.ownedSkills.includes('dragonSummers') && gameState.equippedSkills.includes('dragonSummers') ? 'block' : 'none';
         
-        // 修行スキル
-        autoDeltaBtn.style.display = gameState.ownedSkills.includes('autoDelta') && gameState.equippedSkills.includes('autoDelta') ? 'block' : 'none';
-        comboDeltaBtn.style.display = gameState.ownedSkills.includes('comboDelta') && gameState.equippedSkills.includes('comboDelta') ? 'block' : 'none';
-        
         const now = Date.now();
         const skillDurations = {
             auto: 30000,
@@ -1676,12 +1633,10 @@
             sigma: 30000,
             doubleScore: 40000,
             comboAlpha: 50000,
-            dragonSummers: 45000,
-            autoDelta: 30000,
-            comboDelta: 50000
+            dragonSummers: 45000
         };
         
-        ['auto', 'autoBeta', 'timeExtend', 'comboUp', 'comboPlus', 'leprechaun', 'combo25', 'luckyBlock', 'sigma', 'doubleScore', 'comboAlpha', 'dragonSummers', 'autoDelta', 'comboDelta'].forEach(id => {
+        ['auto', 'autoBeta', 'timeExtend', 'comboUp', 'comboPlus', 'leprechaun', 'combo25', 'luckyBlock', 'sigma', 'doubleScore', 'comboAlpha', 'dragonSummers'].forEach(id => {
             let overlay = document.getElementById(`cooldown${id}`);
             let textEl = document.getElementById(`cooldown${id}Text`);
             if (overlay && textEl) {
@@ -1968,103 +1923,6 @@
         }
     }
 
-    function startTraining(type) {
-        if (gameState.level < 15) { // 修正: レベル15から
-            alert('修行モードはレベル15以上から解放されます');
-            return;
-        }
-        
-        trainingType = type;
-        currentMode = 'training';
-        currentDifficulty = 'normal';
-        currentScore = 0;
-        currentCombo = 0;
-        gameActive = true;
-        typedInput = '';
-        
-        // プレイ中は右上ボタンを無効化
-        document.querySelectorAll('.top-buttons .icon-btn').forEach(btn => {
-            btn.classList.add('disabled');
-        });
-        
-        if (type === 'probability') {
-            gameTime = 60;
-            document.getElementById('trainingTimer').style.display = 'block';
-            document.getElementById('trainingTimer').textContent = '60';
-            document.getElementById('trainingGoalBar').style.display = 'flex';
-        } else if (type === 'score') {
-            gameTime = Infinity;
-            document.getElementById('trainingTimer').style.display = 'none';
-            document.getElementById('trainingGoalBar').style.display = 'flex';
-        } else if (type === 'effect') {
-            gameTime = 60;
-            document.getElementById('trainingTimer').style.display = 'block';
-            document.getElementById('trainingTimer').textContent = '60';
-            document.getElementById('trainingGoalBar').style.display = 'flex';
-            
-            // 3~5秒ごとに画面暗転
-            if (effectDebuffInterval) clearInterval(effectDebuffInterval);
-            effectDebuffInterval = setInterval(() => {
-                if (!gameActive) {
-                    clearInterval(effectDebuffInterval);
-                    return;
-                }
-                document.getElementById('darknessOverlay').classList.add('active');
-                setTimeout(() => {
-                    document.getElementById('darknessOverlay').classList.remove('active');
-                }, 800);
-            }, Math.random() * 2000 + 3000); // 3~5秒
-        }
-        
-        document.getElementById('scoreDisplay').textContent = '0';
-        document.getElementById('comboDisplay').textContent = '0';
-        document.getElementById('timerDisplay').textContent = gameTime === Infinity ? '∞' : gameTime;
-        
-        switchScreen('gameScreen');
-        nextQuestion();
-        
-        if (type !== 'score') {
-            gameTimer = setInterval(() => {
-                if (gameTime > 0) {
-                    gameTime--;
-                    document.getElementById('timerDisplay').textContent = gameTime;
-                }
-                if (gameTime <= 0) endGame();
-                updateTrainingGoalBar();
-            }, 1000);
-        } else {
-            // スコアの修行は時間制限なし
-            gameTimer = setInterval(() => {
-                updateTrainingGoalBar();
-            }, 1000);
-        }
-    }
-
-    function updateTrainingGoalBar() {
-        if (currentMode !== 'training') return;
-        
-        let target, current;
-        if (trainingType === 'probability') {
-            target = 100000;
-            current = currentScore;
-        } else if (trainingType === 'score') {
-            target = 100000000;
-            current = currentScore;
-        } else if (trainingType === 'effect') {
-            target = 100000;
-            current = currentScore;
-        }
-        
-        let percent = Math.min(100, (current / target) * 100);
-        document.getElementById('trainingGoalFill').style.width = percent + '%';
-        
-        if (current >= target && gameActive) {
-            clearInterval(gameTimer);
-            if (effectDebuffInterval) clearInterval(effectDebuffInterval);
-            endGame();
-        }
-    }
-
     function updateStoryGoalBar() {
         if (currentMode !== 'story' && currentMode !== 'event') return;
         let target = currentMode === 'story' ? 10000 + (gameState.storyStage - 1) * 1000 : 50000;
@@ -2086,7 +1944,6 @@
         document.getElementById('questionDisplay').textContent = currentQuestion; 
         updateRomajiDisplay(); 
         if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
-        if (currentMode === 'training') updateTrainingGoalBar();
     }
     
     function updateRomajiDisplay() { 
@@ -2096,7 +1953,6 @@
     function endGame() {
         gameActive = false; 
         clearInterval(gameTimer);
-        if (effectDebuffInterval) clearInterval(effectDebuffInterval);
         if (autoInterval) clearInterval(autoInterval);
         
         // 右上ボタンを再有効化
@@ -2134,30 +1990,6 @@
             earnedClovers = Math.floor(currentScore / 50000);
             gameState.clovers += earnedClovers;
             updateEventTasks(currentScore, currentCombo);
-        }
-        
-        // 修行モードクリア報酬
-        let trainingReward = '';
-        if (currentMode === 'training' && currentScore >= 100000 && trainingType === 'probability') {
-            if (Math.random() < 0.01) { // 1%
-                if (!gameState.ownedSkills.includes('autoDelta')) {
-                    gameState.ownedSkills.push('autoDelta');
-                    gameState.trainingSkills.autoDelta = true;
-                    trainingReward = '🎉 自動入力Δ を獲得！';
-                }
-            }
-        } else if (currentMode === 'training' && currentScore >= 100000000 && trainingType === 'score') {
-            if (!gameState.ownedSkills.includes('comboDelta')) {
-                gameState.ownedSkills.push('comboDelta');
-                gameState.trainingSkills.comboDelta = true;
-                trainingReward = '🎉 コンボアップΔ を獲得！';
-            }
-        } else if (currentMode === 'training' && currentScore >= 100000 && trainingType === 'effect') {
-            if (!gameState.trainingSkills.itemDropGamma) {
-                gameState.trainingSkills.itemDropGamma = true;
-                itemDropGammaActive = true;
-                trainingReward = '🎉 アイテムドロップγ を獲得！（ドロップ確率5倍）';
-            }
         }
         
         while (gameState.xp >= gameState.maxXp) { 
@@ -2223,7 +2055,6 @@
         document.getElementById('earnedCoins').textContent = coins;
         document.getElementById('earnedXP').textContent = xp;
         document.getElementById('itemDropResult').textContent = dropMessage;
-        document.getElementById('trainingReward').textContent = trainingReward;
         
         const eventRewardEl = document.getElementById('eventReward');
         if (currentMode === 'event') {
@@ -2236,7 +2067,6 @@
             cooldowns[key] = 0;
         }
         
-        trainingType = null;
         switchScreen('resultScreen');
         updateUI();
         updateSkillButtons();
@@ -2282,9 +2112,7 @@
             { id:'sigma', name:'⚡自動入力Σ', desc:'30秒:1.5秒間自動入力(36Frame)' },
             { id:'doubleScore', name:'💰スコア2倍', desc:'40秒:5秒間スコア2倍' },
             { id:'comboAlpha', name:'⚡×🔥自動入力×コンボα', desc:'50秒:6秒間自動入力(64Frame)+8秒間コンボ2.5倍' },
-            { id:'dragonSummers', name:'🐉ドラゴンサマーズ', desc:'45秒:2秒間連打で連打数/5のコンボ' },
-            { id:'autoDelta', name:'⚡自動入力Δ', desc:'30秒:3秒時間延長+5秒間55Frame自動入力' },
-            { id:'comboDelta', name:'🔥コンボアップΔ', desc:'50秒:30秒間コンボ1.45倍' }
+            { id:'dragonSummers', name:'🐉ドラゴンサマーズ', desc:'45秒:2秒間連打で連打数/5のコンボ' }
         ];
         
         gameState.ownedSkills.forEach(sid => {
@@ -2431,13 +2259,6 @@
         updateItemCounts();
         switchScreen('craftScreen');
     });
-    document.getElementById('trainingBtn').addEventListener('click', () => {
-        if (gameState.level < 15) { // 修正: レベル15から
-            alert('修行モードはレベル15以上から解放されます');
-            return;
-        }
-        switchScreen('trainingScreen');
-    });
     document.getElementById('dropRuleBtn').addEventListener('click', () => switchScreen('dropRuleScreen'));
     
     document.getElementById('worldRankingViewBtn').addEventListener('click', displayRanking);
@@ -2449,9 +2270,9 @@
     document.getElementById('backFromHighscoreBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('backFromHighscoreViewBtn').addEventListener('click', () => switchScreen('highscoreMenuScreen'));
     document.getElementById('backFromCraftBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromTrainingBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('backFromDropRuleBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('backFromBugBoardBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => switchScreen('menuScreen'));
     
     document.getElementById('viewComboRankingBtn').addEventListener('click', () => displayHighScoreRanking('combo'));
     document.getElementById('viewPlayCountRankingBtn').addEventListener('click', () => displayHighScoreRanking('playcount'));
@@ -2464,11 +2285,6 @@
         if (gameState.storyStage <= 100) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'story'); 
     });
     document.querySelectorAll('.difficulty-btn').forEach(b => b.addEventListener('click', () => startGame(b.dataset.difficulty, 'normal')));
-
-    // 修行ボタン
-    document.getElementById('trainingProbabilityBtn').addEventListener('click', () => startTraining('probability'));
-    document.getElementById('trainingScoreBtn').addEventListener('click', () => startTraining('score'));
-    document.getElementById('trainingEffectBtn').addEventListener('click', () => startTraining('effect'));
 
     // イベント関連
     document.getElementById('eventBtn').addEventListener('click', () => {
@@ -2589,8 +2405,6 @@
     document.getElementById('skillDoubleScoreBtn').addEventListener('click', useSkillDoubleScore);
     document.getElementById('skillComboAlphaBtn').addEventListener('click', useSkillComboAlpha);
     document.getElementById('skillDragonSummersBtn').addEventListener('click', useSkillDragonSummers);
-    document.getElementById('skillAutoDeltaBtn').addEventListener('click', useSkillAutoDelta);
-    document.getElementById('skillComboDeltaBtn').addEventListener('click', useSkillComboDelta);
 
     // タブ切り替え
     document.querySelectorAll('#invTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
@@ -2638,8 +2452,6 @@
                 else if (skillId === 'doubleScore') useSkillDoubleScore();
                 else if (skillId === 'comboAlpha') useSkillComboAlpha();
                 else if (skillId === 'dragonSummers') useSkillDragonSummers();
-                else if (skillId === 'autoDelta') useSkillAutoDelta();
-                else if (skillId === 'comboDelta') useSkillComboDelta();
                 else useSkill(skillId);
             }
             return;
@@ -2662,7 +2474,6 @@
                 updateRomajiDisplay(); 
                 if (typedInput === currentRomaji) nextQuestion(); 
                 if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
-                if (currentMode === 'training') updateTrainingGoalBar();
             } else { 
                 if (!leprechaunActive) {
                     currentCombo = 0; 
