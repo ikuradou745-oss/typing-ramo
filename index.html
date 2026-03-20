@@ -96,7 +96,8 @@
         .ranking-list { width: 100%; max-width: 600px; max-height: 400px; overflow-y: auto; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 20px; }
         .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,212,255,0.1); }
         .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
-        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+        .ranking-avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; background: #333; flex-shrink: 0; }
         .ranking-score { font-weight: 600; color: var(--accent-green); }
         .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg,#2a1e3a,#1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; }
         .gift-dialog.active { display: flex; }
@@ -209,8 +210,9 @@
         .player-info-section { margin-bottom: 30px; }
         .player-info-title { font-size: 20px; color: var(--accent-blue); margin-bottom: 15px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px; }
         .player-list { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
-        .player-list-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-white); }
+        .player-list-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-white); display: flex; align-items: center; gap: 8px; }
         .player-list-item:last-child { border-bottom: none; }
+        .player-avatar-small { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; background: #333; }
         .player-count { font-size: 14px; color: var(--accent-green); margin-top: 5px; }
         
         /* 設定画面 */
@@ -237,7 +239,7 @@
         .feedback-view-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
         .feedback-view-item:last-child { border-bottom: none; }
         .feedback-view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px; }
-        .feedback-view-user { color: var(--accent-blue); font-weight: bold; }
+        .feedback-view-user { color: var(--accent-blue); font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .feedback-view-time { font-size: 11px; color: var(--text-gray); }
         .feedback-view-content { font-size: 14px; margin: 8px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; word-wrap: break-word; white-space: pre-wrap; min-height: 60px; }
         .feedback-view-actions { display: flex; gap: 10px; justify-content: flex-end; }
@@ -249,6 +251,26 @@
         .feedback-item-simple { padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .feedback-item-simple .user { color: var(--accent-blue); }
         .feedback-item-simple .preview { color: var(--text-gray); }
+        
+        /* スキンショップ用スタイル */
+        .skin-panel { width: 100%; max-width: 800px; margin-top: 20px; }
+        .skin-preview-area { display: flex; justify-content: center; margin-bottom: 30px; }
+        .avatar-preview { display: flex; justify-content: center; align-items: center; }
+        .avatar-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: background-color 0.3s; box-shadow: 0 0 20px rgba(0,212,255,0.5); }
+        .avatar-face { font-size: 60px; position: relative; z-index: 2; }
+        .avatar-accessory { position: absolute; font-size: 40px; top: -10px; right: -10px; z-index: 3; }
+        .skin-shop-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding: 10px; }
+        .skin-item { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .skin-item:hover { transform: translateY(-2px); background: rgba(0,212,255,0.2); }
+        .skin-item.owned { border-color: var(--accent-green); background: rgba(0,255,136,0.1); }
+        .skin-item.equipped { border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-gold); }
+        .skin-item .skin-preview { font-size: 40px; margin-bottom: 10px; }
+        .skin-item .skin-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+        .skin-item .skin-price { font-size: 12px; color: var(--accent-gold); }
+        .skin-item .skin-status { font-size: 11px; color: var(--text-gray); margin-top: 5px; }
+        .custom-color-section { text-align: center; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px; }
+        #customColorInput { width: 80px; height: 40px; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px; }
+        .avatar-display { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; background: #333; margin-right: 8px; }
     </style>
 </head>
 <body class="theme-default color-default">
@@ -357,6 +379,7 @@
                 <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
                 <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
                 <button class="menu-btn" id="craftBtn"><div class="icon">🔨</div><div>クラフト</div></button>
+                <button class="menu-btn" id="skinShopBtn"><div class="icon">🎨</div><div>スキンショップ</div></button>
             </div>
             <div class="menu-row">
                 <button class="menu-btn small" id="inventoryBtn">🎒 持ち物</button>
@@ -708,6 +731,46 @@
                 <button class="admin-btn secondary" id="refreshFeedbackViewBtn">🔄 更新</button>
                 <button class="back-btn" id="backFromFeedbackViewBtn" style="margin-top:10px;">戻る</button>
             </div>
+        </div>
+        
+        <!-- スキンショップ画面 -->
+        <div class="screen" id="skinShopScreen">
+            <div class="menu-title">🎨 スキンショップ</div>
+            <div class="tab-bar" id="skinTabs">
+                <button class="tab-btn active" data-skin-tab="face">😃 顔</button>
+                <button class="tab-btn" data-skin-tab="accessory">🎀 アクセサリー</button>
+                <button class="tab-btn" data-skin-tab="color">🎨 イメージカラー</button>
+            </div>
+            
+            <!-- 顔タブ -->
+            <div id="skinFacePanel" class="skin-panel">
+                <div class="skin-preview-area">
+                    <div class="avatar-preview">
+                        <div class="avatar-circle" id="avatarCircle" style="background-color: #000000;">
+                            <div class="avatar-face" id="avatarFace">😃</div>
+                            <div class="avatar-accessory" id="avatarAccessory"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="skin-shop-items" id="faceShopItems"></div>
+            </div>
+            
+            <!-- アクセサリータブ -->
+            <div id="skinAccessoryPanel" class="skin-panel hidden">
+                <div class="skin-shop-items" id="accessoryShopItems"></div>
+            </div>
+            
+            <!-- イメージカラータブ -->
+            <div id="skinColorPanel" class="skin-panel hidden">
+                <div class="skin-shop-items" id="colorShopItems"></div>
+                <div id="customColorPicker" class="custom-color-section hidden">
+                    <div>カスタムカラーを選択</div>
+                    <input type="color" id="customColorInput" value="#00ff88">
+                    <button class="equip-btn" id="applyCustomColorBtn">適用</button>
+                </div>
+            </div>
+            
+            <button class="back-btn" id="backFromSkinShopBtn">戻る</button>
         </div>
         
         <!-- ゲーム画面 (通常) -->
@@ -1129,6 +1192,18 @@
         feedbackCount: 0,
         lastFeedbackDate: '',
         bannedUntil: 0,
+        // スキン関連
+        skin: {
+            face: '😃',
+            accessory: null,
+            color: '#000000',
+            ownedFaces: ['😃'],
+            ownedAccessories: [],
+            ownedColors: ['#000000'],
+            customFace: null,
+            customAccessory: null,
+            customColor: null
+        },
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -1162,6 +1237,518 @@
         lastEventReset: '',
         previousLevel: 0
     };
+
+    // スキンショップ用データ
+    const skinData = {
+        faces: [
+            { id: 'default', emoji: '😃', name: '通常の顔', price: 0, default: true },
+            { id: 'face_pack', emoji: '🎨', name: '顔20個セット', price: 1000000, type: 'bundle', count: 20 },
+            { id: 'custom_face', emoji: '✨', name: 'カスタムフェイス', price: 10000000, type: 'custom' }
+        ],
+        accessories: [
+            { id: 'headphone', emoji: '🎧', name: 'ヘッドフォン', price: 1000000 },
+            { id: 'controller', emoji: '🎮', name: 'コントローラー', price: 1000000 },
+            { id: 'sunglasses', emoji: '🕶️', name: 'サングラス', price: 1000000 },
+            { id: 'crown', emoji: '👑', name: '王冠', price: 1000000 },
+            { id: 'flower', emoji: '🌸', name: '花飾り', price: 1000000 },
+            { id: 'star', emoji: '⭐', name: 'スター', price: 1000000 },
+            { id: 'heart', emoji: '❤️', name: 'ハート', price: 1000000 },
+            { id: 'cat', emoji: '🐱', name: '猫耳', price: 1000000 },
+            { id: 'ribbon', emoji: '🎀', name: 'リボン', price: 1000000 },
+            { id: 'hat', emoji: '🎩', name: 'シルクハット', price: 1000000 },
+            { id: 'glasses', emoji: '👓', name: 'メガネ', price: 1000000 },
+            { id: 'mask', emoji: '🎭', name: 'マスク', price: 1000000 },
+            { id: 'bowtie', emoji: '🎀', name: '蝶ネクタイ', price: 1000000 },
+            { id: 'tie', emoji: '👔', name: 'ネクタイ', price: 1000000 },
+            { id: 'watch', emoji: '⌚', name: '腕時計', price: 1000000 }
+        ],
+        colors: [
+            { id: 'default', name: '黒', colorCode: '#000000', price: 0, default: true },
+            { id: 'red', name: '赤', colorCode: '#ff0000', price: 1000000 },
+            { id: 'blue', name: '青', colorCode: '#0000ff', price: 1000000 },
+            { id: 'yellow', name: '黄色', colorCode: '#ffff00', price: 1000000 },
+            { id: 'white', name: '白', colorCode: '#ffffff', price: 1000000 },
+            { id: 'custom', name: 'カスタムカラー', colorCode: null, price: 1000000, type: 'custom' }
+        ]
+    };
+
+    // ランダムな文字を生成（カスタムフェイス/アクセサリー用）
+    function getRandomChar() {
+        const chars = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        return chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    // スキン関連関数
+    function updateAvatarPreview() {
+        const circle = document.getElementById('avatarCircle');
+        const faceEl = document.getElementById('avatarFace');
+        const accessoryEl = document.getElementById('avatarAccessory');
+        
+        if (circle) {
+            circle.style.backgroundColor = gameState.skin.color;
+        }
+        if (faceEl) {
+            if (gameState.skin.customFace) {
+                faceEl.textContent = gameState.skin.customFace;
+            } else {
+                faceEl.textContent = gameState.skin.face;
+            }
+        }
+        if (accessoryEl) {
+            if (gameState.skin.customAccessory) {
+                accessoryEl.textContent = gameState.skin.customAccessory;
+            } else if (gameState.skin.accessory) {
+                const accessory = skinData.accessories.find(a => a.id === gameState.skin.accessory);
+                accessoryEl.textContent = accessory ? accessory.emoji : '';
+            } else {
+                accessoryEl.textContent = '';
+            }
+        }
+    }
+
+    function buyFace(faceId) {
+        const face = skinData.faces.find(f => f.id === faceId);
+        if (!face) return false;
+        
+        if (face.id === 'face_pack') {
+            if (gameState.coins >= face.price) {
+                gameState.coins -= face.price;
+                // 20個のランダムな顔を追加
+                const randomFaces = [];
+                for (let i = 0; i < 20; i++) {
+                    const randomChar = getRandomChar();
+                    const newFaceId = `face_${randomChar}_${Date.now()}_${i}`;
+                    randomFaces.push({ id: newFaceId, emoji: randomChar, name: `カスタム顔「${randomChar}」`, price: 0 });
+                    gameState.skin.ownedFaces.push(newFaceId);
+                }
+                saveGameState();
+                renderFaceShop();
+                updateAvatarPreview();
+                alert(`顔20個セットを購入しました！`);
+                return true;
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        } else if (face.id === 'custom_face') {
+            if (gameState.coins >= face.price) {
+                gameState.coins -= face.price;
+                const randomChar = getRandomChar();
+                gameState.skin.customFace = randomChar;
+                gameState.skin.face = `custom_${randomChar}`;
+                gameState.skin.ownedFaces.push(`custom_${randomChar}`);
+                saveGameState();
+                renderFaceShop();
+                updateAvatarPreview();
+                alert(`カスタムフェイス「${randomChar}」を購入しました！`);
+                return true;
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        }
+        return false;
+    }
+
+    function buyAccessory(accessoryId) {
+        const accessory = skinData.accessories.find(a => a.id === accessoryId);
+        if (!accessory) return false;
+        
+        if (accessoryId === 'custom_accessory') {
+            if (gameState.coins >= 1000000) {
+                gameState.coins -= 1000000;
+                const randomChar = getRandomChar();
+                gameState.skin.customAccessory = randomChar;
+                gameState.skin.accessory = `custom_${randomChar}`;
+                gameState.skin.ownedAccessories.push(`custom_${randomChar}`);
+                saveGameState();
+                renderAccessoryShop();
+                updateAvatarPreview();
+                alert(`カスタムアクセサリー「${randomChar}」を購入しました！`);
+                return true;
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        } else {
+            if (gameState.coins >= accessory.price) {
+                if (!gameState.skin.ownedAccessories.includes(accessoryId)) {
+                    gameState.coins -= accessory.price;
+                    gameState.skin.ownedAccessories.push(accessoryId);
+                    saveGameState();
+                    renderAccessoryShop();
+                    alert(`${accessory.name}を購入しました！`);
+                    return true;
+                } else {
+                    alert('すでに所有しています');
+                    return false;
+                }
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        }
+    }
+
+    function buyColor(colorId) {
+        const color = skinData.colors.find(c => c.id === colorId);
+        if (!color) return false;
+        
+        if (color.id === 'custom') {
+            if (gameState.coins >= color.price) {
+                gameState.coins -= color.price;
+                gameState.skin.customColor = '#00ff88';
+                gameState.skin.color = gameState.skin.customColor;
+                gameState.skin.ownedColors.push('custom');
+                saveGameState();
+                renderColorShop();
+                updateAvatarPreview();
+                document.getElementById('customColorPicker').classList.remove('hidden');
+                alert('カスタムカラーを購入しました！色を自由に選択できます');
+                return true;
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        } else {
+            if (gameState.coins >= color.price) {
+                if (!gameState.skin.ownedColors.includes(colorId)) {
+                    gameState.coins -= color.price;
+                    gameState.skin.ownedColors.push(colorId);
+                    gameState.skin.color = color.colorCode;
+                    saveGameState();
+                    renderColorShop();
+                    updateAvatarPreview();
+                    alert(`${color.name}を購入しました！`);
+                    return true;
+                } else {
+                    alert('すでに所有しています');
+                    return false;
+                }
+            } else {
+                alert('コインが足りません');
+                return false;
+            }
+        }
+    }
+
+    function equipFace(faceId) {
+        if (faceId === 'custom_face') {
+            if (gameState.skin.customFace) {
+                gameState.skin.face = `custom_${gameState.skin.customFace}`;
+                saveGameState();
+                renderFaceShop();
+                updateAvatarPreview();
+                alert('カスタムフェイスを装備しました');
+            }
+        } else if (faceId === 'default') {
+            gameState.skin.face = '😃';
+            saveGameState();
+            renderFaceShop();
+            updateAvatarPreview();
+        } else if (faceId.startsWith('face_')) {
+            // ランダム顔の装備
+            const faceItem = gameState.skin.ownedFaces.find(f => f === faceId);
+            if (faceItem) {
+                const char = faceId.split('_')[1];
+                gameState.skin.face = char;
+                saveGameState();
+                renderFaceShop();
+                updateAvatarPreview();
+            }
+        }
+    }
+
+    function equipAccessory(accessoryId) {
+        if (accessoryId === 'custom_accessory') {
+            if (gameState.skin.customAccessory) {
+                gameState.skin.accessory = `custom_${gameState.skin.customAccessory}`;
+                saveGameState();
+                renderAccessoryShop();
+                updateAvatarPreview();
+                alert('カスタムアクセサリーを装備しました');
+            }
+        } else if (accessoryId === 'none') {
+            gameState.skin.accessory = null;
+            saveGameState();
+            renderAccessoryShop();
+            updateAvatarPreview();
+        } else {
+            if (gameState.skin.ownedAccessories.includes(accessoryId)) {
+                gameState.skin.accessory = accessoryId;
+                saveGameState();
+                renderAccessoryShop();
+                updateAvatarPreview();
+            }
+        }
+    }
+
+    function equipColor(colorId) {
+        if (colorId === 'custom') {
+            if (gameState.skin.customColor) {
+                gameState.skin.color = gameState.skin.customColor;
+                saveGameState();
+                renderColorShop();
+                updateAvatarPreview();
+            }
+        } else {
+            const color = skinData.colors.find(c => c.id === colorId);
+            if (color && gameState.skin.ownedColors.includes(colorId)) {
+                gameState.skin.color = color.colorCode;
+                saveGameState();
+                renderColorShop();
+                updateAvatarPreview();
+            }
+        }
+    }
+
+    function applyCustomColor() {
+        if (gameState.skin.ownedColors.includes('custom')) {
+            const colorPicker = document.getElementById('customColorInput');
+            gameState.skin.customColor = colorPicker.value;
+            gameState.skin.color = colorPicker.value;
+            saveGameState();
+            updateAvatarPreview();
+            alert('カスタムカラーを適用しました');
+        } else {
+            alert('カスタムカラーを先に購入してください');
+        }
+    }
+
+    function renderFaceShop() {
+        const container = document.getElementById('faceShopItems');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // 通常の顔
+        const defaultFace = skinData.faces.find(f => f.id === 'default');
+        const defaultItem = document.createElement('div');
+        defaultItem.className = `skin-item ${gameState.skin.face === '😃' ? 'equipped' : ''}`;
+        defaultItem.innerHTML = `
+            <div class="skin-preview">😃</div>
+            <div class="skin-name">通常の顔</div>
+            <div class="skin-price">無料</div>
+            <div class="skin-status">${gameState.skin.face === '😃' ? '装備中' : ''}</div>
+        `;
+        defaultItem.onclick = () => equipFace('default');
+        container.appendChild(defaultItem);
+        
+        // 顔20個セット
+        const facePack = skinData.faces.find(f => f.id === 'face_pack');
+        const hasPack = gameState.skin.ownedFaces.some(f => f.startsWith('face_'));
+        const packItem = document.createElement('div');
+        packItem.className = `skin-item ${hasPack ? 'owned' : ''}`;
+        packItem.innerHTML = `
+            <div class="skin-preview">🎨</div>
+            <div class="skin-name">顔20個セット</div>
+            <div class="skin-price">1,000,000💰</div>
+            <div class="skin-status">${hasPack ? '所有済み' : ''}</div>
+        `;
+        packItem.onclick = () => {
+            if (!hasPack) buyFace('face_pack');
+        };
+        container.appendChild(packItem);
+        
+        // カスタムフェイス
+        const customFace = skinData.faces.find(f => f.id === 'custom_face');
+        const hasCustom = gameState.skin.customFace !== null;
+        const customItem = document.createElement('div');
+        customItem.className = `skin-item ${hasCustom ? 'owned' : ''}`;
+        customItem.innerHTML = `
+            <div class="skin-preview">✨</div>
+            <div class="skin-name">カスタムフェイス</div>
+            <div class="skin-price">10,000,000💰</div>
+            <div class="skin-status">${hasCustom ? `「${gameState.skin.customFace}」` : ''}</div>
+        `;
+        customItem.onclick = () => {
+            if (!hasCustom) buyFace('custom_face');
+            else if (hasCustom) equipFace('custom_face');
+        };
+        container.appendChild(customItem);
+        
+        // 所有しているランダム顔を表示
+        const ownedRandomFaces = gameState.skin.ownedFaces.filter(f => f.startsWith('face_'));
+        ownedRandomFaces.forEach(faceId => {
+            const char = faceId.split('_')[1];
+            const isEquipped = gameState.skin.face === char;
+            const randomItem = document.createElement('div');
+            randomItem.className = `skin-item ${isEquipped ? 'equipped' : 'owned'}`;
+            randomItem.innerHTML = `
+                <div class="skin-preview">${char}</div>
+                <div class="skin-name">カスタム顔「${char}」</div>
+                <div class="skin-price">無料</div>
+                <div class="skin-status">${isEquipped ? '装備中' : '所有済み'}</div>
+            `;
+            randomItem.onclick = () => equipFace(faceId);
+            container.appendChild(randomItem);
+        });
+    }
+
+    function renderAccessoryShop() {
+        const container = document.getElementById('accessoryShopItems');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // 装備解除ボタン
+        const noneItem = document.createElement('div');
+        noneItem.className = `skin-item ${!gameState.skin.accessory ? 'equipped' : ''}`;
+        noneItem.innerHTML = `
+            <div class="skin-preview">❌</div>
+            <div class="skin-name">装備解除</div>
+            <div class="skin-price">無料</div>
+            <div class="skin-status">${!gameState.skin.accessory ? '装備中' : ''}</div>
+        `;
+        noneItem.onclick = () => equipAccessory('none');
+        container.appendChild(noneItem);
+        
+        // 通常アクセサリー
+        skinData.accessories.forEach(acc => {
+            const owned = gameState.skin.ownedAccessories.includes(acc.id);
+            const equipped = gameState.skin.accessory === acc.id;
+            const item = document.createElement('div');
+            item.className = `skin-item ${owned ? (equipped ? 'equipped' : 'owned') : ''}`;
+            item.innerHTML = `
+                <div class="skin-preview">${acc.emoji}</div>
+                <div class="skin-name">${acc.name}</div>
+                <div class="skin-price">${acc.price.toLocaleString()}💰</div>
+                <div class="skin-status">${equipped ? '装備中' : (owned ? '所有済み' : '未購入')}</div>
+            `;
+            item.onclick = () => {
+                if (!owned) buyAccessory(acc.id);
+                else equipAccessory(acc.id);
+            };
+            container.appendChild(item);
+        });
+        
+        // カスタムアクセサリー
+        const hasCustom = gameState.skin.customAccessory !== null;
+        const customItem = document.createElement('div');
+        customItem.className = `skin-item ${hasCustom ? 'owned' : ''}`;
+        customItem.innerHTML = `
+            <div class="skin-preview">✨</div>
+            <div class="skin-name">カスタムアクセサリー</div>
+            <div class="skin-price">1,000,000💰</div>
+            <div class="skin-status">${hasCustom ? `「${gameState.skin.customAccessory}」` : ''}</div>
+        `;
+        customItem.onclick = () => {
+            if (!hasCustom) buyAccessory('custom_accessory');
+            else if (hasCustom) equipAccessory('custom_accessory');
+        };
+        container.appendChild(customItem);
+        
+        // 所有しているカスタムアクセサリー表示
+        const ownedCustom = gameState.skin.ownedAccessories.filter(a => a.startsWith('custom_'));
+        ownedCustom.forEach(accId => {
+            const char = accId.split('_')[1];
+            const isEquipped = gameState.skin.accessory === accId;
+            const customAccItem = document.createElement('div');
+            customAccItem.className = `skin-item ${isEquipped ? 'equipped' : 'owned'}`;
+            customAccItem.innerHTML = `
+                <div class="skin-preview">${char}</div>
+                <div class="skin-name">カスタムアクセ「${char}」</div>
+                <div class="skin-price">無料</div>
+                <div class="skin-status">${isEquipped ? '装備中' : '所有済み'}</div>
+            `;
+            customAccItem.onclick = () => equipAccessory(accId);
+            container.appendChild(customAccItem);
+        });
+    }
+
+    function renderColorShop() {
+        const container = document.getElementById('colorShopItems');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        skinData.colors.forEach(color => {
+            if (color.id === 'custom') {
+                const owned = gameState.skin.ownedColors.includes('custom');
+                const equipped = gameState.skin.color === gameState.skin.customColor && gameState.skin.customColor !== null;
+                const item = document.createElement('div');
+                item.className = `skin-item ${owned ? (equipped ? 'equipped' : 'owned') : ''}`;
+                item.innerHTML = `
+                    <div class="skin-preview" style="background-color: ${gameState.skin.customColor || '#00ff88'}; width: 40px; height: 40px; border-radius: 50%; margin: 0 auto;"></div>
+                    <div class="skin-name">カスタムカラー</div>
+                    <div class="skin-price">1,000,000💰</div>
+                    <div class="skin-status">${equipped ? '装備中' : (owned ? '所有済み' : '未購入')}</div>
+                `;
+                item.onclick = () => {
+                    if (!owned) buyColor('custom');
+                    else if (owned) equipColor('custom');
+                };
+                container.appendChild(item);
+            } else {
+                const owned = gameState.skin.ownedColors.includes(color.id);
+                const equipped = gameState.skin.color === color.colorCode;
+                const item = document.createElement('div');
+                item.className = `skin-item ${owned ? (equipped ? 'equipped' : 'owned') : ''}`;
+                item.innerHTML = `
+                    <div class="skin-preview" style="background-color: ${color.colorCode}; width: 40px; height: 40px; border-radius: 50%; margin: 0 auto;"></div>
+                    <div class="skin-name">${color.name}</div>
+                    <div class="skin-price">${color.price.toLocaleString()}💰</div>
+                    <div class="skin-status">${equipped ? '装備中' : (owned ? '所有済み' : '未購入')}</div>
+                `;
+                item.onclick = () => {
+                    if (!owned) buyColor(color.id);
+                    else equipColor(color.id);
+                };
+                container.appendChild(item);
+            }
+        });
+        
+        const customPicker = document.getElementById('customColorPicker');
+        if (gameState.skin.ownedColors.includes('custom')) {
+            customPicker.classList.remove('hidden');
+            document.getElementById('customColorInput').value = gameState.skin.customColor || '#00ff88';
+        } else {
+            customPicker.classList.add('hidden');
+        }
+    }
+
+    // アバター表示を取得する関数（ランキングなどで使用）
+    function getAvatarHtml(face, accessory, color) {
+        const faceChar = face && face.startsWith('custom_') ? (gameState.skin.customFace || '😃') : (face || '😃');
+        const accessoryChar = accessory && accessory.startsWith('custom_') ? (gameState.skin.customAccessory || '') : 
+                              (accessory ? (skinData.accessories.find(a => a.id === accessory)?.emoji || '') : '');
+        return `
+            <div class="ranking-avatar" style="background-color: ${color || '#000000'}; position: relative;">
+                <span style="font-size: 20px;">${faceChar}</span>
+                ${accessoryChar ? `<span style="position: absolute; top: -5px; right: -5px; font-size: 14px;">${accessoryChar}</span>` : ''}
+            </div>
+        `;
+    }
+
+    // スキンショップを開く
+    function openSkinShop() {
+        renderFaceShop();
+        renderAccessoryShop();
+        renderColorShop();
+        updateAvatarPreview();
+        switchScreen('skinShopScreen');
+    }
+
+    // スキン情報を保存するようにsyncFirebaseを拡張
+    const originalSyncFirebase = window.syncFirebase;
+    function syncFirebaseWithSkin() {
+        if (db) set(ref(db, `users/${gameState.userId}`), { 
+            name: gameState.userName, 
+            lastActive: Date.now(), 
+            level: gameState.level, 
+            xp: gameState.xp, 
+            coins: gameState.coins, 
+            score: gameState.rankingHighScore,
+            highScoreCombo: gameState.highScoreCombo,
+            totalPlayCount: gameState.totalPlayCount,
+            totalXPEarned: gameState.totalXPEarned,
+            clovers: gameState.clovers,
+            feedbackCount: gameState.feedbackCount,
+            lastFeedbackDate: gameState.lastFeedbackDate,
+            skin: gameState.skin
+        }).catch(() => {});
+    }
+    window.syncFirebase = syncFirebaseWithSkin;
 
     // スキルクールダウン管理
     const cooldowns = { 
@@ -1298,7 +1885,8 @@
                     userName: gameState.userName,
                     message: message,
                     timestamp: Date.now(),
-                    date: today
+                    date: today,
+                    skin: gameState.skin
                 });
                 gameState.coins += 500;
                 gameState.feedbackCount++;
@@ -1329,7 +1917,10 @@
             list.innerHTML = feedbacks.map(f => `
                 <div class="feedback-view-item" data-id="${f.id}" data-userid="${f.userId}">
                     <div class="feedback-view-header">
-                        <span class="feedback-view-user">${f.userName}</span>
+                        <span class="feedback-view-user">
+                            ${f.skin ? `<div class="avatar-display" style="background-color: ${f.skin.color || '#000000'};">${f.skin.face || '😃'}${f.skin.accessory ? `<span style="font-size: 12px; margin-left: -8px;">${skinData.accessories.find(a => a.id === f.skin.accessory)?.emoji || ''}</span>` : ''}</div>` : ''}
+                            ${f.userName}
+                        </span>
                         <span class="feedback-view-time">${new Date(f.timestamp).toLocaleString()}</span>
                     </div>
                     <div class="feedback-view-content">${escapeHtml(f.message)}</div>
@@ -1776,7 +2367,8 @@
                 await push(ref(db, 'bugReports'), {
                     name: gameState.userName,
                     message: message,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    skin: gameState.skin
                 });
                 document.getElementById('bugBoardMessageInput').value = '';
                 loadBugBoardMessages();
@@ -1859,17 +2451,18 @@
             Object.entries(users).forEach(([id, user]) => {
                 const lastActive = user.lastActive || 0;
                 const userName = user.name || '名無し';
-                if (lastActive > fiveMinutesAgo) onlinePlayers.push(userName);
-                if (lastActive > todayStart) todayPlayers.push(userName);
+                const userSkin = user.skin || { face: '😃', color: '#000000' };
+                if (lastActive > fiveMinutesAgo) onlinePlayers.push({ name: userName, skin: userSkin });
+                if (lastActive > todayStart) todayPlayers.push({ name: userName, skin: userSkin });
             });
             const onlineList = document.getElementById('onlinePlayersList');
             onlineList.innerHTML = onlinePlayers.length > 0 
-                ? onlinePlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
+                ? onlinePlayers.map(p => `<div class="player-list-item"><div class="avatar-display" style="background-color: ${p.skin.color || '#000000'};">${p.skin.face || '😃'}</div>${p.name}</div>`).join('')
                 : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>';
             document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`;
             const todayList = document.getElementById('todayPlayersList');
             todayList.innerHTML = todayPlayers.length > 0
-                ? todayPlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
+                ? todayPlayers.map(p => `<div class="player-list-item"><div class="avatar-display" style="background-color: ${p.skin.color || '#000000'};">${p.skin.face || '😃'}</div>${p.name}</div>`).join('')
                 : '<div class="player-list-item">今日ログインしたプレイヤーはいません</div>';
             document.getElementById('todayPlayersCount').textContent = `${todayPlayers.length}人`;
         });
@@ -1940,13 +2533,43 @@
         }
     }));
 
+    // ========== スキンショップボタン ==========
+    document.getElementById('skinShopBtn').addEventListener('click', () => {
+        playClickSound();
+        openSkinShop();
+    });
+    document.getElementById('backFromSkinShopBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('applyCustomColorBtn').addEventListener('click', () => {
+        applyCustomColor();
+    });
+    document.querySelectorAll('#skinTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('#skinTabs .tab-btn').forEach(tt => tt.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('skinFacePanel').classList.add('hidden');
+        document.getElementById('skinAccessoryPanel').classList.add('hidden');
+        document.getElementById('skinColorPanel').classList.add('hidden');
+        if (this.dataset.skinTab === 'face') {
+            document.getElementById('skinFacePanel').classList.remove('hidden');
+            renderFaceShop();
+        } else if (this.dataset.skinTab === 'accessory') {
+            document.getElementById('skinAccessoryPanel').classList.remove('hidden');
+            renderAccessoryShop();
+        } else if (this.dataset.skinTab === 'color') {
+            document.getElementById('skinColorPanel').classList.remove('hidden');
+            renderColorShop();
+        }
+    }));
+
     // ========== 永続化 ==========
     function saveGameState() { 
         localStorage.setItem('gameState', JSON.stringify(gameState)); 
-        syncFirebase(); 
+        syncFirebaseWithSkin(); 
     }
     
-    function syncFirebase() { 
+    function syncFirebaseWithSkin() { 
         if (db) set(ref(db, `users/${gameState.userId}`), { 
             name: gameState.userName, 
             lastActive: Date.now(), 
@@ -1959,14 +2582,35 @@
             totalXPEarned: gameState.totalXPEarned,
             clovers: gameState.clovers,
             feedbackCount: gameState.feedbackCount,
-            lastFeedbackDate: gameState.lastFeedbackDate
+            lastFeedbackDate: gameState.lastFeedbackDate,
+            skin: gameState.skin
         }).catch(() => {}); 
     }
     
     (function load() { 
         loadSettings();
         const s = localStorage.getItem('gameState'); 
-        if (s) Object.assign(gameState, JSON.parse(s)); 
+        if (s) {
+            const loaded = JSON.parse(s);
+            Object.assign(gameState, loaded);
+            // スキン情報のデフォルト値設定
+            if (!gameState.skin) {
+                gameState.skin = {
+                    face: '😃',
+                    accessory: null,
+                    color: '#000000',
+                    ownedFaces: ['😃'],
+                    ownedAccessories: [],
+                    ownedColors: ['#000000'],
+                    customFace: null,
+                    customAccessory: null,
+                    customColor: null
+                };
+            }
+            if (!gameState.skin.ownedFaces) gameState.skin.ownedFaces = ['😃'];
+            if (!gameState.skin.ownedAccessories) gameState.skin.ownedAccessories = [];
+            if (!gameState.skin.ownedColors) gameState.skin.ownedColors = ['#000000'];
+        }
         if (!gameState.storyClears) gameState.storyClears = []; 
         if (!gameState.ownedSkills) gameState.ownedSkills = []; 
         if (!gameState.equippedSkills) gameState.equippedSkills = []; 
@@ -2021,6 +2665,7 @@
         updateSkillButtons();
         updateEventUI();
         updateItemCounts();
+        updateAvatarPreview();
     })();
 
     // タスクリセット
@@ -2233,7 +2878,8 @@
             return Object.entries(users).map(([id, u]) => ({ 
                 name: u.name || '名無し', 
                 score: u.score || 0, 
-                id 
+                id,
+                skin: u.skin || { face: '😃', color: '#000000', accessory: null }
             })).filter(u => u.score > 0).sort((a, b) => b.score - a.score).slice(0, 100);
         } catch(e) { 
             return []; 
@@ -2250,7 +2896,18 @@
         container.innerHTML = '';
         worldRankings.forEach((e, i) => {
             let d = document.createElement('div'); d.className = 'ranking-item';
-            d.innerHTML = `<div class="ranking-rank">${i + 1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.score.toLocaleString()}</div>`;
+            const accessoryEmoji = e.skin.accessory ? (skinData.accessories.find(a => a.id === e.skin.accessory)?.emoji || '') : '';
+            d.innerHTML = `
+                <div class="ranking-rank">${i + 1}位</div>
+                <div class="ranking-name">
+                    <div class="ranking-avatar" style="background-color: ${e.skin.color || '#000000'};">
+                        <span style="font-size: 20px;">${e.skin.face || '😃'}</span>
+                        ${accessoryEmoji ? `<span style="position: absolute; top: -5px; right: -5px; font-size: 14px;">${accessoryEmoji}</span>` : ''}
+                    </div>
+                    ${e.name}
+                </div>
+                <div class="ranking-score">${e.score.toLocaleString()}</div>
+            `;
             container.appendChild(d);
         });
         checkRankingRewards();
@@ -2308,9 +2965,9 @@
             const users = snap.val() || {};
             let entries = [];
             Object.entries(users).forEach(([id, u]) => {
-                if (type === 'combo') entries.push({ name: u.name || '名無し', value: u.highScoreCombo || 0, id });
-                else if (type === 'playcount') entries.push({ name: u.name || '名無し', value: u.totalPlayCount || 0, id });
-                else if (type === 'xp') entries.push({ name: u.name || '名無し', value: u.totalXPEarned || 0, id });
+                if (type === 'combo') entries.push({ name: u.name || '名無し', value: u.highScoreCombo || 0, id, skin: u.skin || { face: '😃', color: '#000000' } });
+                else if (type === 'playcount') entries.push({ name: u.name || '名無し', value: u.totalPlayCount || 0, id, skin: u.skin || { face: '😃', color: '#000000' } });
+                else if (type === 'xp') entries.push({ name: u.name || '名無し', value: u.totalXPEarned || 0, id, skin: u.skin || { face: '😃', color: '#000000' } });
             });
             return entries.filter(e => e.value > 0).sort((a, b) => b.value - a.value).slice(0, 100);
         } catch(e) { 
@@ -2332,7 +2989,16 @@
         container.innerHTML = '';
         rankings.forEach((e, i) => {
             let d = document.createElement('div'); d.className = 'ranking-item';
-            d.innerHTML = `<div class="ranking-rank">${i + 1}位</div><div class="ranking-name">${e.name}</div><div class="ranking-score">${e.value.toLocaleString()}</div>`;
+            d.innerHTML = `
+                <div class="ranking-rank">${i + 1}位</div>
+                <div class="ranking-name">
+                    <div class="ranking-avatar" style="background-color: ${e.skin.color || '#000000'};">
+                        <span style="font-size: 20px;">${e.skin.face || '😃'}</span>
+                    </div>
+                    ${e.name}
+                </div>
+                <div class="ranking-score">${e.value.toLocaleString()}</div>
+            `;
             container.appendChild(d);
         });
         if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
@@ -2802,10 +3468,11 @@
                 totalXPEarned: gameState.totalXPEarned,
                 clovers: gameState.clovers,
                 feedbackCount: gameState.feedbackCount,
-                lastFeedbackDate: gameState.lastFeedbackDate
+                lastFeedbackDate: gameState.lastFeedbackDate,
+                skin: gameState.skin
             }).catch(() => {});
         } else {
-            syncFirebase();
+            syncFirebaseWithSkin();
         }
 
         saveGameState();
