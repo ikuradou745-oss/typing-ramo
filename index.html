@@ -19,7 +19,23 @@
             --item-dragon: #8a2be2; --item-crown: #ffd700;
             --admin-red: #ff3333; --admin-orange: #ff9933;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; }
+        
+        /* テーマ別カラー定義 */
+        body.theme-default { --primary-dark: #0a0e27; --accent-blue: #00d4ff; --accent-green: #00ff88; --accent-pink: #ff006e; --accent-purple: #7c3aed; }
+        body.theme-neon { --primary-dark: #000000; --accent-blue: #00ffff; --accent-green: #00ff00; --accent-pink: #ff00ff; --accent-purple: #aa00ff; }
+        body.theme-classic { --primary-dark: #1a1a2e; --accent-blue: #4a90e2; --accent-green: #50c878; --accent-pink: #ff6b6b; --accent-purple: #9b59b6; }
+        body.theme-dot { --primary-dark: #000000; --accent-blue: #00ff00; --accent-green: #ffff00; --accent-pink: #ff00ff; --accent-purple: #00ffff; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 4px 4px; }
+        body.theme-oldclassic { --primary-dark: #2f4f4f; --accent-blue: #4682b4; --accent-green: #32cd32; --accent-pink: #ff6347; --accent-purple: #9370db; }
+        body.theme-white { --primary-dark: #ffffff; --accent-blue: #0000ff; --accent-green: #008000; --accent-pink: #ff1493; --accent-purple: #800080; --text-white: #000000; --text-gray: #666666; }
+        
+        /* カラーバリエーション */
+        body.color-default { --accent-blue: #00d4ff; --accent-green: #00ff88; --accent-pink: #ff006e; --accent-purple: #7c3aed; }
+        body.color-red { --accent-blue: #ff5555; --accent-green: #ff7777; --accent-pink: #ff0000; --accent-purple: #ff4444; }
+        body.color-cyan { --accent-blue: #00ffff; --accent-green: #00ffff; --accent-pink: #00ffff; --accent-purple: #00ffff; }
+        body.color-yellow { --accent-blue: #ffff00; --accent-green: #ffff00; --accent-pink: #ffff00; --accent-purple: #ffff00; }
+        body.color-magenta { --accent-blue: #ff00ff; --accent-green: #ff00ff; --accent-pink: #ff00ff; --accent-purple: #ff00ff; }
+        
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
         .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); position: relative; }
         .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
@@ -196,9 +212,19 @@
         .player-list-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-white); }
         .player-list-item:last-child { border-bottom: none; }
         .player-count { font-size: 14px; color: var(--accent-green); margin-top: 5px; }
+        
+        /* 設定画面 */
+        .settings-panel { width: 100%; max-width: 700px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
+        .settings-section { margin-bottom: 30px; }
+        .settings-title { font-size: 20px; color: var(--accent-blue); margin-bottom: 15px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .setting-label { font-size: 16px; color: var(--text-white); }
+        .setting-value { color: var(--accent-green); }
+        .setting-select { background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); color: var(--text-white); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .color-preview { display: inline-block; width: 20px; height: 20px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
     </style>
 </head>
-<body>
+<body class="theme-default color-default">
 <div class="game-container">
 
     <div class="header">
@@ -303,6 +329,7 @@
                 <button class="menu-btn small" id="shopBtn">🏪 ショップ</button>
                 <button class="menu-btn small" id="profileBtn">👤 プロフィール</button>
                 <button class="menu-btn small" id="dropRuleBtn">📜 ドロップルール</button>
+                <button class="menu-btn small" id="settingsBtn">⚙️ 設定</button>
             </div>
         </div>
         
@@ -472,6 +499,111 @@
             <button class="back-btn" id="backFromPlayerInfoBtn">戻る</button>
         </div>
         
+        <!-- 設定画面 -->
+        <div class="screen" id="settingsScreen">
+            <div class="menu-title">⚙️ 設定</div>
+            <div class="settings-panel">
+                <div class="tab-bar" id="settingsTabs">
+                    <button class="tab-btn active" data-settings="keybind">キーバインド</button>
+                    <button class="tab-btn" data-settings="design">デザイン</button>
+                </div>
+                
+                <!-- キーバインド設定 -->
+                <div id="keybindSettings" class="settings-section">
+                    <div class="settings-title">キーバインド設定</div>
+                    <div class="setting-item">
+                        <span class="setting-label">しゃ</span>
+                        <select class="setting-select" id="kbdSya">
+                            <option value="sya">sya</option>
+                            <option value="sha">sha</option>
+                            <option value="silya">silya</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">しゅ</span>
+                        <select class="setting-select" id="kbdSyu">
+                            <option value="syu">syu</option>
+                            <option value="shu">shu</option>
+                            <option value="silyu">silyu</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">しょ</span>
+                        <select class="setting-select" id="kbdSyo">
+                            <option value="syo">syo</option>
+                            <option value="sho">sho</option>
+                            <option value="silyo">silyo</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">じ</span>
+                        <select class="setting-select" id="kbdZi">
+                            <option value="zi">zi</option>
+                            <option value="ji">ji</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">じゃ</span>
+                        <select class="setting-select" id="kbdZya">
+                            <option value="zya">zya</option>
+                            <option value="ja">ja</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">じゅ</span>
+                        <select class="setting-select" id="kbdZyu">
+                            <option value="zyu">zyu</option>
+                            <option value="ju">ju</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">じょ</span>
+                        <select class="setting-select" id="kbdZyo">
+                            <option value="zyo">zyo</option>
+                            <option value="jo">jo</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">ん</span>
+                        <select class="setting-select" id="kbdNn">
+                            <option value="nn">nn</option>
+                            <option value="n">n</option>
+                        </select>
+                    </div>
+                    <button class="admin-btn" id="saveKeybindBtn" style="margin-top:20px;">保存</button>
+                </div>
+                
+                <!-- デザイン設定 -->
+                <div id="designSettings" class="settings-section hidden">
+                    <div class="settings-title">テーマ</div>
+                    <div class="setting-item">
+                        <span class="setting-label">テーマ選択</span>
+                        <select class="setting-select" id="themeSelect">
+                            <option value="default">ノーマル</option>
+                            <option value="neon">ネオン</option>
+                            <option value="classic">クラシック</option>
+                            <option value="dot">ドット</option>
+                            <option value="oldclassic">オールドクラシック</option>
+                            <option value="white">ホワイト</option>
+                        </select>
+                    </div>
+                    <div class="settings-title" style="margin-top:20px;">カラー</div>
+                    <div class="setting-item">
+                        <span class="setting-label">カラー選択</span>
+                        <select class="setting-select" id="colorSelect">
+                            <option value="default">デフォルト</option>
+                            <option value="red">レッド</option>
+                            <option value="cyan">シアン</option>
+                            <option value="yellow">イエロー</option>
+                            <option value="magenta">マゼンタ</option>
+                        </select>
+                    </div>
+                    <button class="admin-btn" id="saveDesignBtn" style="margin-top:20px;">適用</button>
+                </div>
+            </div>
+            <button class="back-btn" id="backFromSettingsBtn">戻る</button>
+        </div>
+        
         <!-- ゲーム画面 (通常) -->
         <div class="screen" id="gameScreen">
             <!-- ストーリーモード用目標バー -->
@@ -617,6 +749,116 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // ========== 設定管理 ==========
+    const settings = {
+        keybind: {
+            sya: 'sya',
+            syu: 'syu',
+            syo: 'syo',
+            zi: 'zi',
+            zya: 'zya',
+            zyu: 'zyu',
+            zyo: 'zyo',
+            nn: 'nn'
+        },
+        theme: 'default',
+        color: 'default'
+    };
+
+    // 設定を読み込む
+    function loadSettings() {
+        const saved = localStorage.getItem('gameSettings');
+        if (saved) {
+            Object.assign(settings, JSON.parse(saved));
+        }
+        
+        // テーマとカラーを適用
+        document.body.className = `theme-${settings.theme} color-${settings.color}`;
+        
+        // セレクトボックスに設定を反映
+        document.getElementById('kbdSya').value = settings.keybind.sya;
+        document.getElementById('kbdSyu').value = settings.keybind.syu;
+        document.getElementById('kbdSyo').value = settings.keybind.syo;
+        document.getElementById('kbdZi').value = settings.keybind.zi;
+        document.getElementById('kbdZya').value = settings.keybind.zya;
+        document.getElementById('kbdZyu').value = settings.keybind.zyu;
+        document.getElementById('kbdZyo').value = settings.keybind.zyo;
+        document.getElementById('kbdNn').value = settings.keybind.nn;
+        document.getElementById('themeSelect').value = settings.theme;
+        document.getElementById('colorSelect').value = settings.color;
+    }
+
+    // 設定を保存
+    function saveSettings() {
+        localStorage.setItem('gameSettings', JSON.stringify(settings));
+        document.body.className = `theme-${settings.theme} color-${settings.color}`;
+    }
+
+    // キーバインドを反映させた変換関数
+    function convertToRomajiWithSettings(t) {
+        let r='', i=0;
+        while(i<t.length){
+            if(i+1<t.length) {
+                const digraph = t.substring(i,i+2);
+                // 設定に基づいて変換
+                if (digraph === 'しゃ') {
+                    r += settings.keybind.sya;
+                    i+=2;
+                    continue;
+                } else if (digraph === 'しゅ') {
+                    r += settings.keybind.syu;
+                    i+=2;
+                    continue;
+                } else if (digraph === 'しょ') {
+                    r += settings.keybind.syo;
+                    i+=2;
+                    continue;
+                } else if (digraph === 'じゃ') {
+                    r += settings.keybind.zya;
+                    i+=2;
+                    continue;
+                } else if (digraph === 'じゅ') {
+                    r += settings.keybind.zyu;
+                    i+=2;
+                    continue;
+                } else if (digraph === 'じょ') {
+                    r += settings.keybind.zyo;
+                    i+=2;
+                    continue;
+                } else if (youonMap[digraph]) {
+                    r += youonMap[digraph];
+                    i+=2;
+                    continue;
+                }
+            }
+            if(t[i]==='っ' && i+1<t.length){
+                let n = t[i+1];
+                let nr = romajiMap[n] || n;
+                if(nr.length>1){
+                    r += nr[0] + nr[0] + nr.substring(1);
+                } else {
+                    r += nr + nr;
+                }
+                i+=2;
+                continue;
+            }
+            if (t[i] === 'じ') {
+                r += settings.keybind.zi;
+            } else if (t[i] === 'ん') {
+                r += settings.keybind.nn;
+            } else {
+                r += romajiMap[t[i]] || t[i];
+            }
+            i++;
+        }
+        return r;
+    }
+
+    // デフォルトの変換関数（下位互換性のため）
+    function convertToRomaji(t) {
+        return convertToRomajiWithSettings(t);
+    }
+
     // ========== ゲーム状態 ==========
     const gameState = {
         userId: 'user_' + Math.random().toString(36).substr(2,8),
@@ -744,31 +986,6 @@
         'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo'
     };
     
-    function convertToRomaji(t) {
-        let r='', i=0;
-        while(i<t.length){
-            if(i+1<t.length && youonMap[t.substring(i,i+2)]){
-                r += youonMap[t.substring(i,i+2)];
-                i+=2;
-                continue;
-            }
-            if(t[i]==='っ' && i+1<t.length){
-                let n = t[i+1];
-                let nr = romajiMap[n] || n;
-                if(nr.length>1){
-                    r += nr[0] + nr[0] + nr.substring(1);
-                } else {
-                    r += nr + nr;
-                }
-                i+=2;
-                continue;
-            }
-            r += romajiMap[t[i]] || t[i];
-            i++;
-        }
-        return r;
-    }
-
     let worldRankings = [];
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
@@ -787,12 +1004,15 @@
             if (lastResetDate !== todayStr) {
                 console.log('ランキングリセット実行: 全ユーザーのスコアを削除');
                 
-                // Firebaseの全ユーザーのスコアをリセット
+                // Firebaseの全ユーザーのランキングデータをリセット
                 if (db) {
                     get(ref(db, 'users')).then((snapshot) => {
                         const users = snapshot.val() || {};
                         Object.keys(users).forEach(userId => {
                             set(ref(db, `users/${userId}/score`), 0).catch(() => {});
+                            set(ref(db, `users/${userId}/highScoreCombo`), 0).catch(() => {});
+                            set(ref(db, `users/${userId}/totalPlayCount`), 0).catch(() => {});
+                            set(ref(db, `users/${userId}/totalXPEarned`), 0).catch(() => {});
                         });
                     }).catch(() => {});
                 }
@@ -1067,7 +1287,7 @@
                 gameActive = true;
                 gameTimer = setInterval(() => { 
                     gameTime--; 
-                    document.getElementById('timerDisplay').textContent = gameTime; 
+                    document.getElementById('timerDisplay').textContent = Math.floor(gameTime); 
                     if (gameTime <= 0) endGame(); 
                 }, 1000);
             }
@@ -1282,6 +1502,47 @@
         switchScreen('menuScreen');
     });
 
+    // ========== 設定関連 ==========
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+        switchScreen('settingsScreen');
+    });
+    
+    document.getElementById('backFromSettingsBtn').addEventListener('click', () => {
+        switchScreen('menuScreen');
+    });
+    
+    document.getElementById('saveKeybindBtn').addEventListener('click', () => {
+        settings.keybind.sya = document.getElementById('kbdSya').value;
+        settings.keybind.syu = document.getElementById('kbdSyu').value;
+        settings.keybind.syo = document.getElementById('kbdSyo').value;
+        settings.keybind.zi = document.getElementById('kbdZi').value;
+        settings.keybind.zya = document.getElementById('kbdZya').value;
+        settings.keybind.zyu = document.getElementById('kbdZyu').value;
+        settings.keybind.zyo = document.getElementById('kbdZyo').value;
+        settings.keybind.nn = document.getElementById('kbdNn').value;
+        saveSettings();
+        alert('キーバインドを保存しました');
+    });
+    
+    document.getElementById('saveDesignBtn').addEventListener('click', () => {
+        settings.theme = document.getElementById('themeSelect').value;
+        settings.color = document.getElementById('colorSelect').value;
+        saveSettings();
+        alert('デザインを適用しました');
+    });
+    
+    document.querySelectorAll('#settingsTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('#settingsTabs .tab-btn').forEach(tt => tt.classList.remove('active'));
+        this.classList.add('active');
+        if (this.dataset.settings === 'keybind') {
+            document.getElementById('keybindSettings').classList.remove('hidden');
+            document.getElementById('designSettings').classList.add('hidden');
+        } else {
+            document.getElementById('keybindSettings').classList.add('hidden');
+            document.getElementById('designSettings').classList.remove('hidden');
+        }
+    }));
+
     // ========== 永続化 ==========
     function saveGameState() { 
         localStorage.setItem('gameState', JSON.stringify(gameState)); 
@@ -1304,6 +1565,9 @@
     }
     
     (function load() { 
+        // 設定を読み込む
+        loadSettings();
+        
         const s = localStorage.getItem('gameState'); 
         if (s) Object.assign(gameState, JSON.parse(s)); 
         if (!gameState.storyClears) gameState.storyClears = []; 
@@ -1902,12 +2166,12 @@
                 else gain = 3;
                 
                 gameTime += gain;
-                document.getElementById('timerDisplay').textContent = gameTime;
+                document.getElementById('timerDisplay').textContent = Math.floor(gameTime);
                 alert(`✨ ${gain}秒延びた! (ゾーン: ${pos.toFixed(1)}%)`);
                 gameActive = true;
                 gameTimer = setInterval(() => { 
                     gameTime--; 
-                    document.getElementById('timerDisplay').textContent = gameTime; 
+                    document.getElementById('timerDisplay').textContent = Math.floor(gameTime); 
                     if (gameTime <= 0) endGame(); 
                 }, 1000);
             };
@@ -2050,7 +2314,7 @@
             }
             if (stage >= 50 && stage < 75) { 
                 gameTime = Math.max(55, gameTime - 5); 
-                document.getElementById('timerDisplay').textContent = gameTime; 
+                document.getElementById('timerDisplay').textContent = Math.floor(gameTime); 
             }
             if (stage >= 75 && stage <= 100 && !storyCrackActive) {
                 setTimeout(() => {
@@ -2084,7 +2348,7 @@
     function nextQuestion() { 
         let arr = questions[currentDifficulty]; 
         currentQuestion = arr[Math.floor(Math.random() * arr.length)]; 
-        currentRomaji = convertToRomaji(currentQuestion).toLowerCase(); 
+        currentRomaji = convertToRomajiWithSettings(currentQuestion).toLowerCase(); 
         typedInput = ''; 
         document.getElementById('questionDisplay').textContent = currentQuestion; 
         updateRomajiDisplay(); 
