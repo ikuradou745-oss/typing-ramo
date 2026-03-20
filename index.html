@@ -800,7 +800,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ========== 音声システム ==========
+    // ========== 音声システム（リアルな効果音） ==========
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
     const soundSettings = {
@@ -813,47 +813,143 @@
         task: true
     };
 
-    function playSound(type, frequency, duration, type2 = 'sine') {
+    // 高度な音声生成関数
+    function playSound(type) {
         if (!soundSettings[type]) return;
         
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+        const now = audioCtx.currentTime;
         
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
-        oscillator.type = type2;
-        oscillator.frequency.value = frequency;
-        gainNode.gain.value = 0.1;
-        
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + duration);
+        if (type === 'type') {
+            // キーボードのカチカチ音（高めの周波数、短い減衰）
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.value = 1200;
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            
+            osc.start(now);
+            osc.stop(now + 0.03);
+            
+        } else if (type === 'click') {
+            // ボタンのクリック音（ポップ音）
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            
+            osc.start(now);
+            osc.stop(now + 0.1);
+            
+        } else if (type === 'miss') {
+            // ミス音（低いブザー音）
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = 300;
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            
+            osc.start(now);
+            osc.stop(now + 0.1);
+            
+        } else if (type === 'skill') {
+            // スキル使用音（上昇するチャイム）
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+            osc1.frequency.setValueAtTime(600, now);
+            osc1.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
+            osc2.frequency.setValueAtTime(800, now);
+            osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+            
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.3);
+            osc2.stop(now + 0.3);
+            
+        } else if (type === 'levelUp') {
+            // レベルアップ音（ファンファーレ風）
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // ドミソ高いド
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, now + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
+                
+                osc.start(now + i * 0.15);
+                osc.stop(now + i * 0.15 + 0.2);
+            });
+            
+        } else if (type === 'clear') {
+            // クリア音（華やかなファンファーレ）
+            const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.12, now + i * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
+                
+                osc.start(now + i * 0.12);
+                osc.stop(now + i * 0.12 + 0.25);
+            });
+            
+        } else if (type === 'task') {
+            // タスククリア音（短いチャイム）
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(659.25, now); // ミ
+            osc.frequency.setValueAtTime(783.99, now + 0.1); // ソ
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
     }
 
-    function playMissSound() { playSound('miss', 200, 0.1, 'sawtooth'); }
-    function playTypeSound() { playSound('type', 800, 0.05, 'sine'); }
-    function playClickSound() { playSound('click', 600, 0.05, 'square'); }
-    function playSkillSound() { 
-        playSound('skill', 400, 0.1, 'sawtooth');
-        setTimeout(() => playSound('skill', 600, 0.1, 'sawtooth'), 50);
-        setTimeout(() => playSound('skill', 800, 0.2, 'sawtooth'), 100);
-    }
-    function playLevelUpSound() {
-        playSound('levelUp', 523, 0.2, 'sine'); // ド
-        setTimeout(() => playSound('levelUp', 659, 0.2, 'sine'), 200); // ミ
-        setTimeout(() => playSound('levelUp', 784, 0.3, 'sine'), 400); // ソ
-    }
-    function playClearSound() {
-        playSound('clear', 523, 0.2, 'sine');
-        setTimeout(() => playSound('clear', 587, 0.2, 'sine'), 150);
-        setTimeout(() => playSound('clear', 659, 0.2, 'sine'), 300);
-        setTimeout(() => playSound('clear', 698, 0.2, 'sine'), 450);
-        setTimeout(() => playSound('clear', 784, 0.4, 'sine'), 600);
-    }
-    function playTaskSound() {
-        playSound('task', 659, 0.1, 'sine');
-        setTimeout(() => playSound('task', 784, 0.2, 'sine'), 100);
-    }
+    function playMissSound() { playSound('miss'); }
+    function playTypeSound() { playSound('type'); }
+    function playClickSound() { playSound('click'); }
+    function playSkillSound() { playSound('skill'); }
+    function playLevelUpSound() { playSound('levelUp'); }
+    function playClearSound() { playSound('clear'); }
+    function playTaskSound() { playSound('task'); }
 
     // ========== 設定管理 ==========
     const settings = {
