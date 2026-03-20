@@ -231,17 +231,24 @@
         .feedback-limit { font-size: 12px; color: var(--text-gray); text-align: right; margin-bottom: 10px; }
         .feedback-banned { background: rgba(255,0,0,0.1); border: 2px solid var(--admin-red); padding: 20px; border-radius: 10px; text-align: center; color: #ff8888; font-size: 16px; margin-bottom: 15px; }
         
-        /* フィードバック管理 */
-        .feedback-list { max-height: 400px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 15px; }
-        .feedback-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
-        .feedback-item:last-child { border-bottom: none; }
-        .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .feedback-user { color: var(--accent-blue); font-weight: bold; }
-        .feedback-time { font-size: 11px; color: var(--text-gray); }
-        .feedback-content { font-size: 14px; margin: 5px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
-        .feedback-actions { display: flex; gap: 10px; justify-content: flex-end; }
-        .feedback-actions button { padding: 4px 8px; background: var(--admin-red); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px; }
-        .feedback-actions button.confirm { background: var(--admin-orange); }
+        /* フィードバック表示画面 */
+        .feedback-view-panel { width: 100%; max-width: 800px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
+        .feedback-view-list { max-height: 500px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 15px; }
+        .feedback-view-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
+        .feedback-view-item:last-child { border-bottom: none; }
+        .feedback-view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px; }
+        .feedback-view-user { color: var(--accent-blue); font-weight: bold; }
+        .feedback-view-time { font-size: 11px; color: var(--text-gray); }
+        .feedback-view-content { font-size: 14px; margin: 8px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; word-wrap: break-word; white-space: pre-wrap; min-height: 60px; }
+        .feedback-view-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .feedback-view-actions button { padding: 6px 12px; background: var(--admin-red); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px; }
+        .feedback-view-actions button.confirm { background: var(--admin-orange); }
+        
+        /* フィードバック管理簡易リスト */
+        .feedback-list-simple { max-height: 200px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 10px; font-size: 12px; }
+        .feedback-item-simple { padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .feedback-item-simple .user { color: var(--accent-blue); }
+        .feedback-item-simple .preview { color: var(--text-gray); }
     </style>
 </head>
 <body class="theme-default color-default">
@@ -675,7 +682,7 @@
             <button class="back-btn" id="backFromSettingsBtn">戻る</button>
         </div>
         
-        <!-- フィードバック画面 -->
+        <!-- フィードバック画面（送信用） -->
         <div class="screen" id="feedbackScreen">
             <div class="menu-title">📮 フィードバック</div>
             <div class="feedback-panel">
@@ -691,6 +698,16 @@
                 </div>
             </div>
             <button class="back-btn" id="backFromFeedbackBtn">戻る</button>
+        </div>
+        
+        <!-- フィードバック表示画面（管理者用） -->
+        <div class="screen" id="feedbackViewScreen">
+            <div class="menu-title">📋 フィードバック一覧</div>
+            <div class="feedback-view-panel">
+                <div class="feedback-view-list" id="feedbackViewList"></div>
+                <button class="admin-btn secondary" id="refreshFeedbackViewBtn">🔄 更新</button>
+                <button class="back-btn" id="backFromFeedbackViewBtn" style="margin-top:10px;">戻る</button>
+            </div>
         </div>
         
         <!-- ゲーム画面 (通常) -->
@@ -809,14 +826,14 @@
         
         <div class="admin-subtitle">📋 管理メニュー</div>
         <button class="admin-btn" id="goToBugBoardBtn">📝 バグ報告板へ</button>
+        <button class="admin-btn secondary" id="viewFeedbackListBtn">📮 フィードバックを見る</button>
         
         <div class="admin-subtitle">🗑️ データリセット</div>
         <button class="admin-btn secondary" id="refreshUserListBtn">🔄 ユーザー一覧更新</button>
         <div class="user-list" id="userList"></div>
         
-        <div class="admin-subtitle">📮 フィードバック管理</div>
-        <button class="admin-btn secondary" id="refreshFeedbackBtn">🔄 フィードバック更新</button>
-        <div class="feedback-list" id="feedbackList"></div>
+        <div class="admin-subtitle">📮 最新フィードバック</div>
+        <div class="feedback-list-simple" id="feedbackSimpleList"></div>
     </div>
 
     <!-- 演出レイヤー -->
@@ -862,124 +879,96 @@
         const now = audioCtx.currentTime;
         
         if (type === 'type') {
-            // キーボードのカチカチ音（高めの周波数、短い減衰）
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sine';
             osc.frequency.value = 1200;
             gain.gain.setValueAtTime(0.1, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-            
             osc.start(now);
             osc.stop(now + 0.03);
-            
         } else if (type === 'click') {
-            // ボタンのクリック音（ポップ音）
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, now);
             osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
             gain.gain.setValueAtTime(0.15, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            
             osc.start(now);
             osc.stop(now + 0.1);
-            
         } else if (type === 'miss') {
-            // ミス音（低いブザー音）
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sawtooth';
             osc.frequency.value = 300;
             gain.gain.setValueAtTime(0.1, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            
             osc.start(now);
             osc.stop(now + 0.1);
-            
         } else if (type === 'skill') {
-            // スキル使用音（上昇するチャイム）
             const osc1 = audioCtx.createOscillator();
             const osc2 = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc1.connect(gain);
             osc2.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc1.type = 'sine';
             osc2.type = 'triangle';
             osc1.frequency.setValueAtTime(600, now);
             osc1.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
             osc2.frequency.setValueAtTime(800, now);
             osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-            
             gain.gain.setValueAtTime(0.1, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-            
             osc1.start(now);
             osc2.start(now);
             osc1.stop(now + 0.3);
             osc2.stop(now + 0.3);
-            
         } else if (type === 'levelUp') {
-            // レベルアップ音（ファンファーレ風）
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // ドミソ高いド
+            const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, i) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
                 osc.type = 'sine';
                 osc.frequency.value = freq;
                 gain.gain.setValueAtTime(0.1, now + i * 0.15);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
-                
                 osc.start(now + i * 0.15);
                 osc.stop(now + i * 0.15 + 0.2);
             });
-            
         } else if (type === 'clear') {
-            // クリア音（華やかなファンファーレ）
             const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
             notes.forEach((freq, i) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
                 osc.type = 'sine';
                 osc.frequency.value = freq;
                 gain.gain.setValueAtTime(0.12, now + i * 0.12);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
-                
                 osc.start(now + i * 0.12);
                 osc.stop(now + i * 0.12 + 0.25);
             });
-            
         } else if (type === 'task') {
-            // タスククリア音（短いチャイム）
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(659.25, now); // ミ
-            osc.frequency.setValueAtTime(783.99, now + 0.1); // ソ
+            osc.frequency.setValueAtTime(659.25, now);
+            osc.frequency.setValueAtTime(783.99, now + 0.1);
             gain.gain.setValueAtTime(0.1, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            
             osc.start(now);
             osc.stop(now + 0.2);
         }
@@ -1018,18 +1007,13 @@
         }
     };
 
-    // 設定を読み込む
     function loadSettings() {
         const saved = localStorage.getItem('gameSettings');
         if (saved) {
             Object.assign(settings, JSON.parse(saved));
             if (settings.sound) Object.assign(soundSettings, settings.sound);
         }
-        
-        // テーマとカラーを適用
         document.body.className = `theme-${settings.theme} color-${settings.color}`;
-        
-        // セレクトボックスに設定を反映
         document.getElementById('kbdSya').value = settings.keybind.sya;
         document.getElementById('kbdSyu').value = settings.keybind.syu;
         document.getElementById('kbdSyo').value = settings.keybind.syo;
@@ -1040,8 +1024,6 @@
         document.getElementById('kbdNn').value = settings.keybind.nn;
         document.getElementById('themeSelect').value = settings.theme;
         document.getElementById('colorSelect').value = settings.color;
-        
-        // サウンド設定チェックボックス
         document.getElementById('soundMiss').checked = soundSettings.miss;
         document.getElementById('soundType').checked = soundSettings.type;
         document.getElementById('soundClick').checked = soundSettings.click;
@@ -1051,19 +1033,16 @@
         document.getElementById('soundTask').checked = soundSettings.task;
     }
 
-    // 設定を保存
     function saveSettings() {
         localStorage.setItem('gameSettings', JSON.stringify(settings));
         document.body.className = `theme-${settings.theme} color-${settings.color}`;
     }
 
-    // キーバインドを反映させた変換関数
     function convertToRomajiWithSettings(t) {
         let r='', i=0;
         while(i<t.length){
             if(i+1<t.length) {
                 const digraph = t.substring(i,i+2);
-                // 設定に基づいて変換
                 if (digraph === 'しゃ') {
                     r += settings.keybind.sya;
                     i+=2;
@@ -1117,7 +1096,6 @@
         return r;
     }
 
-    // デフォルトの変換関数（下位互換性のため）
     function convertToRomaji(t) {
         return convertToRomajiWithSettings(t);
     }
@@ -1145,34 +1123,12 @@
         totalPlayCount: 0,
         totalXPEarned: 0,
         clovers: 0,
-        // アイテム所持数
-        items: {
-            stone: 0,
-            fire: 0,
-            thunder: 0,
-            dragon: 0,
-            crown: 0
-        },
-        // クラフトスキル所持フラグ
-        craftedSkills: {
-            sigma: false,
-            doubleScore: false,
-            comboAlpha: false,
-            dragonSummers: false,
-            dropRate: false
-        },
-        // タスクカウンター
-        taskCounters: {
-            craftItemsCollected: 0,
-            levelUps: 0,
-            combo200to300: 0,
-            score100k: 0,
-            combo150plus: 0
-        },
-        // フィードバック関連
+        items: { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 },
+        craftedSkills: { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false, dropRate: false },
+        taskCounters: { craftItemsCollected: 0, levelUps: 0, combo200to300: 0, score100k: 0, combo150plus: 0 },
         feedbackCount: 0,
         lastFeedbackDate: '',
-        bannedUntil: 0, // 荒らしによるBAN期限（タイムスタンプ）
+        bannedUntil: 0,
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -1220,9 +1176,7 @@
     let combo25Active = false;
     let comboMultiplier = 1;
     let doubleScoreActive = false;
-    let dropRateActive = false; // ドロップ率アップ
 
-    // 連打モード用
     let tapModeActive = false;
     let tapCount = 0;
     let tapInterval = null;
@@ -1293,7 +1247,6 @@
         } else {
             bannedMessage.classList.add('hidden');
             normalMessage.classList.remove('hidden');
-            
             const today = new Date().toDateString();
             if (gameState.lastFeedbackDate !== today) {
                 gameState.feedbackCount = 0;
@@ -1347,18 +1300,16 @@
                     timestamp: Date.now(),
                     date: today
                 });
-
-                // 報酬付与
                 gameState.coins += 500;
                 gameState.feedbackCount++;
                 if (isEventActive()) {
                     gameState.clovers += 1;
                 }
-
                 document.getElementById('feedbackMessage').value = '';
                 saveGameState();
                 await updateFeedbackLimitDisplay();
                 alert('フィードバックを送信しました！ 500💰' + (isEventActive() ? ' + 1🍀' : '') + ' を獲得！');
+                loadFeedbackSimpleList();
             } catch(e) {
                 alert('送信に失敗しました');
                 console.error(e);
@@ -1366,30 +1317,29 @@
         }
     });
 
-    // 管理者向けフィードバック管理
-    async function loadFeedbackList() {
+    // フィードバック一覧表示（詳細画面）
+    async function loadFeedbackFullList() {
         if (!db) return;
         try {
             const snap = await get(ref(db, 'feedbacks'));
             const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
             feedbacks.sort((a, b) => b.timestamp - a.timestamp);
             
-            const list = document.getElementById('feedbackList');
+            const list = document.getElementById('feedbackViewList');
             list.innerHTML = feedbacks.map(f => `
-                <div class="feedback-item" data-id="${f.id}" data-userid="${f.userId}">
-                    <div class="feedback-header">
-                        <span class="feedback-user">${f.userName}</span>
-                        <span class="feedback-time">${new Date(f.timestamp).toLocaleString()}</span>
+                <div class="feedback-view-item" data-id="${f.id}" data-userid="${f.userId}">
+                    <div class="feedback-view-header">
+                        <span class="feedback-view-user">${f.userName}</span>
+                        <span class="feedback-view-time">${new Date(f.timestamp).toLocaleString()}</span>
                     </div>
-                    <div class="feedback-content">${f.message}</div>
-                    <div class="feedback-actions">
-                        <button class="spam-btn" data-userid="${f.userId}" data-username="${f.userName}">荒らし報告</button>
+                    <div class="feedback-view-content">${escapeHtml(f.message)}</div>
+                    <div class="feedback-view-actions">
+                        <button class="spam-btn-view" data-userid="${f.userId}" data-username="${f.userName}">荒らし報告</button>
                     </div>
                 </div>
             `).join('');
 
-            // 荒らしボタンのイベント
-            document.querySelectorAll('.spam-btn').forEach(btn => {
+            document.querySelectorAll('.spam-btn-view').forEach(btn => {
                 let confirmState = 0;
                 btn.addEventListener('click', async (e) => {
                     const userId = btn.dataset.userid;
@@ -1405,7 +1355,6 @@
                             confirmState = 0;
                         }, 3000);
                     } else if (confirmState === 1) {
-                        // 3日間BAN (259200000 ms)
                         const banUntil = Date.now() + 3 * 24 * 60 * 60 * 1000;
                         await set(ref(db, `feedbackBans/${userId}`), {
                             until: banUntil,
@@ -1414,7 +1363,8 @@
                             bannedAt: Date.now()
                         });
                         alert(`${userName} を3日間BANしました`);
-                        loadFeedbackList();
+                        loadFeedbackFullList();
+                        loadFeedbackSimpleList();
                     }
                 });
             });
@@ -1423,7 +1373,38 @@
         }
     }
 
-    // ========== ランキングリセット & 報酬処理 ==========
+    // フィードバック簡易リスト（管理者パネル内）
+    async function loadFeedbackSimpleList() {
+        if (!db) return;
+        try {
+            const snap = await get(ref(db, 'feedbacks'));
+            const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
+            feedbacks.sort((a, b) => b.timestamp - a.timestamp);
+            const recent = feedbacks.slice(0, 5);
+            
+            const list = document.getElementById('feedbackSimpleList');
+            list.innerHTML = recent.map(f => `
+                <div class="feedback-item-simple">
+                    <span class="user">${f.userName}</span>: 
+                    <span class="preview">${f.message.substring(0, 30)}${f.message.length > 30 ? '...' : ''}</span>
+                </div>
+            `).join('');
+            if (recent.length === 0) list.innerHTML = '<div>フィードバックはありません</div>';
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ========== ランキングリセット ==========
     function checkRankingReset() {
         const now = new Date();
         const today7 = new Date();
@@ -1435,8 +1416,6 @@
             
             if (lastResetDate !== todayStr) {
                 console.log('ランキングリセット実行: 全ユーザーのスコアを削除');
-                
-                // Firebaseの全ユーザーのランキングデータをリセット
                 if (db) {
                     get(ref(db, 'users')).then((snapshot) => {
                         const users = snapshot.val() || {};
@@ -1448,14 +1427,10 @@
                         });
                     }).catch(() => {});
                 }
-                
-                // ローカルのランキングも削除
                 worldRankings = [];
                 localStorage.removeItem('worldRankings');
                 localStorage.removeItem('highScoreRankings');
                 localStorage.setItem('lastRankingResetDate', todayStr);
-                
-                // 報酬チェック
                 checkRankingRewards();
             }
         }
@@ -1466,28 +1441,23 @@
 
     // ========== アイテムドロップ ==========
     function rollItemDrop() {
-        let dropRate = 0.05; // 5%
+        let dropRate = 0.05;
         if (gameState.craftedSkills.dropRate && gameState.equippedSkills.includes('dropRate')) {
-            dropRate *= 4; // 4倍
+            dropRate *= 4;
         }
-        
         if (Math.random() > dropRate) return null;
-        
         const r = Math.random();
-        if (r < 0.5) return 'stone';      // 50% 石
-        else if (r < 0.7) return 'fire';   // 20% 火
-        else if (r < 0.9) return 'thunder'; // 20% イナズマ
-        else if (r < 0.99) return 'dragon'; // 9% ミニドラゴン
-        else return 'crown';                // 1% 王冠
+        if (r < 0.5) return 'stone';
+        else if (r < 0.7) return 'fire';
+        else if (r < 0.9) return 'thunder';
+        else if (r < 0.99) return 'dragon';
+        else return 'crown';
     }
 
     function addItem(itemType, count = 1) {
         if (!itemType) return false;
         gameState.items[itemType] = (gameState.items[itemType] || 0) + count;
-        
-        // クラフトアイテム収集カウンター
         gameState.taskCounters.craftItemsCollected += count;
-        
         saveGameState();
         updateItemCounts();
         return true;
@@ -1599,10 +1569,8 @@
         if (!gameActive) return;
         const now = Date.now();
         if (cooldowns.sigma > now) return;
-        
-        cooldowns.sigma = now + 30000; // 30秒クールダウン
+        cooldowns.sigma = now + 30000;
         playSkillSound();
-        
         skillAutoActive = true;
         showAnimation('⚡自動入力Σ!');
         if (autoInterval) clearInterval(autoInterval);
@@ -1619,9 +1587,8 @@
                 updateRomajiDisplay();
                 if (typedInput === currentRomaji) nextQuestion();
             }
-        }, SIGMA_AUTO_FRAMES); // 36Frame
-        
-        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 1500); // 1.5秒
+        }, SIGMA_AUTO_FRAMES);
+        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 1500);
         updateSkillButtons();
     }
 
@@ -1629,13 +1596,11 @@
         if (!gameActive) return;
         const now = Date.now();
         if (cooldowns.doubleScore > now) return;
-        
-        cooldowns.doubleScore = now + 40000; // 40秒クールダウン
+        cooldowns.doubleScore = now + 40000;
         doubleScoreActive = true;
         playSkillSound();
         showAnimation('💰 スコア2倍!');
-        
-        setTimeout(() => { doubleScoreActive = false; }, 5000); // 5秒間
+        setTimeout(() => { doubleScoreActive = false; }, 5000);
         updateSkillButtons();
     }
 
@@ -1643,11 +1608,8 @@
         if (!gameActive) return;
         const now = Date.now();
         if (cooldowns.comboAlpha > now) return;
-        
-        cooldowns.comboAlpha = now + 50000; // 50秒クールダウン
+        cooldowns.comboAlpha = now + 50000;
         playSkillSound();
-        
-        // 自動入力 (64Frame)
         skillAutoActive = true;
         showAnimation('⚡×🔥 自動入力×コンボα!');
         if (autoInterval) clearInterval(autoInterval);
@@ -1665,15 +1627,10 @@
                 if (typedInput === currentRomaji) nextQuestion();
             }
         }, ALPHA_AUTO_FRAMES);
-        
-        // 6秒間自動入力
         setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 6000);
-        
-        // コンボ2.5倍 (8秒間)
         combo25Active = true;
         comboMultiplier = 2.5;
         setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 8000);
-        
         updateSkillButtons();
     }
 
@@ -1681,18 +1638,12 @@
         if (!gameActive) return;
         const now = Date.now();
         if (cooldowns.dragonSummers > now) return;
-        
-        cooldowns.dragonSummers = now + 45000; // 45秒クールダウン
+        cooldowns.dragonSummers = now + 45000;
         playSkillSound();
-        
-        // ゲーム中断
         gameActive = false;
         clearInterval(gameTimer);
-        
-        // 連打モード開始
         tapModeActive = true;
         tapCount = 0;
-        
         const container = document.createElement('div'); 
         container.className = 'bar-game-container';
         container.innerHTML = `
@@ -1703,20 +1654,16 @@
             </div>
         `;
         document.body.appendChild(container);
-        
         let timeLeft = 2.0;
         const tapButton = document.getElementById('tapButton');
         const tapCountEl = document.getElementById('tapCount');
         const tapTimeEl = document.getElementById('tapTime');
-        
         tapButton.addEventListener('click', () => {
             if (tapModeActive) {
                 tapCount++;
                 tapCountEl.textContent = tapCount;
             }
         });
-        
-        // スペースキーでも連打可能に
         const spaceHandler = (e) => {
             if (e.code === 'Space' && tapModeActive) {
                 e.preventDefault();
@@ -1725,7 +1672,6 @@
             }
         };
         document.addEventListener('keydown', spaceHandler);
-        
         const tapInterval = setInterval(() => {
             timeLeft -= 0.1;
             tapTimeEl.textContent = timeLeft.toFixed(1);
@@ -1733,12 +1679,10 @@
                 clearInterval(tapInterval);
                 document.removeEventListener('keydown', spaceHandler);
                 container.remove();
-                
                 const comboGain = Math.floor(tapCount / 5);
                 currentCombo += comboGain;
                 document.getElementById('comboDisplay').textContent = currentCombo;
                 showAnimation(`✨ コンボ+${comboGain}!`);
-                
                 tapModeActive = false;
                 gameActive = true;
                 gameTimer = setInterval(() => { 
@@ -1748,11 +1692,9 @@
                 }, 1000);
             }
         }, 100);
-        
         updateSkillButtons();
     }
 
-    // ========== イベント期間チェック ==========
     function isEventActive() {
         const now = new Date();
         const eventEnd = new Date(now.getFullYear(), 2, 31);
@@ -1769,7 +1711,7 @@
             document.getElementById('overlay').classList.add('active');
             loadBugReports();
             loadUserList();
-            loadFeedbackList();
+            loadFeedbackSimpleList();
         } else {
             alert('コードが違います');
         }
@@ -1784,6 +1726,20 @@
         document.getElementById('adminPanel').classList.remove('active');
         switchScreen('bugBoardScreen');
         loadBugBoardMessages();
+    });
+    
+    document.getElementById('viewFeedbackListBtn').addEventListener('click', () => {
+        document.getElementById('adminPanel').classList.remove('active');
+        switchScreen('feedbackViewScreen');
+        loadFeedbackFullList();
+    });
+    
+    document.getElementById('refreshFeedbackViewBtn').addEventListener('click', () => {
+        loadFeedbackFullList();
+    });
+    
+    document.getElementById('backFromFeedbackViewBtn').addEventListener('click', () => {
+        switchScreen('menuScreen');
     });
     
     async function loadBugReports() {
@@ -1803,7 +1759,6 @@
             const snap = await get(ref(db, 'bugReports'));
             const reports = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
             reports.sort((a, b) => b.timestamp - a.timestamp);
-            
             const list = document.getElementById('bugBoardList');
             list.innerHTML = reports.map(r => 
                 `<div class="bug-message"><span class="bug-name">${r.name}:</span> ${r.message}</div>`
@@ -1816,7 +1771,6 @@
     document.getElementById('postBugBoardBtn').addEventListener('click', async () => {
         const message = document.getElementById('bugBoardMessageInput').value.trim();
         if (!message) return;
-        
         if (db) {
             try {
                 await push(ref(db, 'bugReports'), {
@@ -1837,7 +1791,6 @@
     });
     
     document.getElementById('refreshUserListBtn').addEventListener('click', loadUserList);
-    document.getElementById('refreshFeedbackBtn').addEventListener('click', loadFeedbackList);
     
     async function loadUserList() {
         if (!db) return;
@@ -1845,10 +1798,6 @@
             const snap = await get(ref(db, 'users'));
             const users = snap.val() || {};
             const list = document.getElementById('userList');
-            
-            // 削除確認状態を管理
-            const deleteConfirm = {};
-            
             list.innerHTML = Object.entries(users).map(([id, user]) => {
                 const userName = user.name || '名無し';
                 return `
@@ -1860,34 +1809,24 @@
                     </div>
                 `;
             }).join('');
-            
-            // 削除ボタンのイベント
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 let confirmState = 0;
                 let timeoutId = null;
-                
                 btn.addEventListener('click', async (e) => {
                     const userId = btn.dataset.userid;
                     const userName = btn.dataset.username;
-                    
                     if (confirmState === 0) {
-                        // 1回目の確認
                         btn.textContent = '本当に削除？';
                         btn.style.background = 'var(--admin-orange)';
                         confirmState = 1;
-                        
-                        // 5秒後にリセット
                         if (timeoutId) clearTimeout(timeoutId);
                         timeoutId = setTimeout(() => {
                             btn.textContent = 'データ削除';
                             btn.style.background = 'var(--admin-red)';
                             confirmState = 0;
                         }, 5000);
-                        
                     } else if (confirmState === 1) {
-                        // 2回目の確認（5秒待機完了）
                         if (timeoutId) clearTimeout(timeoutId);
-                        
                         if (db) {
                             try {
                                 await remove(ref(db, `users/${userId}`));
@@ -1908,41 +1847,26 @@
     // ========== プレイヤー情報 ==========
     function updatePlayerInfo() {
         if (!db) return;
-        
         const now = Date.now();
         const fiveMinutesAgo = now - 5 * 60 * 1000;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayStart = today.getTime();
-        
         onValue(ref(db, 'users'), (snapshot) => {
             const users = snapshot.val() || {};
             const onlinePlayers = [];
             const todayPlayers = [];
-            
             Object.entries(users).forEach(([id, user]) => {
                 const lastActive = user.lastActive || 0;
                 const userName = user.name || '名無し';
-                
-                // 現在プレイ中（過去5分以内）
-                if (lastActive > fiveMinutesAgo) {
-                    onlinePlayers.push(userName);
-                }
-                
-                // 今日ログイン（今日0時以降）
-                if (lastActive > todayStart) {
-                    todayPlayers.push(userName);
-                }
+                if (lastActive > fiveMinutesAgo) onlinePlayers.push(userName);
+                if (lastActive > todayStart) todayPlayers.push(userName);
             });
-            
-            // オンラインプレイヤー表示
             const onlineList = document.getElementById('onlinePlayersList');
             onlineList.innerHTML = onlinePlayers.length > 0 
                 ? onlinePlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
                 : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>';
             document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`;
-            
-            // 今日ログインプレイヤー表示
             const todayList = document.getElementById('todayPlayersList');
             todayList.innerHTML = todayPlayers.length > 0
                 ? todayPlayers.map(name => `<div class="player-list-item">${name}</div>`).join('')
@@ -1955,7 +1879,6 @@
         switchScreen('playerInfoScreen');
         updatePlayerInfo();
     });
-    
     document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => {
         switchScreen('menuScreen');
     });
@@ -1964,11 +1887,9 @@
     document.getElementById('settingsBtn').addEventListener('click', () => {
         switchScreen('settingsScreen');
     });
-    
     document.getElementById('backFromSettingsBtn').addEventListener('click', () => {
         switchScreen('menuScreen');
     });
-    
     document.getElementById('saveKeybindBtn').addEventListener('click', () => {
         settings.keybind.sya = document.getElementById('kbdSya').value;
         settings.keybind.syu = document.getElementById('kbdSyu').value;
@@ -1981,14 +1902,12 @@
         saveSettings();
         alert('キーバインドを保存しました');
     });
-    
     document.getElementById('saveDesignBtn').addEventListener('click', () => {
         settings.theme = document.getElementById('themeSelect').value;
         settings.color = document.getElementById('colorSelect').value;
         saveSettings();
         alert('デザインを適用しました');
     });
-
     document.getElementById('saveSoundBtn').addEventListener('click', () => {
         settings.sound = {
             miss: document.getElementById('soundMiss').checked,
@@ -2003,7 +1922,6 @@
         saveSettings();
         alert('サウンド設定を保存しました');
     });
-    
     document.querySelectorAll('#settingsTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
         document.querySelectorAll('#settingsTabs .tab-btn').forEach(tt => tt.classList.remove('active'));
         this.classList.add('active');
@@ -2046,9 +1964,7 @@
     }
     
     (function load() { 
-        // 設定を読み込む
         loadSettings();
-        
         const s = localStorage.getItem('gameState'); 
         if (s) Object.assign(gameState, JSON.parse(s)); 
         if (!gameState.storyClears) gameState.storyClears = []; 
@@ -2064,18 +1980,11 @@
         if (!gameState.clovers) gameState.clovers = 0;
         if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 };
         if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false, dropRate: false };
-        if (!gameState.taskCounters) gameState.taskCounters = {
-            craftItemsCollected: 0,
-            levelUps: 0,
-            combo200to300: 0,
-            score100k: 0,
-            combo150plus: 0
-        };
+        if (!gameState.taskCounters) gameState.taskCounters = { craftItemsCollected: 0, levelUps: 0, combo200to300: 0, score100k: 0, combo150plus: 0 };
         if (!gameState.feedbackCount) gameState.feedbackCount = 0;
         if (!gameState.lastFeedbackDate) gameState.lastFeedbackDate = '';
         if (!gameState.bannedUntil) gameState.bannedUntil = 0;
         gameState.previousLevel = gameState.level;
-        
         if (!gameState.eventTasks) {
             gameState.eventTasks = [
                 { id: 'event1', title: 'イベントで10000スコア達成', current: 0, target: 1, reward: 5, completed: false, lastReset: '' },
@@ -2125,38 +2034,27 @@
         lastMon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); 
         lastMon.setHours(7, 0, 0, 0);
         if (dayOfWeek === 1 && now < lastMon) lastMon.setDate(lastMon.getDate() - 7);
-        
-        // 月間タスクリセット（毎月最初の月曜日の朝7時）
         const firstMonday = new Date(now.getFullYear(), now.getMonth(), 1);
         while (firstMonday.getDay() !== 1) {
             firstMonday.setDate(firstMonday.getDate() + 1);
         }
         firstMonday.setHours(7, 0, 0, 0);
         const monthResetTime = firstMonday.getTime();
-        
         const todayStr = today7.toDateString();
         const weekStr = lastMon.toDateString();
         const monthStr = `${now.getFullYear()}-${now.getMonth()}`;
-        
-        // 毎日タスク
         if (gameState.lastDailyReset !== todayStr) {
             gameState.dailyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; });
             gameState.lastDailyReset = todayStr;
         }
-        
-        // 週間タスク
         if (gameState.lastWeeklyReset !== weekStr) {
             gameState.weeklyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = weekStr; });
             gameState.lastWeeklyReset = weekStr;
         }
-        
-        // 月間タスク
         if (gameState.lastMonthlyReset !== monthStr && now.getTime() >= monthResetTime) {
             gameState.monthlyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = monthStr; });
             gameState.lastMonthlyReset = monthStr;
         }
-        
-        // イベントタスク（毎日更新）
         if (gameState.lastEventReset !== todayStr) {
             gameState.eventTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; });
             gameState.lastEventReset = todayStr;
@@ -2185,7 +2083,6 @@
                 let current = t.current;
                 if (t.id === 'daily4') current = gameState.taskCounters.craftItemsCollected;
                 if (t.id === 'daily5') current = gameState.taskCounters.levelUps;
-                
                 let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
                 let percent = Math.min(100, (current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
@@ -2201,7 +2098,6 @@
                 if (t.id === 'weekly5') current = gameState.taskCounters.levelUps;
                 if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300;
                 if (t.id === 'weekly7') current = gameState.taskCounters.score100k;
-                
                 let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
                 let percent = Math.min(100, (current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
@@ -2217,7 +2113,6 @@
                 if (t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected;
                 if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus;
                 if (t.id === 'monthly4') current = gameState.taskCounters.levelUps;
-                
                 let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`;
                 let percent = Math.min(100, (current / t.target) * 100);
                 d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`;
@@ -2230,50 +2125,33 @@
         let daily = gameState.dailyTasks;
         let weekly = gameState.weeklyTasks;
         let monthly = gameState.monthlyTasks;
-        
-        // プレイ回数
         if (!daily[0].completed) { daily[0].current = Math.min(daily[0].current + 1, daily[0].target); }
         if (!weekly[0].completed) { weekly[0].current = Math.min(weekly[0].current + 1, weekly[0].target); }
-        
-        // スコア5000以上
         if (score >= 5000) {
             if (!daily[1].completed) { daily[1].current = Math.min(daily[1].current + 1, daily[1].target); }
             if (!weekly[1].completed) { weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); }
         }
-        
-        // コンボ50以上
         if (combo >= 50) {
             if (!daily[2].completed) { daily[2].current = Math.min(daily[2].current + 1, daily[2].target); }
             if (!weekly[2].completed) { weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); }
         }
-        
-        // コンボ200-300
         if (combo >= 200 && combo <= 300) {
             gameState.taskCounters.combo200to300++;
             if (!weekly[5].completed) { weekly[5].current = Math.min(weekly[5].current + 1, weekly[5].target); }
         }
-        
-        // スコア100000
         if (score >= 100000) {
             gameState.taskCounters.score100k++;
             if (!weekly[6].completed) { weekly[6].current = Math.min(weekly[6].current + 1, weekly[6].target); }
         }
-        
-        // コンボ150以上
         if (combo >= 150) {
             gameState.taskCounters.combo150plus++;
         }
-        
-        // レベルアップチェック
         if (gameState.level > gameState.previousLevel) {
             const levelDiff = gameState.level - gameState.previousLevel;
             gameState.taskCounters.levelUps += levelDiff;
             gameState.previousLevel = gameState.level;
             playLevelUpSound();
         }
-        
-        // クラフトアイテム収集はaddItemでカウント
-        
         [daily, weekly, monthly].forEach(tasks => {
             tasks.forEach(t => {
                 let current = t.current;
@@ -2283,7 +2161,6 @@
                 if (t.id === 'weekly7') current = gameState.taskCounters.score100k;
                 if (t.id === 'monthly1') current = gameState.totalPlayCount;
                 if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus;
-                
                 if (!t.completed && current >= t.target) {
                     t.completed = true;
                     gameState.xp += t.reward.xp;
@@ -2293,7 +2170,6 @@
                 }
             });
         });
-        
         saveGameState();
         updateTasksDisplay();
     }
@@ -2310,7 +2186,6 @@
         if (!tasks[2].completed) {
             tasks[2].current = Math.min(tasks[2].current + 1, tasks[2].target);
         }
-        
         tasks.forEach(t => {
             if (!t.completed && t.current >= t.target) {
                 t.completed = true;
@@ -2387,7 +2262,6 @@
         const myEntry = worldRankings.find(r => r.id === gameState.userId);
         let inRank = myEntry ? (worldRankings.findIndex(r => r.id === gameState.userId) + 1) <= 10 : false;
         const hasReward = (claimed !== today && inRank);
-        
         document.getElementById('giftBadge').textContent = hasReward ? '1' : '0';
         document.getElementById('giftBadge').style.display = hasReward ? 'flex' : 'none';
         return hasReward;
@@ -2395,7 +2269,6 @@
 
     function showGiftDialog() {
         const today = getTodayString();
-        
         if (gameState.claimedRankings.world !== today) {
             const myEntry = worldRankings.find(r => r.id === gameState.userId);
             if (myEntry) {
@@ -2424,7 +2297,6 @@
                 }
             }
         }
-        
         alert('受け取れる報酬はありません');
     }
 
@@ -2455,10 +2327,8 @@
         document.getElementById('highscoreViewTitle').textContent = title;
         let container = document.getElementById('highscoreListContainer');
         container.innerHTML = '<div>読込中...</div>';
-        
         let rankings = await fetchHighScoreRanking(type);
         localStorage.setItem(`highScoreRankings_${type}`, JSON.stringify(rankings));
-        
         container.innerHTML = '';
         rankings.forEach((e, i) => {
             let d = document.createElement('div'); d.className = 'ranking-item';
@@ -2466,7 +2336,6 @@
             container.appendChild(d);
         });
         if (rankings.length === 0) container.innerHTML = '<div style="text-align:center; color:var(--text-gray);">データがありません</div>';
-        
         checkHighScoreRewards(type, rankings);
     }
 
@@ -2475,7 +2344,6 @@
         const claimed = gameState.claimedHighScoreRankings[type];
         const myEntry = rankings.find(r => r.id === gameState.userId);
         const isRank1 = myEntry && rankings.findIndex(r => r.id === gameState.userId) === 0;
-        
         if (claimed !== today && isRank1) {
             document.getElementById('giftBadge').textContent = '1';
             document.getElementById('giftBadge').style.display = 'flex';
@@ -2510,8 +2378,6 @@
         leprechaunBtn.style.display = gameState.ownedSkills.includes('leprechaun') && gameState.equippedSkills.includes('leprechaun') ? 'block' : 'none';
         combo25Btn.style.display = gameState.ownedSkills.includes('combo25') && gameState.equippedSkills.includes('combo25') ? 'block' : 'none';
         luckyBlockBtn.style.display = gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock') ? 'block' : 'none';
-        
-        // クラフトスキル
         sigmaBtn.style.display = gameState.ownedSkills.includes('sigma') && gameState.equippedSkills.includes('sigma') ? 'block' : 'none';
         doubleScoreBtn.style.display = gameState.ownedSkills.includes('doubleScore') && gameState.equippedSkills.includes('doubleScore') ? 'block' : 'none';
         comboAlphaBtn.style.display = gameState.ownedSkills.includes('comboAlpha') && gameState.equippedSkills.includes('comboAlpha') ? 'block' : 'none';
@@ -2555,9 +2421,7 @@
     function useSkill(skillId) {
         if (!gameActive) return;
         const now = Date.now();
-        
         if (cooldowns[skillId] > now) return;
-        
         const cooldownTimes = {
             auto: 30000,
             autoBeta: 30000,
@@ -2568,11 +2432,9 @@
             combo25: 45000,
             luckyBlock: 25000
         };
-        
         if (cooldownTimes[skillId]) {
             cooldowns[skillId] = now + cooldownTimes[skillId];
         }
-        
         if (skillId === 'auto') {
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
@@ -2620,7 +2482,6 @@
             playSkillSound();
             gameActive = false;
             clearInterval(gameTimer);
-            
             const container = document.createElement('div'); container.className = 'bar-game-container';
             container.innerHTML = `
                 <div class="bar-game" id="barGame">
@@ -2637,7 +2498,6 @@
                 <button class="stop-btn" id="stopBarBtn">⏹️ ストップ</button>
             `;
             document.body.appendChild(container);
-            
             let pos = 10;
             let direction = 1;
             let interval = setInterval(() => {
@@ -2646,18 +2506,15 @@
                 document.getElementById('barFill').style.width = pos + '%';
                 document.getElementById('barMarker').style.left = `calc(${pos}% - 2px)`;
             }, 30);
-            
             const stopHandler = () => {
                 clearInterval(interval);
                 container.remove();
-                
                 let gain = 3;
                 if (pos > 80) gain = 3;
                 else if (pos > 60) gain = 8;
                 else if (pos > 40) gain = 6;
                 else if (pos > 20) gain = 6;
                 else gain = 3;
-                
                 gameTime += gain;
                 document.getElementById('timerDisplay').textContent = Math.floor(gameTime);
                 alert(`✨ ${gain}秒延びた! (ゾーン: ${pos.toFixed(1)}%)`);
@@ -2668,7 +2525,6 @@
                     if (gameTime <= 0) endGame(); 
                 }, 1000);
             };
-            
             document.getElementById('stopBarBtn').addEventListener('click', stopHandler, { once: true });
         }
         else if (skillId === 'comboUp') {
@@ -2710,7 +2566,6 @@
             playSkillSound();
             const effects = ['auto', 'combo', 'time'];
             const selected = effects[Math.floor(Math.random() * effects.length)];
-            
             if (selected === 'auto') {
                 const oldAuto = skillAutoActive;
                 skillAutoActive = true;
@@ -2742,7 +2597,6 @@
                 showAnimation('⏳ +2.5秒');
             }
         }
-        
         updateSkillButtons();
     }
 
@@ -2766,7 +2620,6 @@
         combo25Active = false;
         doubleScoreActive = false;
         
-        // プレイ中は右上ボタンを無効化
         document.querySelectorAll('.top-buttons .icon-btn').forEach(btn => {
             btn.classList.add('disabled');
         });
@@ -2836,7 +2689,6 @@
         let percent = Math.min(100, (currentScore / target) * 100);
         document.getElementById('storyGoalFill').style.width = percent + '%';
         document.getElementById('storyGoalText').textContent = `${Math.floor(currentScore)}/${target}`;
-        
         if (currentScore >= target && gameActive) {
             clearInterval(gameTimer);
             playClearSound();
@@ -2863,18 +2715,15 @@
         clearInterval(gameTimer);
         if (autoInterval) clearInterval(autoInterval);
         
-        // 右上ボタンを再有効化
         document.querySelectorAll('.top-buttons .icon-btn').forEach(btn => {
             btn.classList.remove('disabled');
         });
         
         let coins = Math.floor(currentScore / 10); 
         let xp = Math.floor(currentScore / 100);
-        
         if (gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock')) {
             xp = Math.floor(xp * 1.5);
         }
-        
         gameState.coins += coins; 
         gameState.xp += xp;
         
@@ -2884,7 +2733,6 @@
             if (currentCombo > gameState.highScoreCombo) gameState.highScoreCombo = currentCombo;
         }
         
-        // アイテムドロップ
         const droppedItem = rollItemDrop();
         let dropMessage = '';
         if (droppedItem) {
@@ -3496,13 +3344,10 @@
     // キーボード入力
     document.addEventListener('keydown', (e) => {
         if (!gameActive) return;
-        
-        // スペースキーでスキル使用（装備中のスキル）
         if (e.code === 'Space' && !tapModeActive) {
             e.preventDefault();
             if (gameState.equippedSkills.length > 0) {
                 const skillId = gameState.equippedSkills[0];
-                // 各スキル関数を呼び出し
                 if (skillId === 'sigma') useSkillSigma();
                 else if (skillId === 'doubleScore') useSkillDoubleScore();
                 else if (skillId === 'comboAlpha') useSkillComboAlpha();
@@ -3511,7 +3356,6 @@
             }
             return;
         }
-        
         let key = e.key.toLowerCase();
         if (key.match(/[a-z]/)) {
             let ex = currentRomaji[typedInput.length];
