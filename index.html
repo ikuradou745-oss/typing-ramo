@@ -221,6 +221,7 @@
         .setting-label { font-size: 16px; color: var(--text-white); }
         .setting-value { color: var(--accent-green); }
         .setting-select { background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); color: var(--text-white); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .setting-checkbox { width: 20px; height: 20px; cursor: pointer; }
         .color-preview { display: inline-block; width: 20px; height: 20px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
     </style>
 </head>
@@ -309,6 +310,12 @@
             <button class="skill-use-btn" id="skillDragonSummersBtn" style="background:linear-gradient(135deg,#ff6600,#cc4400);">🐉ドラゴンサマーズ</button>
             <div class="cooldown-overlay" id="cooldowndragonSummers" style="width:0%;"></div>
             <span class="cooldown-text" id="cooldowndragonSummersText"></span>
+        </div>
+        <!-- ドロップ率アップ -->
+        <div style="position:relative;">
+            <button class="skill-use-btn" id="skillDropRateBtn" style="background:linear-gradient(135deg,#00aa00,#006600); display:none;">📦ドロップ率アップ</button>
+            <div class="cooldown-overlay" id="cooldowndropRate" style="width:0%;"></div>
+            <span class="cooldown-text" id="cooldowndropRateText"></span>
         </div>
     </div>
 
@@ -417,6 +424,14 @@
             <div class="item-grid" style="width:100%; max-width:600px;">
                 <div class="item-card craft-item">
                     <div class="item-info">
+                        <span class="item-name">📦ドロップ率アップ</span>
+                        <span class="item-desc">パッシブ: アイテムドロップ確率4倍(5%→20%)</span>
+                        <div class="craft-recipe">レシピ: <span class="item-stone">石×7</span></div>
+                    </div>
+                    <button class="equip-btn" id="craftDropRateBtn">作成</button>
+                </div>
+                <div class="item-card craft-item">
+                    <div class="item-info">
                         <span class="item-name">⚡自動入力Σ</span>
                         <span class="item-desc">クールダウン30秒・1.5秒間自動入力(36Frame)</span>
                         <div class="craft-recipe">レシピ: <span class="item-stone">石×1</span> + <span class="item-fire">火×2</span> + <span class="item-thunder">イナズマ×2</span></div>
@@ -465,6 +480,7 @@
                 <div class="drop-item"><span class="item-thunder">⚡ イナズマ</span> <span class="item-badge badge-thunder">20%</span></div>
                 <div class="drop-item"><span class="item-dragon">🐉 ミニドラゴン</span> <span class="item-badge badge-dragon">9%</span></div>
                 <div class="drop-item"><span class="item-crown">👑 王冠</span> <span class="item-badge badge-crown">1%</span></div>
+                <div style="margin-top:20px; color:var(--accent-blue);">📦 ドロップ率アップ装備時: 20%</div>
             </div>
             <button class="back-btn" id="backFromDropRuleBtn">戻る</button>
         </div>
@@ -506,6 +522,7 @@
                 <div class="tab-bar" id="settingsTabs">
                     <button class="tab-btn active" data-settings="keybind">キーバインド</button>
                     <button class="tab-btn" data-settings="design">デザイン</button>
+                    <button class="tab-btn" data-settings="sound">サウンド</button>
                 </div>
                 
                 <!-- キーバインド設定 -->
@@ -599,6 +616,40 @@
                         </select>
                     </div>
                     <button class="admin-btn" id="saveDesignBtn" style="margin-top:20px;">適用</button>
+                </div>
+
+                <!-- サウンド設定 -->
+                <div id="soundSettings" class="settings-section hidden">
+                    <div class="settings-title">サウンド設定</div>
+                    <div class="setting-item">
+                        <span class="setting-label">ミス音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundMiss" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">打鍵音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundType" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">クリック音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundClick" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">スキル使用音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundSkill" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">レベルアップ音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundLevelUp" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">クリア音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundClear" checked>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">タスククリア音</span>
+                        <input type="checkbox" class="setting-checkbox" id="soundTask" checked>
+                    </div>
+                    <button class="admin-btn" id="saveSoundBtn" style="margin-top:20px;">保存</button>
                 </div>
             </div>
             <button class="back-btn" id="backFromSettingsBtn">戻る</button>
@@ -749,6 +800,61 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // ========== 音声システム ==========
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const soundSettings = {
+        miss: true,
+        type: true,
+        click: true,
+        skill: true,
+        levelUp: true,
+        clear: true,
+        task: true
+    };
+
+    function playSound(type, frequency, duration, type2 = 'sine') {
+        if (!soundSettings[type]) return;
+        
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.type = type2;
+        oscillator.frequency.value = frequency;
+        gainNode.gain.value = 0.1;
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    function playMissSound() { playSound('miss', 200, 0.1, 'sawtooth'); }
+    function playTypeSound() { playSound('type', 800, 0.05, 'sine'); }
+    function playClickSound() { playSound('click', 600, 0.05, 'square'); }
+    function playSkillSound() { 
+        playSound('skill', 400, 0.1, 'sawtooth');
+        setTimeout(() => playSound('skill', 600, 0.1, 'sawtooth'), 50);
+        setTimeout(() => playSound('skill', 800, 0.2, 'sawtooth'), 100);
+    }
+    function playLevelUpSound() {
+        playSound('levelUp', 523, 0.2, 'sine'); // ド
+        setTimeout(() => playSound('levelUp', 659, 0.2, 'sine'), 200); // ミ
+        setTimeout(() => playSound('levelUp', 784, 0.3, 'sine'), 400); // ソ
+    }
+    function playClearSound() {
+        playSound('clear', 523, 0.2, 'sine');
+        setTimeout(() => playSound('clear', 587, 0.2, 'sine'), 150);
+        setTimeout(() => playSound('clear', 659, 0.2, 'sine'), 300);
+        setTimeout(() => playSound('clear', 698, 0.2, 'sine'), 450);
+        setTimeout(() => playSound('clear', 784, 0.4, 'sine'), 600);
+    }
+    function playTaskSound() {
+        playSound('task', 659, 0.1, 'sine');
+        setTimeout(() => playSound('task', 784, 0.2, 'sine'), 100);
+    }
+
     // ========== 設定管理 ==========
     const settings = {
         keybind: {
@@ -762,7 +868,16 @@
             nn: 'nn'
         },
         theme: 'default',
-        color: 'default'
+        color: 'default',
+        sound: {
+            miss: true,
+            type: true,
+            click: true,
+            skill: true,
+            levelUp: true,
+            clear: true,
+            task: true
+        }
     };
 
     // 設定を読み込む
@@ -770,6 +885,7 @@
         const saved = localStorage.getItem('gameSettings');
         if (saved) {
             Object.assign(settings, JSON.parse(saved));
+            if (settings.sound) Object.assign(soundSettings, settings.sound);
         }
         
         // テーマとカラーを適用
@@ -786,6 +902,15 @@
         document.getElementById('kbdNn').value = settings.keybind.nn;
         document.getElementById('themeSelect').value = settings.theme;
         document.getElementById('colorSelect').value = settings.color;
+        
+        // サウンド設定チェックボックス
+        document.getElementById('soundMiss').checked = soundSettings.miss;
+        document.getElementById('soundType').checked = soundSettings.type;
+        document.getElementById('soundClick').checked = soundSettings.click;
+        document.getElementById('soundSkill').checked = soundSettings.skill;
+        document.getElementById('soundLevelUp').checked = soundSettings.levelUp;
+        document.getElementById('soundClear').checked = soundSettings.clear;
+        document.getElementById('soundTask').checked = soundSettings.task;
     }
 
     // 設定を保存
@@ -895,7 +1020,8 @@
             sigma: false,
             doubleScore: false,
             comboAlpha: false,
-            dragonSummers: false
+            dragonSummers: false,
+            dropRate: false
         },
         // タスクカウンター
         taskCounters: {
@@ -943,7 +1069,8 @@
     const cooldowns = { 
         auto:0, autoBeta:0, timeExtend:0, comboUp:0, comboPlus:0,
         leprechaun:0, combo25:0, luckyBlock:0,
-        sigma:0, doubleScore:0, comboAlpha:0, dragonSummers:0
+        sigma:0, doubleScore:0, comboAlpha:0, dragonSummers:0,
+        dropRate:0
     };
     let skillAutoActive = false;
     let autoInterval = null;
@@ -951,6 +1078,7 @@
     let combo25Active = false;
     let comboMultiplier = 1;
     let doubleScoreActive = false;
+    let dropRateActive = false; // ドロップ率アップ
 
     // 連打モード用
     let tapModeActive = false;
@@ -1034,7 +1162,11 @@
 
     // ========== アイテムドロップ ==========
     function rollItemDrop() {
-        const dropRate = 0.05; // 5%
+        let dropRate = 0.05; // 5%
+        if (gameState.craftedSkills.dropRate && gameState.equippedSkills.includes('dropRate')) {
+            dropRate *= 4; // 4倍
+        }
+        
         if (Math.random() > dropRate) return null;
         
         const r = Math.random();
@@ -1078,6 +1210,22 @@
     }
 
     // ========== クラフト ==========
+    function craftDropRate() {
+        const requirements = { stone: 7 };
+        if (removeItems(requirements)) {
+            if (!gameState.ownedSkills.includes('dropRate')) {
+                gameState.ownedSkills.push('dropRate');
+            }
+            gameState.craftedSkills.dropRate = true;
+            saveGameState();
+            alert('📦 ドロップ率アップ を作成しました！');
+            renderInventory();
+            updateSkillButtons();
+        } else {
+            alert('アイテムが足りません');
+        }
+    }
+
     function craftSigma() {
         const requirements = { stone: 1, fire: 2, thunder: 2 };
         if (removeItems(requirements)) {
@@ -1149,6 +1297,7 @@
         if (cooldowns.sigma > now) return;
         
         cooldowns.sigma = now + 30000; // 30秒クールダウン
+        playSkillSound();
         
         skillAutoActive = true;
         showAnimation('⚡自動入力Σ!');
@@ -1179,6 +1328,7 @@
         
         cooldowns.doubleScore = now + 40000; // 40秒クールダウン
         doubleScoreActive = true;
+        playSkillSound();
         showAnimation('💰 スコア2倍!');
         
         setTimeout(() => { doubleScoreActive = false; }, 5000); // 5秒間
@@ -1191,6 +1341,7 @@
         if (cooldowns.comboAlpha > now) return;
         
         cooldowns.comboAlpha = now + 50000; // 50秒クールダウン
+        playSkillSound();
         
         // 自動入力 (64Frame)
         skillAutoActive = true;
@@ -1228,6 +1379,7 @@
         if (cooldowns.dragonSummers > now) return;
         
         cooldowns.dragonSummers = now + 45000; // 45秒クールダウン
+        playSkillSound();
         
         // ゲーム中断
         gameActive = false;
@@ -1530,6 +1682,21 @@
         saveSettings();
         alert('デザインを適用しました');
     });
+
+    document.getElementById('saveSoundBtn').addEventListener('click', () => {
+        settings.sound = {
+            miss: document.getElementById('soundMiss').checked,
+            type: document.getElementById('soundType').checked,
+            click: document.getElementById('soundClick').checked,
+            skill: document.getElementById('soundSkill').checked,
+            levelUp: document.getElementById('soundLevelUp').checked,
+            clear: document.getElementById('soundClear').checked,
+            task: document.getElementById('soundTask').checked
+        };
+        Object.assign(soundSettings, settings.sound);
+        saveSettings();
+        alert('サウンド設定を保存しました');
+    });
     
     document.querySelectorAll('#settingsTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
         document.querySelectorAll('#settingsTabs .tab-btn').forEach(tt => tt.classList.remove('active'));
@@ -1537,9 +1704,15 @@
         if (this.dataset.settings === 'keybind') {
             document.getElementById('keybindSettings').classList.remove('hidden');
             document.getElementById('designSettings').classList.add('hidden');
-        } else {
+            document.getElementById('soundSettings').classList.add('hidden');
+        } else if (this.dataset.settings === 'design') {
             document.getElementById('keybindSettings').classList.add('hidden');
             document.getElementById('designSettings').classList.remove('hidden');
+            document.getElementById('soundSettings').classList.add('hidden');
+        } else {
+            document.getElementById('keybindSettings').classList.add('hidden');
+            document.getElementById('designSettings').classList.add('hidden');
+            document.getElementById('soundSettings').classList.remove('hidden');
         }
     }));
 
@@ -1582,7 +1755,7 @@
         if (!gameState.totalXPEarned) gameState.totalXPEarned = 0;
         if (!gameState.clovers) gameState.clovers = 0;
         if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0 };
-        if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false };
+        if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false, dropRate: false };
         if (!gameState.taskCounters) gameState.taskCounters = {
             craftItemsCollected: 0,
             levelUps: 0,
@@ -1785,6 +1958,7 @@
             const levelDiff = gameState.level - gameState.previousLevel;
             gameState.taskCounters.levelUps += levelDiff;
             gameState.previousLevel = gameState.level;
+            playLevelUpSound();
         }
         
         // クラフトアイテム収集はaddItemでカウント
@@ -1804,6 +1978,7 @@
                     gameState.xp += t.reward.xp;
                     gameState.coins += t.reward.coins;
                     showTaskNotification(t.title);
+                    playTaskSound();
                 }
             });
         });
@@ -1830,6 +2005,7 @@
                 t.completed = true;
                 gameState.clovers += t.reward;
                 showTaskNotification(`イベントタスククリア！ +${t.reward}🍀`);
+                playTaskSound();
             }
         });
         saveGameState();
@@ -2013,6 +2189,7 @@
         const doubleScoreBtn = document.getElementById('skillDoubleScoreBtn');
         const comboAlphaBtn = document.getElementById('skillComboAlphaBtn');
         const dragonSummersBtn = document.getElementById('skillDragonSummersBtn');
+        const dropRateBtn = document.getElementById('skillDropRateBtn');
         
         autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none';
         autoBetaBtn.style.display = gameState.ownedSkills.includes('autoBeta') && gameState.equippedSkills.includes('autoBeta') ? 'block' : 'none';
@@ -2028,6 +2205,7 @@
         doubleScoreBtn.style.display = gameState.ownedSkills.includes('doubleScore') && gameState.equippedSkills.includes('doubleScore') ? 'block' : 'none';
         comboAlphaBtn.style.display = gameState.ownedSkills.includes('comboAlpha') && gameState.equippedSkills.includes('comboAlpha') ? 'block' : 'none';
         dragonSummersBtn.style.display = gameState.ownedSkills.includes('dragonSummers') && gameState.equippedSkills.includes('dragonSummers') ? 'block' : 'none';
+        dropRateBtn.style.display = gameState.ownedSkills.includes('dropRate') && gameState.equippedSkills.includes('dropRate') ? 'block' : 'none';
         
         const now = Date.now();
         const skillDurations = {
@@ -2042,10 +2220,11 @@
             sigma: 30000,
             doubleScore: 40000,
             comboAlpha: 50000,
-            dragonSummers: 45000
+            dragonSummers: 45000,
+            dropRate: 0
         };
         
-        ['auto', 'autoBeta', 'timeExtend', 'comboUp', 'comboPlus', 'leprechaun', 'combo25', 'luckyBlock', 'sigma', 'doubleScore', 'comboAlpha', 'dragonSummers'].forEach(id => {
+        ['auto', 'autoBeta', 'timeExtend', 'comboUp', 'comboPlus', 'leprechaun', 'combo25', 'luckyBlock', 'sigma', 'doubleScore', 'comboAlpha', 'dragonSummers', 'dropRate'].forEach(id => {
             let overlay = document.getElementById(`cooldown${id}`);
             let textEl = document.getElementById(`cooldown${id}Text`);
             if (overlay && textEl) {
@@ -2086,6 +2265,7 @@
         if (skillId === 'auto') {
             skillAutoActive = true;
             showAnimation('⚡自動入力!');
+            playSkillSound();
             if (autoInterval) clearInterval(autoInterval);
             autoInterval = setInterval(() => {
                 if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
@@ -2106,6 +2286,7 @@
         else if (skillId === 'autoBeta') {
             skillAutoActive = true;
             showAnimation('⚡自動入力β!');
+            playSkillSound();
             if (autoInterval) clearInterval(autoInterval);
             autoInterval = setInterval(() => {
                 if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
@@ -2125,6 +2306,7 @@
         }
         else if (skillId === 'timeExtend') {
             showAnimation('⏳タイミングゲーム!');
+            playSkillSound();
             gameActive = false;
             clearInterval(gameTimer);
             
@@ -2180,17 +2362,20 @@
         }
         else if (skillId === 'comboUp') {
             showAnimation('🔥コンボ+40!');
+            playSkillSound();
             currentCombo += 40;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
         else if (skillId === 'comboPlus') {
             let add = Math.floor(Math.random() * 36) + 25;
             showAnimation(`✨コンボ+${add}!`);
+            playSkillSound();
             currentCombo += add;
             document.getElementById('comboDisplay').textContent = currentCombo;
         }
         else if (skillId === 'leprechaun') {
             showAnimation('🍀 レプラコーンビーム!');
+            playSkillSound();
             leprechaunActive = true;
             const beam = document.createElement('div'); 
             beam.style.position = 'fixed'; beam.style.top = '0'; beam.style.left = '50%'; 
@@ -2204,12 +2389,14 @@
         }
         else if (skillId === 'combo25') {
             showAnimation('🔥 コンボ2.5倍!');
+            playSkillSound();
             combo25Active = true;
             comboMultiplier = 2.5;
             setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 10000);
         }
         else if (skillId === 'luckyBlock') {
             showAnimation('🎲 ラッキーブロック!');
+            playSkillSound();
             const effects = ['auto', 'combo', 'time'];
             const selected = effects[Math.floor(Math.random() * effects.length)];
             
@@ -2341,6 +2528,7 @@
         
         if (currentScore >= target && gameActive) {
             clearInterval(gameTimer);
+            playClearSound();
             endGame();
         }
     }
@@ -2521,7 +2709,8 @@
             { id:'sigma', name:'⚡自動入力Σ', desc:'30秒:1.5秒間自動入力(36Frame)' },
             { id:'doubleScore', name:'💰スコア2倍', desc:'40秒:5秒間スコア2倍' },
             { id:'comboAlpha', name:'⚡×🔥自動入力×コンボα', desc:'50秒:6秒間自動入力(64Frame)+8秒間コンボ2.5倍' },
-            { id:'dragonSummers', name:'🐉ドラゴンサマーズ', desc:'45秒:2秒間連打で連打数/5のコンボ' }
+            { id:'dragonSummers', name:'🐉ドラゴンサマーズ', desc:'45秒:2秒間連打で連打数/5のコンボ' },
+            { id:'dropRate', name:'📦ドロップ率アップ', desc:'パッシブ:アイテムドロップ確率4倍' }
         ];
         
         gameState.ownedSkills.forEach(sid => {
@@ -2653,8 +2842,12 @@
     }
 
     // イベントリスナー
-    document.getElementById('playBtn').addEventListener('click', () => switchScreen('difficultyScreen'));
+    document.getElementById('playBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('difficultyScreen');
+    });
     document.getElementById('storyBtn').addEventListener('click', () => {
+        playClickSound();
         if (gameState.level < 10) { 
             alert('ストーリーはレベル10から解放'); 
             return; 
@@ -2662,74 +2855,165 @@
         renderStoryMap(); 
         switchScreen('storyMapScreen');
     });
-    document.getElementById('rankingBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
-    document.getElementById('highscoreRankingBtn').addEventListener('click', () => switchScreen('highscoreMenuScreen'));
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('rankingModeScreen');
+    });
+    document.getElementById('highscoreRankingBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('highscoreMenuScreen');
+    });
     document.getElementById('craftBtn').addEventListener('click', () => {
+        playClickSound();
         updateItemCounts();
         switchScreen('craftScreen');
     });
-    document.getElementById('dropRuleBtn').addEventListener('click', () => switchScreen('dropRuleScreen'));
+    document.getElementById('dropRuleBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('dropRuleScreen');
+    });
     
-    document.getElementById('worldRankingViewBtn').addEventListener('click', displayRanking);
+    document.getElementById('worldRankingViewBtn').addEventListener('click', () => {
+        playClickSound();
+        displayRanking();
+    });
     document.getElementById('worldRankingPlayBtn').addEventListener('click', () => { 
+        playClickSound();
         startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'ranking'); 
     });
-    document.getElementById('backFromRankingModeBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromRankingViewBtn').addEventListener('click', () => switchScreen('rankingModeScreen'));
-    document.getElementById('backFromHighscoreBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromHighscoreViewBtn').addEventListener('click', () => switchScreen('highscoreMenuScreen'));
-    document.getElementById('backFromCraftBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromDropRuleBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromBugBoardBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromRankingModeBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromRankingViewBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('rankingModeScreen');
+    });
+    document.getElementById('backFromHighscoreBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromHighscoreViewBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('highscoreMenuScreen');
+    });
+    document.getElementById('backFromCraftBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromDropRuleBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromBugBoardBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
     
-    document.getElementById('viewComboRankingBtn').addEventListener('click', () => displayHighScoreRanking('combo'));
-    document.getElementById('viewPlayCountRankingBtn').addEventListener('click', () => displayHighScoreRanking('playcount'));
-    document.getElementById('viewXPRankingBtn').addEventListener('click', () => displayHighScoreRanking('xp'));
+    document.getElementById('viewComboRankingBtn').addEventListener('click', () => {
+        playClickSound();
+        displayHighScoreRanking('combo');
+    });
+    document.getElementById('viewPlayCountRankingBtn').addEventListener('click', () => {
+        playClickSound();
+        displayHighScoreRanking('playcount');
+    });
+    document.getElementById('viewXPRankingBtn').addEventListener('click', () => {
+        playClickSound();
+        displayHighScoreRanking('xp');
+    });
     
-    document.getElementById('backBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('continueBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('backFromStoryBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('continueBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+    document.getElementById('backFromStoryBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
     document.getElementById('startStoryBtn').addEventListener('click', () => { 
+        playClickSound();
         if (gameState.storyStage <= 100) startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'story'); 
     });
-    document.querySelectorAll('.difficulty-btn').forEach(b => b.addEventListener('click', () => startGame(b.dataset.difficulty, 'normal')));
+    document.querySelectorAll('.difficulty-btn').forEach(b => b.addEventListener('click', () => {
+        playClickSound();
+        startGame(b.dataset.difficulty, 'normal');
+    }));
 
     // イベント関連
     document.getElementById('eventBtn').addEventListener('click', () => {
+        playClickSound();
         if (!isEventActive()) { 
             alert('イベント期間は終了しましたが、スキルは引き続き使用できます'); 
         }
         switchScreen('eventMenuScreen');
     });
-    document.getElementById('backFromEventBtn').addEventListener('click', () => switchScreen('menuScreen'));
+    document.getElementById('backFromEventBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
     document.getElementById('eventPlayBtn').addEventListener('click', () => {
+        playClickSound();
         startGame(['easy', 'normal', 'hard'][Math.floor(Math.random() * 3)], 'event');
     });
     document.getElementById('eventShopBtn').addEventListener('click', () => {
+        playClickSound();
         renderEventShop();
         document.getElementById('eventShopPanel').classList.add('active');
         overlay(true);
     });
     document.getElementById('eventShopCloseBtn').addEventListener('click', () => {
+        playClickSound();
         document.getElementById('eventShopPanel').classList.remove('active');
         overlay(false);
     });
     document.getElementById('eventTaskBtn').addEventListener('click', () => {
+        playClickSound();
         updateEventUI();
         switchScreen('eventTaskScreen');
     });
-    document.getElementById('backFromEventTaskBtn').addEventListener('click', () => switchScreen('eventMenuScreen'));
+    document.getElementById('backFromEventTaskBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('eventMenuScreen');
+    });
 
     // クラフトボタン
-    document.getElementById('craftSigmaBtn').addEventListener('click', craftSigma);
-    document.getElementById('craftDoubleScoreBtn').addEventListener('click', craftDoubleScore);
-    document.getElementById('craftComboAlphaBtn').addEventListener('click', craftComboAlpha);
-    document.getElementById('craftDragonSummersBtn').addEventListener('click', craftDragonSummers);
+    document.getElementById('craftDropRateBtn').addEventListener('click', () => {
+        playClickSound();
+        craftDropRate();
+    });
+    document.getElementById('craftSigmaBtn').addEventListener('click', () => {
+        playClickSound();
+        craftSigma();
+    });
+    document.getElementById('craftDoubleScoreBtn').addEventListener('click', () => {
+        playClickSound();
+        craftDoubleScore();
+    });
+    document.getElementById('craftComboAlphaBtn').addEventListener('click', () => {
+        playClickSound();
+        craftComboAlpha();
+    });
+    document.getElementById('craftDragonSummersBtn').addEventListener('click', () => {
+        playClickSound();
+        craftDragonSummers();
+    });
 
     // ギフト関連
-    document.getElementById('giftBtn').addEventListener('click', showGiftDialog);
+    document.getElementById('giftBtn').addEventListener('click', () => {
+        playClickSound();
+        showGiftDialog();
+    });
     document.getElementById('giftCloseBtn').addEventListener('click', () => { 
+        playClickSound();
         document.getElementById('giftDialog').classList.remove('active'); 
         overlay(false); 
     });
@@ -2744,6 +3028,7 @@
 
     // サイドパネル
     document.getElementById('taskBtn').addEventListener('click', () => {
+        playClickSound();
         document.getElementById('panelTitle').textContent = 'タスク';
         document.getElementById('profilePanel').classList.add('hidden');
         document.getElementById('inventoryPanel').classList.add('hidden');
@@ -2754,6 +3039,7 @@
     });
 
     document.getElementById('profileBtn').addEventListener('click', () => {
+        playClickSound();
         document.getElementById('panelTitle').textContent = 'プロフィール';
         document.getElementById('profilePanel').classList.remove('hidden');
         document.getElementById('inventoryPanel').classList.add('hidden');
@@ -2763,6 +3049,7 @@
     });
     
     document.getElementById('inventoryBtn').addEventListener('click', () => {
+        playClickSound();
         document.getElementById('panelTitle').textContent = '持ち物';
         document.getElementById('profilePanel').classList.add('hidden');
         document.getElementById('inventoryPanel').classList.remove('hidden');
@@ -2773,22 +3060,26 @@
     });
     
     document.getElementById('shopBtn').addEventListener('click', () => {
+        playClickSound();
         renderShop();
         document.getElementById('shopPanel').classList.add('active'); 
         overlay(true);
     });
     
     document.getElementById('panelCloseBtn').addEventListener('click', () => { 
+        playClickSound();
         document.getElementById('sidePanel').classList.remove('active'); 
         overlay(false); 
     });
     
     document.getElementById('shopCloseBtn').addEventListener('click', () => { 
+        playClickSound();
         document.getElementById('shopPanel').classList.remove('active'); 
         overlay(false); 
     });
 
     document.getElementById('changeNameBtn').addEventListener('click', () => {
+        playClickSound();
         let newName = document.getElementById('newNameInput').value.trim();
         if (newName && gameState.nameChangeCount < 3) {
             gameState.userName = newName; 
@@ -2802,18 +3093,54 @@
     });
 
     // スキル使用ボタン
-    document.getElementById('skillAutoBtn').addEventListener('click', () => useSkill('auto'));
-    document.getElementById('skillAutoBetaBtn').addEventListener('click', () => useSkill('autoBeta'));
-    document.getElementById('skillTimeBtn').addEventListener('click', () => useSkill('timeExtend'));
-    document.getElementById('skillComboBtn').addEventListener('click', () => useSkill('comboUp'));
-    document.getElementById('skillComboPlusBtn').addEventListener('click', () => useSkill('comboPlus'));
-    document.getElementById('skillLeprechaunBtn').addEventListener('click', () => useSkill('leprechaun'));
-    document.getElementById('skillCombo25Btn').addEventListener('click', () => useSkill('combo25'));
-    document.getElementById('skillLuckyBlockBtn').addEventListener('click', () => useSkill('luckyBlock'));
-    document.getElementById('skillSigmaBtn').addEventListener('click', useSkillSigma);
-    document.getElementById('skillDoubleScoreBtn').addEventListener('click', useSkillDoubleScore);
-    document.getElementById('skillComboAlphaBtn').addEventListener('click', useSkillComboAlpha);
-    document.getElementById('skillDragonSummersBtn').addEventListener('click', useSkillDragonSummers);
+    document.getElementById('skillAutoBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('auto');
+    });
+    document.getElementById('skillAutoBetaBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('autoBeta');
+    });
+    document.getElementById('skillTimeBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('timeExtend');
+    });
+    document.getElementById('skillComboBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('comboUp');
+    });
+    document.getElementById('skillComboPlusBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('comboPlus');
+    });
+    document.getElementById('skillLeprechaunBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('leprechaun');
+    });
+    document.getElementById('skillCombo25Btn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('combo25');
+    });
+    document.getElementById('skillLuckyBlockBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkill('luckyBlock');
+    });
+    document.getElementById('skillSigmaBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkillSigma();
+    });
+    document.getElementById('skillDoubleScoreBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkillDoubleScore();
+    });
+    document.getElementById('skillComboAlphaBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkillComboAlpha();
+    });
+    document.getElementById('skillDragonSummersBtn').addEventListener('click', () => {
+        playClickSound();
+        useSkillDragonSummers();
+    });
 
     // タブ切り替え
     document.querySelectorAll('#invTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
@@ -2887,6 +3214,7 @@
                 document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); 
                 document.getElementById('comboDisplay').textContent = currentCombo; 
                 updateRomajiDisplay(); 
+                playTypeSound();
                 if (typedInput === currentRomaji) nextQuestion(); 
                 if (currentMode === 'story' || currentMode === 'event') updateStoryGoalBar();
             } else { 
@@ -2895,6 +3223,7 @@
                 }
                 document.getElementById('comboDisplay').textContent = currentCombo; 
                 updateRomajiDisplay(); 
+                playMissSound();
             }
         }
     });
