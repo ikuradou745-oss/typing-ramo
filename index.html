@@ -254,7 +254,7 @@
         .skin-panel { width: 100%; max-width: 800px; margin-top: 20px; }
         .skin-preview-area { display: flex; justify-content: center; margin-bottom: 30px; }
         .avatar-preview { display: flex; justify-content: center; align-items: center; }
-        .avatar-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: background-color 0.3s; box-shadow: 0 0 20px rgba(0,212,255,0.5); }
+        .avatar-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: background-color 0.3s; box-shadow: 0 0 20px rgba(0,212,255,0.5); background-color: #000000; }
         .avatar-face { font-size: 60px; position: relative; z-index: 2; }
         .avatar-accessory { position: absolute; font-size: 40px; top: -10px; right: -10px; z-index: 3; }
         .skin-shop-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding: 10px; }
@@ -270,6 +270,12 @@
         #customColorInput { width: 80px; height: 40px; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px; }
         .avatar-display { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; background: #333; margin-right: 8px; position: relative; flex-shrink: 0; }
         .avatar-accessory-small { position: absolute; font-size: 12px; top: -4px; right: -4px; }
+        
+        /* カスタム顔/アクセ用の入力ダイアログ用スタイル (簡易) */
+        .custom-input-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg,#2a1e3a,#1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 30px; z-index: 2001; display: flex; flex-direction: column; gap: 20px; min-width: 300px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .custom-input-dialog input { padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid var(--accent-blue); background: rgba(0,0,0,0.5); color: white; text-align: center; }
+        .custom-input-dialog button { padding: 10px 20px; background: var(--accent-blue); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+        .custom-input-dialog .close { background: #666; }
     </style>
 </head>
 <body class="theme-default color-default">
@@ -732,7 +738,7 @@
             </div>
         </div>
         
-        <!-- スキンショップ画面 -->
+        <!-- スキンショップ画面 (修正版) -->
         <div class="screen" id="skinShopScreen">
             <div class="menu-title">🎨 スキンショップ</div>
             <div class="tab-bar" id="skinTabs">
@@ -741,11 +747,11 @@
                 <button class="tab-btn" data-skin-tab="color">🎨 イメージカラー</button>
             </div>
             
-            <!-- 顔タブ -->
+            <!-- 顔タブ (プレビュー付き) -->
             <div id="skinFacePanel" class="skin-panel">
                 <div class="skin-preview-area">
                     <div class="avatar-preview">
-                        <div class="avatar-circle" id="avatarCircle" style="background-color: #000000;">
+                        <div class="avatar-circle" id="avatarCircle">
                             <div class="avatar-face" id="avatarFace">😃</div>
                             <div class="avatar-accessory" id="avatarAccessory"></div>
                         </div>
@@ -934,108 +940,18 @@
         task: true
     };
 
-    // 高度な音声生成関数
+    // 高度な音声生成関数 (省略)
     function playSound(type) {
         if (!soundSettings[type]) return;
-        
         const now = audioCtx.currentTime;
-        
-        if (type === 'type') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = 1200;
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-            osc.start(now);
-            osc.stop(now + 0.03);
-        } else if (type === 'click') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
-            gain.gain.setValueAtTime(0.15, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            osc.start(now);
-            osc.stop(now + 0.1);
-        } else if (type === 'miss') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sawtooth';
-            osc.frequency.value = 300;
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            osc.start(now);
-            osc.stop(now + 0.1);
-        } else if (type === 'skill') {
-            const osc1 = audioCtx.createOscillator();
-            const osc2 = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc1.connect(gain);
-            osc2.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc1.type = 'sine';
-            osc2.type = 'triangle';
-            osc1.frequency.setValueAtTime(600, now);
-            osc1.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
-            osc2.frequency.setValueAtTime(800, now);
-            osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-            osc1.start(now);
-            osc2.start(now);
-            osc1.stop(now + 0.3);
-            osc2.stop(now + 0.3);
-        } else if (type === 'levelUp') {
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((freq, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.1, now + i * 0.15);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
-                osc.start(now + i * 0.15);
-                osc.stop(now + i * 0.15 + 0.2);
-            });
-        } else if (type === 'clear') {
-            const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
-            notes.forEach((freq, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.12, now + i * 0.12);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
-                osc.start(now + i * 0.12);
-                osc.stop(now + i * 0.12 + 0.25);
-            });
-        } else if (type === 'task') {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(659.25, now);
-            osc.frequency.setValueAtTime(783.99, now + 0.1);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            osc.start(now);
-            osc.stop(now + 0.2);
-        }
+        if (type === 'type') { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.value = 1200; gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03); osc.start(now); osc.stop(now + 0.03); }
+        else if (type === 'click') { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.05); gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1); }
+        else if (type === 'miss') { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sawtooth'; osc.frequency.value = 300; gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1); }
+        else if (type === 'skill') { const osc1 = audioCtx.createOscillator(); const osc2 = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination); osc1.type = 'sine'; osc2.type = 'triangle'; osc1.frequency.setValueAtTime(600, now); osc1.frequency.exponentialRampToValueAtTime(1000, now + 0.2); osc2.frequency.setValueAtTime(800, now); osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3); osc1.start(now); osc2.start(now); osc1.stop(now + 0.3); osc2.stop(now + 0.3); }
+        else if (type === 'levelUp') { const notes = [523.25, 659.25, 783.99, 1046.50]; notes.forEach((freq, i) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.value = freq; gain.gain.setValueAtTime(0.1, now + i * 0.15); gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2); osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.2); }); }
+        else if (type === 'clear') { const notes = [523.25, 587.33, 659.25, 698.46, 783.99]; notes.forEach((freq, i) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.value = freq; gain.gain.setValueAtTime(0.12, now + i * 0.12); gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25); osc.start(now + i * 0.12); osc.stop(now + i * 0.12 + 0.25); }); }
+        else if (type === 'task') { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(659.25, now); osc.frequency.setValueAtTime(783.99, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
     }
-
     function playMissSound() { playSound('miss'); }
     function playTypeSound() { playSound('type'); }
     function playClickSound() { playSound('click'); }
@@ -1046,121 +962,14 @@
 
     // ========== 設定管理 ==========
     const settings = {
-        keybind: {
-            sya: 'sya',
-            syu: 'syu',
-            syo: 'syo',
-            zi: 'zi',
-            zya: 'zya',
-            zyu: 'zyu',
-            zyo: 'zyo',
-            nn: 'nn'
-        },
-        theme: 'default',
-        color: 'default',
-        sound: {
-            miss: true,
-            type: true,
-            click: true,
-            skill: true,
-            levelUp: true,
-            clear: true,
-            task: true
-        }
+        keybind: { sya: 'sya', syu: 'syu', syo: 'syo', zi: 'zi', zya: 'zya', zyu: 'zyu', zyo: 'zyo', nn: 'nn' },
+        theme: 'default', color: 'default',
+        sound: { miss: true, type: true, click: true, skill: true, levelUp: true, clear: true, task: true }
     };
-
-    function loadSettings() {
-        const saved = localStorage.getItem('gameSettings');
-        if (saved) {
-            Object.assign(settings, JSON.parse(saved));
-            if (settings.sound) Object.assign(soundSettings, settings.sound);
-        }
-        document.body.className = `theme-${settings.theme} color-${settings.color}`;
-        document.getElementById('kbdSya').value = settings.keybind.sya;
-        document.getElementById('kbdSyu').value = settings.keybind.syu;
-        document.getElementById('kbdSyo').value = settings.keybind.syo;
-        document.getElementById('kbdZi').value = settings.keybind.zi;
-        document.getElementById('kbdZya').value = settings.keybind.zya;
-        document.getElementById('kbdZyu').value = settings.keybind.zyu;
-        document.getElementById('kbdZyo').value = settings.keybind.zyo;
-        document.getElementById('kbdNn').value = settings.keybind.nn;
-        document.getElementById('themeSelect').value = settings.theme;
-        document.getElementById('colorSelect').value = settings.color;
-        document.getElementById('soundMiss').checked = soundSettings.miss;
-        document.getElementById('soundType').checked = soundSettings.type;
-        document.getElementById('soundClick').checked = soundSettings.click;
-        document.getElementById('soundSkill').checked = soundSettings.skill;
-        document.getElementById('soundLevelUp').checked = soundSettings.levelUp;
-        document.getElementById('soundClear').checked = soundSettings.clear;
-        document.getElementById('soundTask').checked = soundSettings.task;
-    }
-
-    function saveSettings() {
-        localStorage.setItem('gameSettings', JSON.stringify(settings));
-        document.body.className = `theme-${settings.theme} color-${settings.color}`;
-    }
-
-    function convertToRomajiWithSettings(t) {
-        let r='', i=0;
-        while(i<t.length){
-            if(i+1<t.length) {
-                const digraph = t.substring(i,i+2);
-                if (digraph === 'しゃ') {
-                    r += settings.keybind.sya;
-                    i+=2;
-                    continue;
-                } else if (digraph === 'しゅ') {
-                    r += settings.keybind.syu;
-                    i+=2;
-                    continue;
-                } else if (digraph === 'しょ') {
-                    r += settings.keybind.syo;
-                    i+=2;
-                    continue;
-                } else if (digraph === 'じゃ') {
-                    r += settings.keybind.zya;
-                    i+=2;
-                    continue;
-                } else if (digraph === 'じゅ') {
-                    r += settings.keybind.zyu;
-                    i+=2;
-                    continue;
-                } else if (digraph === 'じょ') {
-                    r += settings.keybind.zyo;
-                    i+=2;
-                    continue;
-                } else if (youonMap[digraph]) {
-                    r += youonMap[digraph];
-                    i+=2;
-                    continue;
-                }
-            }
-            if(t[i]==='っ' && i+1<t.length){
-                let n = t[i+1];
-                let nr = romajiMap[n] || n;
-                if(nr.length>1){
-                    r += nr[0] + nr[0] + nr.substring(1);
-                } else {
-                    r += nr + nr;
-                }
-                i+=2;
-                continue;
-            }
-            if (t[i] === 'じ') {
-                r += settings.keybind.zi;
-            } else if (t[i] === 'ん') {
-                r += settings.keybind.nn;
-            } else {
-                r += romajiMap[t[i]] || t[i];
-            }
-            i++;
-        }
-        return r;
-    }
-
-    function convertToRomaji(t) {
-        return convertToRomajiWithSettings(t);
-    }
+    function loadSettings() { const saved = localStorage.getItem('gameSettings'); if (saved) Object.assign(settings, JSON.parse(saved)); if (settings.sound) Object.assign(soundSettings, settings.sound); document.body.className = `theme-${settings.theme} color-${settings.color}`; document.getElementById('kbdSya').value = settings.keybind.sya; document.getElementById('kbdSyu').value = settings.keybind.syu; document.getElementById('kbdSyo').value = settings.keybind.syo; document.getElementById('kbdZi').value = settings.keybind.zi; document.getElementById('kbdZya').value = settings.keybind.zya; document.getElementById('kbdZyu').value = settings.keybind.zyu; document.getElementById('kbdZyo').value = settings.keybind.zyo; document.getElementById('kbdNn').value = settings.keybind.nn; document.getElementById('themeSelect').value = settings.theme; document.getElementById('colorSelect').value = settings.color; document.getElementById('soundMiss').checked = soundSettings.miss; document.getElementById('soundType').checked = soundSettings.type; document.getElementById('soundClick').checked = soundSettings.click; document.getElementById('soundSkill').checked = soundSettings.skill; document.getElementById('soundLevelUp').checked = soundSettings.levelUp; document.getElementById('soundClear').checked = soundSettings.clear; document.getElementById('soundTask').checked = soundSettings.task; }
+    function saveSettings() { localStorage.setItem('gameSettings', JSON.stringify(settings)); document.body.className = `theme-${settings.theme} color-${settings.color}`; }
+    function convertToRomajiWithSettings(t) { let r='', i=0; while(i<t.length){ if(i+1<t.length) { const digraph = t.substring(i,i+2); if (digraph === 'しゃ') { r += settings.keybind.sya; i+=2; continue; } else if (digraph === 'しゅ') { r += settings.keybind.syu; i+=2; continue; } else if (digraph === 'しょ') { r += settings.keybind.syo; i+=2; continue; } else if (digraph === 'じゃ') { r += settings.keybind.zya; i+=2; continue; } else if (digraph === 'じゅ') { r += settings.keybind.zyu; i+=2; continue; } else if (digraph === 'じょ') { r += settings.keybind.zyo; i+=2; continue; } else if (youonMap[digraph]) { r += youonMap[digraph]; i+=2; continue; } } if(t[i]==='っ' && i+1<t.length){ let n = t[i+1]; let nr = romajiMap[n] || n; if(nr.length>1){ r += nr[0] + nr[0] + nr.substring(1); } else { r += nr + nr; } i+=2; continue; } if (t[i] === 'じ') { r += settings.keybind.zi; } else if (t[i] === 'ん') { r += settings.keybind.nn; } else { r += romajiMap[t[i]] || t[i]; } i++; } return r; }
+    function convertToRomaji(t) { return convertToRomajiWithSettings(t); }
 
     // ========== ゲーム状態 ==========
     const gameState = {
@@ -1237,11 +1046,11 @@
         previousLevel: 0
     };
 
-    // スキンショップ用データ
+    // スキンショップ用データ (修正)
     const skinData = {
         faces: [
             { id: 'default', emoji: '😃', name: '通常の顔', price: 0, default: true },
-            { id: 'face_pack', emoji: '🎨', name: '顔20個セット', price: 1000000, type: 'bundle', count: 20 },
+            { id: 'face_pack', emoji: '🎨', name: '顔20個セット', price: 1000000, type: 'bundle', count: 20, pool: ['😁','😊','😅','😇','😉','🎃','👻','👾','🧟','T_T','TωT','🤪','🥳','🤖','👹'] },
             { id: 'custom_face', emoji: '✨', name: 'カスタムフェイス', price: 10000000, type: 'custom' }
         ],
         accessories: [
@@ -1259,7 +1068,8 @@
             { id: 'mask', emoji: '🎭', name: 'マスク', price: 1000000 },
             { id: 'bowtie', emoji: '🎀', name: '蝶ネクタイ', price: 1000000 },
             { id: 'tie', emoji: '👔', name: 'ネクタイ', price: 1000000 },
-            { id: 'watch', emoji: '⌚', name: '腕時計', price: 1000000 }
+            { id: 'watch', emoji: '⌚', name: '腕時計', price: 1000000 },
+            { id: 'custom_accessory', emoji: '✨', name: 'カスタムアクセサリー', price: 1000000, type: 'custom' }
         ],
         colors: [
             { id: 'default', name: '黒', colorCode: '#000000', price: 0, default: true },
@@ -1271,18 +1081,46 @@
         ]
     };
 
-    // ランダムな文字を生成
-    function getRandomChar() {
-        const chars = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        return chars[Math.floor(Math.random() * chars.length)];
+    // ランダムな文字を生成（ただし指定されたプールから選ぶ）
+    function getRandomCharFromPool(pool) {
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
-    // スキン関連関数
+    // 汎用入力ダイアログを表示する関数
+    function showCustomInputDialog(title, placeholder, callback) {
+        const dialog = document.createElement('div');
+        dialog.className = 'custom-input-dialog';
+        dialog.innerHTML = `
+            <h3 style="color: var(--accent-gold); margin:0;">${title}</h3>
+            <input type="text" id="customInputField" placeholder="${placeholder}" maxlength="1" style="text-align:center; font-size:24px; width:100px;">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="dialogConfirmBtn">決定</button>
+                <button id="dialogCancelBtn" class="close">キャンセル</button>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+        const input = dialog.querySelector('#customInputField');
+        const confirmBtn = dialog.querySelector('#dialogConfirmBtn');
+        const cancelBtn = dialog.querySelector('#dialogCancelBtn');
+        const closeDialog = () => dialog.remove();
+        confirmBtn.onclick = () => {
+            const val = input.value.trim();
+            if (val && val.length === 1) {
+                callback(val);
+                closeDialog();
+            } else {
+                alert('1文字を入力してください');
+            }
+        };
+        cancelBtn.onclick = closeDialog;
+        input.focus();
+    }
+
+    // スキン関連関数 (修正版)
     function updateAvatarPreview() {
         const circle = document.getElementById('avatarCircle');
         const faceEl = document.getElementById('avatarFace');
         const accessoryEl = document.getElementById('avatarAccessory');
-        
         if (circle) circle.style.backgroundColor = gameState.skin.color;
         if (faceEl) {
             if (gameState.skin.customFace) faceEl.textContent = gameState.skin.customFace;
@@ -1300,12 +1138,11 @@
     function buyFace(faceId) {
         const face = skinData.faces.find(f => f.id === faceId);
         if (!face) return false;
-        
         if (face.id === 'face_pack') {
             if (gameState.coins >= face.price) {
                 gameState.coins -= face.price;
-                for (let i = 0; i < 20; i++) {
-                    const randomChar = getRandomChar();
+                for (let i = 0; i < face.count; i++) {
+                    const randomChar = getRandomCharFromPool(face.pool);
                     const newFaceId = `face_${randomChar}_${Date.now()}_${i}`;
                     gameState.skin.ownedFaces.push(newFaceId);
                 }
@@ -1318,14 +1155,15 @@
         } else if (face.id === 'custom_face') {
             if (gameState.coins >= face.price) {
                 gameState.coins -= face.price;
-                const randomChar = getRandomChar();
-                gameState.skin.customFace = randomChar;
-                gameState.skin.face = `custom_${randomChar}`;
-                gameState.skin.ownedFaces.push(`custom_${randomChar}`);
-                saveGameState();
-                renderFaceShop();
-                updateAvatarPreview();
-                alert(`カスタムフェイス「${randomChar}」を購入しました！`);
+                showCustomInputDialog('カスタムフェイス', '1文字入力', (char) => {
+                    gameState.skin.customFace = char;
+                    gameState.skin.face = `custom_${char}`;
+                    gameState.skin.ownedFaces.push(`custom_${char}`);
+                    saveGameState();
+                    renderFaceShop();
+                    updateAvatarPreview();
+                    alert(`カスタムフェイス「${char}」を購入しました！`);
+                });
                 return true;
             } else { alert('コインが足りません'); return false; }
         }
@@ -1336,14 +1174,15 @@
         if (accessoryId === 'custom_accessory') {
             if (gameState.coins >= 1000000) {
                 gameState.coins -= 1000000;
-                const randomChar = getRandomChar();
-                gameState.skin.customAccessory = randomChar;
-                gameState.skin.accessory = `custom_${randomChar}`;
-                gameState.skin.ownedAccessories.push(`custom_${randomChar}`);
-                saveGameState();
-                renderAccessoryShop();
-                updateAvatarPreview();
-                alert(`カスタムアクセサリー「${randomChar}」を購入しました！`);
+                showCustomInputDialog('カスタムアクセサリー', '1文字入力', (char) => {
+                    gameState.skin.customAccessory = char;
+                    gameState.skin.accessory = `custom_${char}`;
+                    gameState.skin.ownedAccessories.push(`custom_${char}`);
+                    saveGameState();
+                    renderAccessoryShop();
+                    updateAvatarPreview();
+                    alert(`カスタムアクセサリー「${char}」を購入しました！`);
+                });
                 return true;
             } else { alert('コインが足りません'); return false; }
         } else {
@@ -1365,7 +1204,6 @@
     function buyColor(colorId) {
         const color = skinData.colors.find(c => c.id === colorId);
         if (!color) return false;
-        
         if (color.id === 'custom') {
             if (gameState.coins >= color.price) {
                 gameState.coins -= color.price;
@@ -1415,6 +1253,14 @@
                 renderFaceShop();
                 updateAvatarPreview();
             }
+        } else if (faceId.startsWith('custom_')) {
+            const customChar = gameState.skin.customFace;
+            if (customChar) {
+                gameState.skin.face = `custom_${customChar}`;
+                saveGameState();
+                renderFaceShop();
+                updateAvatarPreview();
+            }
         }
     }
 
@@ -1430,6 +1276,11 @@
             renderAccessoryShop();
             updateAvatarPreview();
         } else if (gameState.skin.ownedAccessories.includes(accessoryId)) {
+            gameState.skin.accessory = accessoryId;
+            saveGameState();
+            renderAccessoryShop();
+            updateAvatarPreview();
+        } else if (accessoryId.startsWith('custom_') && gameState.skin.customAccessory) {
             gameState.skin.accessory = accessoryId;
             saveGameState();
             renderAccessoryShop();
@@ -1501,6 +1352,17 @@
             randomItem.onclick = () => equipFace(faceId);
             container.appendChild(randomItem);
         });
+        
+        const ownedCustomFaces = gameState.skin.ownedFaces.filter(f => f.startsWith('custom_'));
+        ownedCustomFaces.forEach(faceId => {
+            const char = gameState.skin.customFace;
+            const isEquipped = gameState.skin.face === `custom_${char}`;
+            const customFaceItem = document.createElement('div');
+            customFaceItem.className = `skin-item ${isEquipped ? 'equipped' : 'owned'}`;
+            customFaceItem.innerHTML = `<div class="skin-preview">${char}</div><div class="skin-name">カスタム顔「${char}」</div><div class="skin-price">無料</div><div class="skin-status">${isEquipped ? '装備中' : '所有済み'}</div>`;
+            customFaceItem.onclick = () => equipFace(faceId);
+            container.appendChild(customFaceItem);
+        });
     }
 
     function renderAccessoryShop() {
@@ -1533,7 +1395,7 @@
         
         const ownedCustom = gameState.skin.ownedAccessories.filter(a => a.startsWith('custom_'));
         ownedCustom.forEach(accId => {
-            const char = accId.split('_')[1];
+            const char = gameState.skin.customAccessory;
             const isEquipped = gameState.skin.accessory === accId;
             const customAccItem = document.createElement('div');
             customAccItem.className = `skin-item ${isEquipped ? 'equipped' : 'owned'}`;
@@ -1578,10 +1440,14 @@
     // アバター表示を取得する関数
     function getAvatarHtml(skin) {
         const s = skin || gameState.skin;
-        const faceChar = s.customFace ? s.customFace : s.face;
+        let faceChar = s.face;
+        if (s.customFace && s.face === `custom_${s.customFace}`) faceChar = s.customFace;
+        else if (s.face && !s.face.startsWith('custom_')) faceChar = s.face;
+        else faceChar = '😃';
+        
         let accessoryChar = '';
         if (s.customAccessory) accessoryChar = s.customAccessory;
-        else if (s.accessory) {
+        else if (s.accessory && !s.accessory.startsWith('custom_')) {
             const acc = skinData.accessories.find(a => a.id === s.accessory);
             accessoryChar = acc ? acc.emoji : '';
         }
@@ -1668,474 +1534,71 @@
     let currentMode = 'normal';
 
     // ========== フィードバック関連（簡略化のため既存コードと同じ）==========
-    async function checkFeedbackBan() {
-        if (!db) return false;
-        try {
-            const snap = await get(ref(db, `feedbackBans/${gameState.userId}`));
-            if (snap.exists()) {
-                const banData = snap.val();
-                if (banData.until > Date.now()) {
-                    gameState.bannedUntil = banData.until;
-                    return true;
-                }
-            }
-            gameState.bannedUntil = 0;
-            return false;
-        } catch(e) { return false; }
-    }
-
-    async function updateFeedbackLimitDisplay() {
-        const isBanned = await checkFeedbackBan();
-        const bannedMessage = document.getElementById('feedbackBannedMessage');
-        const normalMessage = document.getElementById('feedbackNormalMessage');
-        if (isBanned) {
-            bannedMessage.classList.remove('hidden');
-            normalMessage.classList.add('hidden');
-        } else {
-            bannedMessage.classList.add('hidden');
-            normalMessage.classList.remove('hidden');
-            const today = new Date().toDateString();
-            if (gameState.lastFeedbackDate !== today) {
-                gameState.feedbackCount = 0;
-                gameState.lastFeedbackDate = today;
-            }
-            document.getElementById('feedbackLimit').textContent = `残り送信回数: ${2 - gameState.feedbackCount}/2 (今日)`;
-        }
-    }
-
-    document.getElementById('feedbackBtn').addEventListener('click', async () => {
-        playClickSound();
-        await updateFeedbackLimitDisplay();
-        switchScreen('feedbackScreen');
-    });
+    async function checkFeedbackBan() { if (!db) return false; try { const snap = await get(ref(db, `feedbackBans/${gameState.userId}`)); if (snap.exists()) { const banData = snap.val(); if (banData.until > Date.now()) { gameState.bannedUntil = banData.until; return true; } } gameState.bannedUntil = 0; return false; } catch(e) { return false; } }
+    async function updateFeedbackLimitDisplay() { const isBanned = await checkFeedbackBan(); const bannedMessage = document.getElementById('feedbackBannedMessage'); const normalMessage = document.getElementById('feedbackNormalMessage'); if (isBanned) { bannedMessage.classList.remove('hidden'); normalMessage.classList.add('hidden'); } else { bannedMessage.classList.add('hidden'); normalMessage.classList.remove('hidden'); const today = new Date().toDateString(); if (gameState.lastFeedbackDate !== today) { gameState.feedbackCount = 0; gameState.lastFeedbackDate = today; } document.getElementById('feedbackLimit').textContent = `残り送信回数: ${2 - gameState.feedbackCount}/2 (今日)`; } }
+    document.getElementById('feedbackBtn').addEventListener('click', async () => { playClickSound(); await updateFeedbackLimitDisplay(); switchScreen('feedbackScreen'); });
     document.getElementById('backFromFeedbackBtn').addEventListener('click', () => { playClickSound(); switchScreen('menuScreen'); });
-    document.getElementById('sendFeedbackBtn').addEventListener('click', async () => {
-        const message = document.getElementById('feedbackMessage').value.trim();
-        if (!message) { alert('メッセージを入力してください'); return; }
-        const isBanned = await checkFeedbackBan();
-        if (isBanned) { alert('あなたはBANされているためフィードバックを送信できません'); return; }
-        const today = new Date().toDateString();
-        if (gameState.lastFeedbackDate !== today) { gameState.feedbackCount = 0; gameState.lastFeedbackDate = today; }
-        if (gameState.feedbackCount >= 2) { alert('今日の送信回数制限に達しました'); return; }
-        if (db) {
-            try {
-                await push(ref(db, 'feedbacks'), {
-                    userId: gameState.userId, userName: gameState.userName,
-                    message: message, timestamp: Date.now(), date: today,
-                    skin: gameState.skin
-                });
-                gameState.coins += 500;
-                gameState.feedbackCount++;
-                if (isEventActive()) gameState.clovers += 1;
-                document.getElementById('feedbackMessage').value = '';
-                saveGameState();
-                await updateFeedbackLimitDisplay();
-                alert('フィードバックを送信しました！ 500💰' + (isEventActive() ? ' + 1🍀' : '') + ' を獲得！');
-                loadFeedbackSimpleList();
-            } catch(e) { alert('送信に失敗しました'); console.error(e); }
-        }
-    });
-
-    async function loadFeedbackFullList() {
-        if (!db) return;
-        try {
-            const snap = await get(ref(db, 'feedbacks'));
-            const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
-            feedbacks.sort((a, b) => b.timestamp - a.timestamp);
-            const list = document.getElementById('feedbackViewList');
-            list.innerHTML = feedbacks.map(f => `
-                <div class="feedback-view-item" data-id="${f.id}" data-userid="${f.userId}">
-                    <div class="feedback-view-header">
-                        <span class="feedback-view-user">${getAvatarHtml(f.skin || { face: '😃', color: '#000000' })}${f.userName}</span>
-                        <span class="feedback-view-time">${new Date(f.timestamp).toLocaleString()}</span>
-                    </div>
-                    <div class="feedback-view-content">${escapeHtml(f.message)}</div>
-                    <div class="feedback-view-actions"><button class="spam-btn-view" data-userid="${f.userId}" data-username="${f.userName}">荒らし報告</button></div>
-                </div>
-            `).join('');
-            document.querySelectorAll('.spam-btn-view').forEach(btn => {
-                let confirmState = 0;
-                btn.addEventListener('click', async (e) => {
-                    const userId = btn.dataset.userid, userName = btn.dataset.username;
-                    if (confirmState === 0) {
-                        btn.textContent = '本当に荒らし？'; btn.classList.add('confirm'); confirmState = 1;
-                        setTimeout(() => { btn.textContent = '荒らし報告'; btn.classList.remove('confirm'); confirmState = 0; }, 3000);
-                    } else if (confirmState === 1) {
-                        await set(ref(db, `feedbackBans/${userId}`), { until: Date.now() + 3 * 24 * 60 * 60 * 1000, reason: 'spam', bannedBy: gameState.userName, bannedAt: Date.now() });
-                        alert(`${userName} を3日間BANしました`);
-                        loadFeedbackFullList(); loadFeedbackSimpleList();
-                    }
-                });
-            });
-        } catch(e) { console.error(e); }
-    }
-
-    async function loadFeedbackSimpleList() {
-        if (!db) return;
-        try {
-            const snap = await get(ref(db, 'feedbacks'));
-            const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
-            feedbacks.sort((a, b) => b.timestamp - a.timestamp);
-            const recent = feedbacks.slice(0, 5);
-            const list = document.getElementById('feedbackSimpleList');
-            list.innerHTML = recent.map(f => `<div class="feedback-item-simple"><span class="user">${f.userName}</span>: <span class="preview">${f.message.substring(0, 30)}${f.message.length > 30 ? '...' : ''}</span></div>`).join('');
-            if (recent.length === 0) list.innerHTML = '<div>フィードバックはありません</div>';
-        } catch(e) { console.error(e); }
-    }
-
+    document.getElementById('sendFeedbackBtn').addEventListener('click', async () => { const message = document.getElementById('feedbackMessage').value.trim(); if (!message) { alert('メッセージを入力してください'); return; } const isBanned = await checkFeedbackBan(); if (isBanned) { alert('あなたはBANされているためフィードバックを送信できません'); return; } const today = new Date().toDateString(); if (gameState.lastFeedbackDate !== today) { gameState.feedbackCount = 0; gameState.lastFeedbackDate = today; } if (gameState.feedbackCount >= 2) { alert('今日の送信回数制限に達しました'); return; } if (db) { try { await push(ref(db, 'feedbacks'), { userId: gameState.userId, userName: gameState.userName, message: message, timestamp: Date.now(), date: today, skin: gameState.skin }); gameState.coins += 500; gameState.feedbackCount++; if (isEventActive()) gameState.clovers += 1; document.getElementById('feedbackMessage').value = ''; saveGameState(); await updateFeedbackLimitDisplay(); alert('フィードバックを送信しました！ 500💰' + (isEventActive() ? ' + 1🍀' : '') + ' を獲得！'); loadFeedbackSimpleList(); } catch(e) { alert('送信に失敗しました'); console.error(e); } } });
+    async function loadFeedbackFullList() { if (!db) return; try { const snap = await get(ref(db, 'feedbacks')); const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : []; feedbacks.sort((a, b) => b.timestamp - a.timestamp); const list = document.getElementById('feedbackViewList'); list.innerHTML = feedbacks.map(f => `<div class="feedback-view-item" data-id="${f.id}" data-userid="${f.userId}"><div class="feedback-view-header"><span class="feedback-view-user">${getAvatarHtml(f.skin || { face: '😃', color: '#000000' })}${f.userName}</span><span class="feedback-view-time">${new Date(f.timestamp).toLocaleString()}</span></div><div class="feedback-view-content">${escapeHtml(f.message)}</div><div class="feedback-view-actions"><button class="spam-btn-view" data-userid="${f.userId}" data-username="${f.userName}">荒らし報告</button></div></div>`).join(''); document.querySelectorAll('.spam-btn-view').forEach(btn => { let confirmState = 0; btn.addEventListener('click', async (e) => { const userId = btn.dataset.userid, userName = btn.dataset.username; if (confirmState === 0) { btn.textContent = '本当に荒らし？'; btn.classList.add('confirm'); confirmState = 1; setTimeout(() => { btn.textContent = '荒らし報告'; btn.classList.remove('confirm'); confirmState = 0; }, 3000); } else if (confirmState === 1) { await set(ref(db, `feedbackBans/${userId}`), { until: Date.now() + 3 * 24 * 60 * 60 * 1000, reason: 'spam', bannedBy: gameState.userName, bannedAt: Date.now() }); alert(`${userName} を3日間BANしました`); loadFeedbackFullList(); loadFeedbackSimpleList(); } }); }); } catch(e) { console.error(e); } }
+    async function loadFeedbackSimpleList() { if (!db) return; try { const snap = await get(ref(db, 'feedbacks')); const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : []; feedbacks.sort((a, b) => b.timestamp - a.timestamp); const recent = feedbacks.slice(0, 5); const list = document.getElementById('feedbackSimpleList'); list.innerHTML = recent.map(f => `<div class="feedback-item-simple"><span class="user">${f.userName}</span>: <span class="preview">${f.message.substring(0, 30)}${f.message.length > 30 ? '...' : ''}</span></div>`).join(''); if (recent.length === 0) list.innerHTML = '<div>フィードバックはありません</div>'; } catch(e) { console.error(e); } }
     function escapeHtml(str) { return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
 
     // ========== ランキングリセット ==========
-    function checkRankingReset() {
-        const now = new Date();
-        const today7 = new Date(); today7.setHours(7, 0, 0, 0);
-        if (now >= today7) {
-            const lastResetDate = localStorage.getItem('lastRankingResetDate');
-            const todayStr = today7.toDateString();
-            if (lastResetDate !== todayStr) {
-                if (db) {
-                    get(ref(db, 'users')).then((snapshot) => {
-                        const users = snapshot.val() || {};
-                        Object.keys(users).forEach(userId => {
-                            set(ref(db, `users/${userId}/score`), 0).catch(() => {});
-                            set(ref(db, `users/${userId}/highScoreCombo`), 0).catch(() => {});
-                            set(ref(db, `users/${userId}/totalPlayCount`), 0).catch(() => {});
-                            set(ref(db, `users/${userId}/totalXPEarned`), 0).catch(() => {});
-                        });
-                    }).catch(() => {});
-                }
-                worldRankings = [];
-                localStorage.removeItem('worldRankings'); localStorage.removeItem('highScoreRankings');
-                localStorage.setItem('lastRankingResetDate', todayStr);
-                checkRankingRewards();
-            }
-        }
-    }
-    setInterval(checkRankingReset, 60000); setTimeout(checkRankingReset, 1000);
+    function checkRankingReset() { const now = new Date(); const today7 = new Date(); today7.setHours(7, 0, 0, 0); if (now >= today7) { const lastResetDate = localStorage.getItem('lastRankingResetDate'); const todayStr = today7.toDateString(); if (lastResetDate !== todayStr) { if (db) { get(ref(db, 'users')).then((snapshot) => { const users = snapshot.val() || {}; Object.keys(users).forEach(userId => { set(ref(db, `users/${userId}/score`), 0).catch(() => {}); set(ref(db, `users/${userId}/highScoreCombo`), 0).catch(() => {}); set(ref(db, `users/${userId}/totalPlayCount`), 0).catch(() => {}); set(ref(db, `users/${userId}/totalXPEarned`), 0).catch(() => {}); }); }).catch(() => {}); } worldRankings = []; localStorage.removeItem('worldRankings'); localStorage.removeItem('highScoreRankings'); localStorage.setItem('lastRankingResetDate', todayStr); checkRankingRewards(); } } } setInterval(checkRankingReset, 60000); setTimeout(checkRankingReset, 1000);
 
     // ========== アイテムドロップ ==========
-    function rollItemDrop() {
-        let dropRate = 0.05;
-        if (gameState.craftedSkills.dropRate && gameState.equippedSkills.includes('dropRate')) dropRate *= 4;
-        if (Math.random() > dropRate) return null;
-        const r = Math.random();
-        if (r < 0.5) return 'stone';
-        else if (r < 0.7) return 'fire';
-        else if (r < 0.9) return 'thunder';
-        else if (r < 0.99) return 'dragon';
-        else return 'crown';
-    }
-
-    function addItem(itemType, count = 1) {
-        if (!itemType) return false;
-        gameState.items[itemType] = (gameState.items[itemType] || 0) + count;
-        gameState.taskCounters.craftItemsCollected += count;
-        saveGameState();
-        updateItemCounts();
-        return true;
-    }
-
-    function removeItems(requirements) {
-        for (let [item, count] of Object.entries(requirements)) {
-            if ((gameState.items[item] || 0) < count) return false;
-        }
-        for (let [item, count] of Object.entries(requirements)) {
-            gameState.items[item] -= count;
-        }
-        saveGameState();
-        updateItemCounts();
-        return true;
-    }
-
-    function updateItemCounts() {
-        document.getElementById('itemStoneCount').textContent = gameState.items.stone || 0;
-        document.getElementById('itemFireCount').textContent = gameState.items.fire || 0;
-        document.getElementById('itemThunderCount').textContent = gameState.items.thunder || 0;
-        document.getElementById('itemDragonCount').textContent = gameState.items.dragon || 0;
-        document.getElementById('itemCrownCount').textContent = gameState.items.crown || 0;
-    }
+    function rollItemDrop() { let dropRate = 0.05; if (gameState.craftedSkills.dropRate && gameState.equippedSkills.includes('dropRate')) dropRate *= 4; if (Math.random() > dropRate) return null; const r = Math.random(); if (r < 0.5) return 'stone'; else if (r < 0.7) return 'fire'; else if (r < 0.9) return 'thunder'; else if (r < 0.99) return 'dragon'; else return 'crown'; }
+    function addItem(itemType, count = 1) { if (!itemType) return false; gameState.items[itemType] = (gameState.items[itemType] || 0) + count; gameState.taskCounters.craftItemsCollected += count; saveGameState(); updateItemCounts(); return true; }
+    function removeItems(requirements) { for (let [item, count] of Object.entries(requirements)) { if ((gameState.items[item] || 0) < count) return false; } for (let [item, count] of Object.entries(requirements)) { gameState.items[item] -= count; } saveGameState(); updateItemCounts(); return true; }
+    function updateItemCounts() { document.getElementById('itemStoneCount').textContent = gameState.items.stone || 0; document.getElementById('itemFireCount').textContent = gameState.items.fire || 0; document.getElementById('itemThunderCount').textContent = gameState.items.thunder || 0; document.getElementById('itemDragonCount').textContent = gameState.items.dragon || 0; document.getElementById('itemCrownCount').textContent = gameState.items.crown || 0; }
 
     // ========== クラフト ==========
-    function craftDropRate() {
-        if (removeItems({ stone: 7 })) {
-            if (!gameState.ownedSkills.includes('dropRate')) gameState.ownedSkills.push('dropRate');
-            gameState.craftedSkills.dropRate = true;
-            saveGameState(); alert('📦 ドロップ率アップ を作成しました！');
-            renderInventory(); updateSkillButtons();
-        } else alert('アイテムが足りません');
-    }
-    function craftSigma() {
-        if (removeItems({ stone: 1, fire: 2, thunder: 2 })) {
-            if (!gameState.ownedSkills.includes('sigma')) gameState.ownedSkills.push('sigma');
-            gameState.craftedSkills.sigma = true;
-            saveGameState(); alert('⚡ 自動入力Σ を作成しました！');
-            renderInventory(); updateSkillButtons();
-        } else alert('アイテムが足りません');
-    }
-    function craftDoubleScore() {
-        if (removeItems({ fire: 3, thunder: 1, dragon: 2 })) {
-            if (!gameState.ownedSkills.includes('doubleScore')) gameState.ownedSkills.push('doubleScore');
-            gameState.craftedSkills.doubleScore = true;
-            saveGameState(); alert('💰 スコア2倍 を作成しました！');
-            renderInventory(); updateSkillButtons();
-        } else alert('アイテムが足りません');
-    }
-    function craftComboAlpha() {
-        if (removeItems({ crown: 5, dragon: 3 })) {
-            if (!gameState.ownedSkills.includes('comboAlpha')) gameState.ownedSkills.push('comboAlpha');
-            gameState.craftedSkills.comboAlpha = true;
-            saveGameState(); alert('⚡×🔥 自動入力×コンボα を作成しました！');
-            renderInventory(); updateSkillButtons();
-        } else alert('アイテムが足りません');
-    }
-    function craftDragonSummers() {
-        if (removeItems({ dragon: 150 })) {
-            if (!gameState.ownedSkills.includes('dragonSummers')) gameState.ownedSkills.push('dragonSummers');
-            gameState.craftedSkills.dragonSummers = true;
-            saveGameState(); alert('🐉 ドラゴンサマーズ を作成しました！');
-            renderInventory(); updateSkillButtons();
-        } else alert('アイテムが足りません');
-    }
+    function craftDropRate() { if (removeItems({ stone: 7 })) { if (!gameState.ownedSkills.includes('dropRate')) gameState.ownedSkills.push('dropRate'); gameState.craftedSkills.dropRate = true; saveGameState(); alert('📦 ドロップ率アップ を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
+    function craftSigma() { if (removeItems({ stone: 1, fire: 2, thunder: 2 })) { if (!gameState.ownedSkills.includes('sigma')) gameState.ownedSkills.push('sigma'); gameState.craftedSkills.sigma = true; saveGameState(); alert('⚡ 自動入力Σ を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
+    function craftDoubleScore() { if (removeItems({ fire: 3, thunder: 1, dragon: 2 })) { if (!gameState.ownedSkills.includes('doubleScore')) gameState.ownedSkills.push('doubleScore'); gameState.craftedSkills.doubleScore = true; saveGameState(); alert('💰 スコア2倍 を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
+    function craftComboAlpha() { if (removeItems({ crown: 5, dragon: 3 })) { if (!gameState.ownedSkills.includes('comboAlpha')) gameState.ownedSkills.push('comboAlpha'); gameState.craftedSkills.comboAlpha = true; saveGameState(); alert('⚡×🔥 自動入力×コンボα を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
+    function craftDragonSummers() { if (removeItems({ dragon: 150 })) { if (!gameState.ownedSkills.includes('dragonSummers')) gameState.ownedSkills.push('dragonSummers'); gameState.craftedSkills.dragonSummers = true; saveGameState(); alert('🐉 ドラゴンサマーズ を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
 
     // ========== クラフトスキル使用 ==========
-    function useSkillSigma() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.sigma > now) return;
-        cooldowns.sigma = now + 30000;
-        playSkillSound();
-        skillAutoActive = true;
-        showAnimation('⚡自動入力Σ!');
-        if (autoInterval) clearInterval(autoInterval);
-        autoInterval = setInterval(() => {
-            if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
-            let ex = currentRomaji[typedInput.length];
-            if (ex) {
-                typedInput += ex; currentCombo++;
-                let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
-                currentScore += addScore;
-                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
-                document.getElementById('comboDisplay').textContent = currentCombo;
-                updateRomajiDisplay();
-                if (typedInput === currentRomaji) nextQuestion();
-            }
-        }, SIGMA_AUTO_FRAMES);
-        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 1500);
-        updateSkillButtons();
-    }
-
-    function useSkillDoubleScore() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.doubleScore > now) return;
-        cooldowns.doubleScore = now + 40000;
-        doubleScoreActive = true;
-        playSkillSound();
-        showAnimation('💰 スコア2倍!');
-        setTimeout(() => { doubleScoreActive = false; }, 5000);
-        updateSkillButtons();
-    }
-
-    function useSkillComboAlpha() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.comboAlpha > now) return;
-        cooldowns.comboAlpha = now + 50000;
-        playSkillSound();
-        skillAutoActive = true;
-        showAnimation('⚡×🔥 自動入力×コンボα!');
-        if (autoInterval) clearInterval(autoInterval);
-        autoInterval = setInterval(() => {
-            if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; }
-            let ex = currentRomaji[typedInput.length];
-            if (ex) {
-                typedInput += ex; currentCombo++;
-                let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1);
-                currentScore += addScore;
-                document.getElementById('scoreDisplay').textContent = Math.floor(currentScore);
-                document.getElementById('comboDisplay').textContent = currentCombo;
-                updateRomajiDisplay();
-                if (typedInput === currentRomaji) nextQuestion();
-            }
-        }, ALPHA_AUTO_FRAMES);
-        setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 6000);
-        combo25Active = true; comboMultiplier = 2.5;
-        setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 8000);
-        updateSkillButtons();
-    }
-
-    function useSkillDragonSummers() {
-        if (!gameActive) return;
-        const now = Date.now();
-        if (cooldowns.dragonSummers > now) return;
-        cooldowns.dragonSummers = now + 45000;
-        playSkillSound();
-        gameActive = false;
-        clearInterval(gameTimer);
-        tapModeActive = true;
-        tapCount = 0;
-        const container = document.createElement('div'); 
-        container.className = 'bar-game-container';
-        container.innerHTML = `<div style="text-align:center; color:white;"><div class="tap-button" id="tapButton">👆 連打！</div><div class="tap-count" id="tapCount">0</div><div>残り <span id="tapTime">2.0</span>秒</div></div>`;
-        document.body.appendChild(container);
-        let timeLeft = 2.0;
-        const tapButton = document.getElementById('tapButton');
-        const tapCountEl = document.getElementById('tapCount');
-        const tapTimeEl = document.getElementById('tapTime');
-        tapButton.addEventListener('click', () => { if (tapModeActive) { tapCount++; tapCountEl.textContent = tapCount; } });
-        const spaceHandler = (e) => { if (e.code === 'Space' && tapModeActive) { e.preventDefault(); tapCount++; tapCountEl.textContent = tapCount; } };
-        document.addEventListener('keydown', spaceHandler);
-        const tapInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            tapTimeEl.textContent = timeLeft.toFixed(1);
-            if (timeLeft <= 0) {
-                clearInterval(tapInterval);
-                document.removeEventListener('keydown', spaceHandler);
-                container.remove();
-                const comboGain = Math.floor(tapCount / 5);
-                currentCombo += comboGain;
-                document.getElementById('comboDisplay').textContent = currentCombo;
-                showAnimation(`✨ コンボ+${comboGain}!`);
-                tapModeActive = false;
-                gameActive = true;
-                gameTimer = setInterval(() => { gameTime--; document.getElementById('timerDisplay').textContent = Math.floor(gameTime); if (gameTime <= 0) endGame(); }, 1000);
-            }
-        }, 100);
-        updateSkillButtons();
-    }
-
-    function isEventActive() {
-        const now = new Date();
-        const eventEnd = new Date(now.getFullYear(), 2, 31);
-        return now <= eventEnd;
-    }
+    function useSkillSigma() { if (!gameActive) return; const now = Date.now(); if (cooldowns.sigma > now) return; cooldowns.sigma = now + 30000; playSkillSound(); skillAutoActive = true; showAnimation('⚡自動入力Σ!'); if (autoInterval) clearInterval(autoInterval); autoInterval = setInterval(() => { if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; } let ex = currentRomaji[typedInput.length]; if (ex) { typedInput += ex; currentCombo++; let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1); currentScore += addScore; document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); document.getElementById('comboDisplay').textContent = currentCombo; updateRomajiDisplay(); if (typedInput === currentRomaji) nextQuestion(); } }, SIGMA_AUTO_FRAMES); setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 1500); updateSkillButtons(); }
+    function useSkillDoubleScore() { if (!gameActive) return; const now = Date.now(); if (cooldowns.doubleScore > now) return; cooldowns.doubleScore = now + 40000; doubleScoreActive = true; playSkillSound(); showAnimation('💰 スコア2倍!'); setTimeout(() => { doubleScoreActive = false; }, 5000); updateSkillButtons(); }
+    function useSkillComboAlpha() { if (!gameActive) return; const now = Date.now(); if (cooldowns.comboAlpha > now) return; cooldowns.comboAlpha = now + 50000; playSkillSound(); skillAutoActive = true; showAnimation('⚡×🔥 自動入力×コンボα!'); if (autoInterval) clearInterval(autoInterval); autoInterval = setInterval(() => { if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; } let ex = currentRomaji[typedInput.length]; if (ex) { typedInput += ex; currentCombo++; let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1); currentScore += addScore; document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); document.getElementById('comboDisplay').textContent = currentCombo; updateRomajiDisplay(); if (typedInput === currentRomaji) nextQuestion(); } }, ALPHA_AUTO_FRAMES); setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 6000); combo25Active = true; comboMultiplier = 2.5; setTimeout(() => { combo25Active = false; comboMultiplier = 1; }, 8000); updateSkillButtons(); }
+    function useSkillDragonSummers() { if (!gameActive) return; const now = Date.now(); if (cooldowns.dragonSummers > now) return; cooldowns.dragonSummers = now + 45000; playSkillSound(); gameActive = false; clearInterval(gameTimer); tapModeActive = true; tapCount = 0; const container = document.createElement('div'); container.className = 'bar-game-container'; container.innerHTML = `<div style="text-align:center; color:white;"><div class="tap-button" id="tapButton">👆 連打！</div><div class="tap-count" id="tapCount">0</div><div>残り <span id="tapTime">2.0</span>秒</div></div>`; document.body.appendChild(container); let timeLeft = 2.0; const tapButton = document.getElementById('tapButton'); const tapCountEl = document.getElementById('tapCount'); const tapTimeEl = document.getElementById('tapTime'); tapButton.addEventListener('click', () => { if (tapModeActive) { tapCount++; tapCountEl.textContent = tapCount; } }); const spaceHandler = (e) => { if (e.code === 'Space' && tapModeActive) { e.preventDefault(); tapCount++; tapCountEl.textContent = tapCount; } }; document.addEventListener('keydown', spaceHandler); const tapInterval = setInterval(() => { timeLeft -= 0.1; tapTimeEl.textContent = timeLeft.toFixed(1); if (timeLeft <= 0) { clearInterval(tapInterval); document.removeEventListener('keydown', spaceHandler); container.remove(); const comboGain = Math.floor(tapCount / 5); currentCombo += comboGain; document.getElementById('comboDisplay').textContent = currentCombo; showAnimation(`✨ コンボ+${comboGain}!`); tapModeActive = false; gameActive = true; gameTimer = setInterval(() => { gameTime--; document.getElementById('timerDisplay').textContent = Math.floor(gameTime); if (gameTime <= 0) endGame(); }, 1000); } }, 100); updateSkillButtons(); }
+    function isEventActive() { const now = new Date(); const eventEnd = new Date(now.getFullYear(), 2, 31); return now <= eventEnd; }
 
     // ========== 管理者モード ==========
     let bugReports = [];
-    document.getElementById('adminBtn').addEventListener('click', () => {
-        const code = prompt('管理者コードを入力してください:');
-        if (code === '1x4x5f') {
-            document.getElementById('adminPanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-            loadBugReports(); loadUserList(); loadFeedbackSimpleList();
-        } else alert('コードが違います');
-    });
-    document.getElementById('adminCloseBtn').addEventListener('click', () => {
-        document.getElementById('adminPanel').classList.remove('active');
-        document.getElementById('overlay').classList.remove('active');
-    });
-    document.getElementById('goToBugBoardBtn').addEventListener('click', () => {
-        document.getElementById('adminPanel').classList.remove('active');
-        switchScreen('bugBoardScreen'); loadBugBoardMessages();
-    });
-    document.getElementById('viewFeedbackListBtn').addEventListener('click', () => {
-        document.getElementById('adminPanel').classList.remove('active');
-        switchScreen('feedbackViewScreen'); loadFeedbackFullList();
-    });
+    document.getElementById('adminBtn').addEventListener('click', () => { const code = prompt('管理者コードを入力してください:'); if (code === '1x4x5f') { document.getElementById('adminPanel').classList.add('active'); document.getElementById('overlay').classList.add('active'); loadBugReports(); loadUserList(); loadFeedbackSimpleList(); } else alert('コードが違います'); });
+    document.getElementById('adminCloseBtn').addEventListener('click', () => { document.getElementById('adminPanel').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); });
+    document.getElementById('goToBugBoardBtn').addEventListener('click', () => { document.getElementById('adminPanel').classList.remove('active'); switchScreen('bugBoardScreen'); loadBugBoardMessages(); });
+    document.getElementById('viewFeedbackListBtn').addEventListener('click', () => { document.getElementById('adminPanel').classList.remove('active'); switchScreen('feedbackViewScreen'); loadFeedbackFullList(); });
     document.getElementById('refreshFeedbackViewBtn').addEventListener('click', () => loadFeedbackFullList());
     document.getElementById('backFromFeedbackViewBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    
     async function loadBugReports() { if (!db) return; try { const snap = await get(ref(db, 'bugReports')); bugReports = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : []; bugReports.sort((a, b) => b.timestamp - a.timestamp); } catch(e) { console.error(e); } }
     async function loadBugBoardMessages() { if (!db) return; try { const snap = await get(ref(db, 'bugReports')); const reports = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : []; reports.sort((a, b) => b.timestamp - a.timestamp); const list = document.getElementById('bugBoardList'); list.innerHTML = reports.map(r => `<div class="bug-message"><span class="bug-name">${r.name}:</span> ${r.message}</div>`).join(''); } catch(e) { console.error(e); } }
-    document.getElementById('postBugBoardBtn').addEventListener('click', async () => {
-        const message = document.getElementById('bugBoardMessageInput').value.trim();
-        if (!message) return;
-        if (db) { try { await push(ref(db, 'bugReports'), { name: gameState.userName, message: message, timestamp: Date.now(), skin: gameState.skin }); document.getElementById('bugBoardMessageInput').value = ''; loadBugBoardMessages(); } catch(e) { console.error(e); } }
-    });
+    document.getElementById('postBugBoardBtn').addEventListener('click', async () => { const message = document.getElementById('bugBoardMessageInput').value.trim(); if (!message) return; if (db) { try { await push(ref(db, 'bugReports'), { name: gameState.userName, message: message, timestamp: Date.now(), skin: gameState.skin }); document.getElementById('bugBoardMessageInput').value = ''; loadBugBoardMessages(); } catch(e) { console.error(e); } } });
     document.getElementById('backFromBugBoardBtn').addEventListener('click', () => switchScreen('menuScreen'));
     document.getElementById('refreshUserListBtn').addEventListener('click', loadUserList);
-    
-    async function loadUserList() {
-        if (!db) return;
-        try {
-            const snap = await get(ref(db, 'users'));
-            const users = snap.val() || {};
-            const list = document.getElementById('userList');
-            list.innerHTML = Object.entries(users).map(([id, user]) => `<div class="user-item" data-userid="${id}"><span>${user.name || '名無し'}</span><div><button class="delete-btn" data-userid="${id}" data-username="${user.name || '名無し'}">データ削除</button></div></div>`).join('');
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                let confirmState = 0, timeoutId = null;
-                btn.addEventListener('click', async (e) => {
-                    const userId = btn.dataset.userid, userName = btn.dataset.username;
-                    if (confirmState === 0) {
-                        btn.textContent = '本当に削除？'; btn.style.background = 'var(--admin-orange)'; confirmState = 1;
-                        if (timeoutId) clearTimeout(timeoutId);
-                        timeoutId = setTimeout(() => { btn.textContent = 'データ削除'; btn.style.background = 'var(--admin-red)'; confirmState = 0; }, 5000);
-                    } else if (confirmState === 1) {
-                        if (timeoutId) clearTimeout(timeoutId);
-                        if (db) { try { await remove(ref(db, `users/${userId}`)); alert(`${userName} のデータを削除しました`); loadUserList(); } catch(e) { alert('削除に失敗しました'); } }
-                    }
-                });
-            });
-        } catch(e) { console.error(e); }
-    }
+    async function loadUserList() { if (!db) return; try { const snap = await get(ref(db, 'users')); const users = snap.val() || {}; const list = document.getElementById('userList'); list.innerHTML = Object.entries(users).map(([id, user]) => `<div class="user-item" data-userid="${id}"><span>${user.name || '名無し'}</span><div><button class="delete-btn" data-userid="${id}" data-username="${user.name || '名無し'}">データ削除</button></div></div>`).join(''); document.querySelectorAll('.delete-btn').forEach(btn => { let confirmState = 0, timeoutId = null; btn.addEventListener('click', async (e) => { const userId = btn.dataset.userid, userName = btn.dataset.username; if (confirmState === 0) { btn.textContent = '本当に削除？'; btn.style.background = 'var(--admin-orange)'; confirmState = 1; if (timeoutId) clearTimeout(timeoutId); timeoutId = setTimeout(() => { btn.textContent = 'データ削除'; btn.style.background = 'var(--admin-red)'; confirmState = 0; }, 5000); } else if (confirmState === 1) { if (timeoutId) clearTimeout(timeoutId); if (db) { try { await remove(ref(db, `users/${userId}`)); alert(`${userName} のデータを削除しました`); loadUserList(); } catch(e) { alert('削除に失敗しました'); } } } }); }); } catch(e) { console.error(e); } }
 
     // ========== プレイヤー情報 ==========
-    function updatePlayerInfo() {
-        if (!db) return;
-        const now = Date.now();
-        const fiveMinutesAgo = now - 5 * 60 * 1000;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const todayStart = today.getTime();
-        onValue(ref(db, 'users'), (snapshot) => {
-            const users = snapshot.val() || {};
-            const onlinePlayers = [], todayPlayers = [];
-            Object.entries(users).forEach(([id, user]) => {
-                const lastActive = user.lastActive || 0;
-                const userName = user.name || '名無し';
-                const userSkin = user.skin || { face: '😃', color: '#000000', accessory: null };
-                if (lastActive > fiveMinutesAgo) onlinePlayers.push({ name: userName, skin: userSkin });
-                if (lastActive > todayStart) todayPlayers.push({ name: userName, skin: userSkin });
-            });
-            const onlineList = document.getElementById('onlinePlayersList');
-            onlineList.innerHTML = onlinePlayers.length > 0 ? onlinePlayers.map(p => `<div class="player-list-item">${getAvatarHtml(p.skin)}${p.name}</div>`).join('') : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>';
-            document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`;
-            const todayList = document.getElementById('todayPlayersList');
-            todayList.innerHTML = todayPlayers.length > 0 ? todayPlayers.map(p => `<div class="player-list-item">${getAvatarHtml(p.skin)}${p.name}</div>`).join('') : '<div class="player-list-item">今日ログインしたプレイヤーはいません</div>';
-            document.getElementById('todayPlayersCount').textContent = `${todayPlayers.length}人`;
-        });
-    }
-    
+    function updatePlayerInfo() { if (!db) return; const now = Date.now(); const fiveMinutesAgo = now - 5 * 60 * 1000; const today = new Date(); today.setHours(0, 0, 0, 0); const todayStart = today.getTime(); onValue(ref(db, 'users'), (snapshot) => { const users = snapshot.val() || {}; const onlinePlayers = [], todayPlayers = []; Object.entries(users).forEach(([id, user]) => { const lastActive = user.lastActive || 0; const userName = user.name || '名無し'; const userSkin = user.skin || { face: '😃', color: '#000000', accessory: null }; if (lastActive > fiveMinutesAgo) onlinePlayers.push({ name: userName, skin: userSkin }); if (lastActive > todayStart) todayPlayers.push({ name: userName, skin: userSkin }); }); const onlineList = document.getElementById('onlinePlayersList'); onlineList.innerHTML = onlinePlayers.length > 0 ? onlinePlayers.map(p => `<div class="player-list-item">${getAvatarHtml(p.skin)}${p.name}</div>`).join('') : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>'; document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`; const todayList = document.getElementById('todayPlayersList'); todayList.innerHTML = todayPlayers.length > 0 ? todayPlayers.map(p => `<div class="player-list-item">${getAvatarHtml(p.skin)}${p.name}</div>`).join('') : '<div class="player-list-item">今日ログインしたプレイヤーはいません</div>'; document.getElementById('todayPlayersCount').textContent = `${todayPlayers.length}人`; }); }
     document.getElementById('playerInfoBtn').addEventListener('click', () => { switchScreen('playerInfoScreen'); updatePlayerInfo(); });
     document.getElementById('backFromPlayerInfoBtn').addEventListener('click', () => switchScreen('menuScreen'));
 
     // ========== 設定関連 ==========
     document.getElementById('settingsBtn').addEventListener('click', () => switchScreen('settingsScreen'));
     document.getElementById('backFromSettingsBtn').addEventListener('click', () => switchScreen('menuScreen'));
-    document.getElementById('saveKeybindBtn').addEventListener('click', () => {
-        settings.keybind.sya = document.getElementById('kbdSya').value; settings.keybind.syu = document.getElementById('kbdSyu').value;
-        settings.keybind.syo = document.getElementById('kbdSyo').value; settings.keybind.zi = document.getElementById('kbdZi').value;
-        settings.keybind.zya = document.getElementById('kbdZya').value; settings.keybind.zyu = document.getElementById('kbdZyu').value;
-        settings.keybind.zyo = document.getElementById('kbdZyo').value; settings.keybind.nn = document.getElementById('kbdNn').value;
-        saveSettings(); alert('キーバインドを保存しました');
-    });
-    document.getElementById('saveDesignBtn').addEventListener('click', () => {
-        settings.theme = document.getElementById('themeSelect').value; settings.color = document.getElementById('colorSelect').value;
-        saveSettings(); alert('デザインを適用しました');
-    });
-    document.getElementById('saveSoundBtn').addEventListener('click', () => {
-        settings.sound = { miss: document.getElementById('soundMiss').checked, type: document.getElementById('soundType').checked, click: document.getElementById('soundClick').checked, skill: document.getElementById('soundSkill').checked, levelUp: document.getElementById('soundLevelUp').checked, clear: document.getElementById('soundClear').checked, task: document.getElementById('soundTask').checked };
-        Object.assign(soundSettings, settings.sound); saveSettings(); alert('サウンド設定を保存しました');
-    });
-    document.querySelectorAll('#settingsTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
-        document.querySelectorAll('#settingsTabs .tab-btn').forEach(tt => tt.classList.remove('active')); this.classList.add('active');
-        document.getElementById('keybindSettings').classList.toggle('hidden', this.dataset.settings !== 'keybind');
-        document.getElementById('designSettings').classList.toggle('hidden', this.dataset.settings !== 'design');
-        document.getElementById('soundSettings').classList.toggle('hidden', this.dataset.settings !== 'sound');
-    }));
+    document.getElementById('saveKeybindBtn').addEventListener('click', () => { settings.keybind.sya = document.getElementById('kbdSya').value; settings.keybind.syu = document.getElementById('kbdSyu').value; settings.keybind.syo = document.getElementById('kbdSyo').value; settings.keybind.zi = document.getElementById('kbdZi').value; settings.keybind.zya = document.getElementById('kbdZya').value; settings.keybind.zyu = document.getElementById('kbdZyu').value; settings.keybind.zyo = document.getElementById('kbdZyo').value; settings.keybind.nn = document.getElementById('kbdNn').value; saveSettings(); alert('キーバインドを保存しました'); });
+    document.getElementById('saveDesignBtn').addEventListener('click', () => { settings.theme = document.getElementById('themeSelect').value; settings.color = document.getElementById('colorSelect').value; saveSettings(); alert('デザインを適用しました'); });
+    document.getElementById('saveSoundBtn').addEventListener('click', () => { settings.sound = { miss: document.getElementById('soundMiss').checked, type: document.getElementById('soundType').checked, click: document.getElementById('soundClick').checked, skill: document.getElementById('soundSkill').checked, levelUp: document.getElementById('soundLevelUp').checked, clear: document.getElementById('soundClear').checked, task: document.getElementById('soundTask').checked }; Object.assign(soundSettings, settings.sound); saveSettings(); alert('サウンド設定を保存しました'); });
+    document.querySelectorAll('#settingsTabs .tab-btn').forEach(t => t.addEventListener('click', function() { document.querySelectorAll('#settingsTabs .tab-btn').forEach(tt => tt.classList.remove('active')); this.classList.add('active'); document.getElementById('keybindSettings').classList.toggle('hidden', this.dataset.settings !== 'keybind'); document.getElementById('designSettings').classList.toggle('hidden', this.dataset.settings !== 'design'); document.getElementById('soundSettings').classList.toggle('hidden', this.dataset.settings !== 'sound'); }));
 
     // ========== スキンショップボタン ==========
     document.getElementById('skinShopBtn').addEventListener('click', () => { playClickSound(); openSkinShop(); });
     document.getElementById('backFromSkinShopBtn').addEventListener('click', () => { playClickSound(); switchScreen('menuScreen'); });
     document.getElementById('applyCustomColorBtn').addEventListener('click', () => applyCustomColor());
-    document.querySelectorAll('#skinTabs .tab-btn').forEach(t => t.addEventListener('click', function() {
-        document.querySelectorAll('#skinTabs .tab-btn').forEach(tt => tt.classList.remove('active')); this.classList.add('active');
-        document.getElementById('skinFacePanel').classList.add('hidden');
-        document.getElementById('skinAccessoryPanel').classList.add('hidden');
-        document.getElementById('skinColorPanel').classList.add('hidden');
-        if (this.dataset.skinTab === 'face') { document.getElementById('skinFacePanel').classList.remove('hidden'); renderFaceShop(); }
-        else if (this.dataset.skinTab === 'accessory') { document.getElementById('skinAccessoryPanel').classList.remove('hidden'); renderAccessoryShop(); }
-        else if (this.dataset.skinTab === 'color') { document.getElementById('skinColorPanel').classList.remove('hidden'); renderColorShop(); }
-    }));
+    document.querySelectorAll('#skinTabs .tab-btn').forEach(t => t.addEventListener('click', function() { document.querySelectorAll('#skinTabs .tab-btn').forEach(tt => tt.classList.remove('active')); this.classList.add('active'); document.getElementById('skinFacePanel').classList.add('hidden'); document.getElementById('skinAccessoryPanel').classList.add('hidden'); document.getElementById('skinColorPanel').classList.add('hidden'); if (this.dataset.skinTab === 'face') { document.getElementById('skinFacePanel').classList.remove('hidden'); renderFaceShop(); } else if (this.dataset.skinTab === 'accessory') { document.getElementById('skinAccessoryPanel').classList.remove('hidden'); renderAccessoryShop(); } else if (this.dataset.skinTab === 'color') { document.getElementById('skinColorPanel').classList.remove('hidden'); renderColorShop(); } }));
 
     // ========== 永続化 ==========
     function saveGameState() { localStorage.setItem('gameState', JSON.stringify(gameState)); syncFirebaseWithSkin(); }
