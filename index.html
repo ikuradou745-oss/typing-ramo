@@ -39,7 +39,7 @@
         .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); position: relative; }
         .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
-        .debug-corner { position: absolute; top: 20px; left: 20px; }
+        .debug-corner { position: absolute; top: 20px; left: 20px; display: flex; gap: 5px; }
         .debug-corner .icon-btn { width: 35px; height: 35px; font-size: 16px; }
         .header-right { display: flex; align-items: center; gap: 20px; margin-left: auto; }
         .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0,212,255,0.1); padding: 12px 20px; border-radius: 8px; }
@@ -223,6 +223,25 @@
         .setting-select { background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); color: var(--text-white); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
         .setting-checkbox { width: 20px; height: 20px; cursor: pointer; }
         .color-preview { display: inline-block; width: 20px; height: 20px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
+        
+        /* フィードバック画面 */
+        .feedback-panel { width: 100%; max-width: 700px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
+        .feedback-warning { color: #ff8888; font-size: 14px; text-align: center; padding: 10px; background: rgba(255,0,0,0.2); border-radius: 8px; margin-bottom: 10px; }
+        .feedback-input { width: 100%; padding: 15px; background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); border-radius: 8px; color: var(--text-white); font-size: 16px; margin-bottom: 15px; min-height: 150px; resize: vertical; font-family: inherit; }
+        .feedback-limit { font-size: 12px; color: var(--text-gray); text-align: right; margin-bottom: 10px; }
+        .feedback-banned { background: rgba(255,0,0,0.1); border: 2px solid var(--admin-red); padding: 20px; border-radius: 10px; text-align: center; color: #ff8888; font-size: 16px; margin-bottom: 15px; }
+        
+        /* フィードバック管理 */
+        .feedback-list { max-height: 400px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 15px; }
+        .feedback-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
+        .feedback-item:last-child { border-bottom: none; }
+        .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .feedback-user { color: var(--accent-blue); font-weight: bold; }
+        .feedback-time { font-size: 11px; color: var(--text-gray); }
+        .feedback-content { font-size: 14px; margin: 5px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .feedback-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .feedback-actions button { padding: 4px 8px; background: var(--admin-red); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px; }
+        .feedback-actions button.confirm { background: var(--admin-orange); }
     </style>
 </head>
 <body class="theme-default color-default">
@@ -231,6 +250,7 @@
     <div class="header">
         <div class="debug-corner">
             <button class="icon-btn" id="adminBtn">🚫</button>
+            <button class="icon-btn" id="feedbackBtn">📮</button>
         </div>
         <div class="game-title">⚡ タイピングクラフト</div>
         <div class="header-right">
@@ -655,6 +675,24 @@
             <button class="back-btn" id="backFromSettingsBtn">戻る</button>
         </div>
         
+        <!-- フィードバック画面 -->
+        <div class="screen" id="feedbackScreen">
+            <div class="menu-title">📮 フィードバック</div>
+            <div class="feedback-panel">
+                <div id="feedbackBannedMessage" class="feedback-banned hidden">
+                    あなたは荒らし行為を疑われたため、3日間フィードバックを送信できません。<br>
+                    データが消える可能性があるため、絶対にやめましょう。
+                </div>
+                <div id="feedbackNormalMessage">
+                    <div class="feedback-warning">⚠️ 荒らし行為を行うと、データが削除される可能性があります。</div>
+                    <textarea class="feedback-input" id="feedbackMessage" placeholder="ゲームのバグや追加してほしい機能などを記入してください..."></textarea>
+                    <div class="feedback-limit" id="feedbackLimit">残り送信回数: 2/2 (今日)</div>
+                    <button class="admin-btn" id="sendFeedbackBtn">送信 (報酬: 500💰 + 1🍀)</button>
+                </div>
+            </div>
+            <button class="back-btn" id="backFromFeedbackBtn">戻る</button>
+        </div>
+        
         <!-- ゲーム画面 (通常) -->
         <div class="screen" id="gameScreen">
             <!-- ストーリーモード用目標バー -->
@@ -775,6 +813,10 @@
         <div class="admin-subtitle">🗑️ データリセット</div>
         <button class="admin-btn secondary" id="refreshUserListBtn">🔄 ユーザー一覧更新</button>
         <div class="user-list" id="userList"></div>
+        
+        <div class="admin-subtitle">📮 フィードバック管理</div>
+        <button class="admin-btn secondary" id="refreshFeedbackBtn">🔄 フィードバック更新</button>
+        <div class="feedback-list" id="feedbackList"></div>
     </div>
 
     <!-- 演出レイヤー -->
@@ -787,7 +829,7 @@
 <script type="module">
     // ========== Firebase ==========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, remove, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, remove, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     const firebaseConfig = {
         apiKey: "AIzaSyBXnNXQ5khcR0EvRide4C0PjshJZpSF4oM",
         authDomain: "typing-game-28ed0.firebaseapp.com",
@@ -1127,6 +1169,10 @@
             score100k: 0,
             combo150plus: 0
         },
+        // フィードバック関連
+        feedbackCount: 0,
+        lastFeedbackDate: '',
+        bannedUntil: 0, // 荒らしによるBAN期限（タイムスタンプ）
         dailyTasks: [
             { id: 'daily1', title: '10回タイピングをプレイ', current: 0, target: 10, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
             { id: 'daily2', title: 'スコア5000以上を達成', current: 0, target: 1, reward: { xp: 50, coins: 1500 }, completed: false, lastReset: '' },
@@ -1214,6 +1260,168 @@
     let gameActive = false, gameTimer=null, currentQuestion='', currentRomaji='', typedInput='', currentDifficulty=null, gameTime=60, currentScore=0, currentCombo=0;
     let storyDebuffActive = false, storyCrackActive = false;
     let currentMode = 'normal';
+
+    // ========== フィードバック関連 ==========
+    async function checkFeedbackBan() {
+        if (!db) return false;
+        try {
+            const snap = await get(ref(db, `feedbackBans/${gameState.userId}`));
+            if (snap.exists()) {
+                const banData = snap.val();
+                if (banData.until > Date.now()) {
+                    gameState.bannedUntil = banData.until;
+                    return true;
+                }
+            }
+            gameState.bannedUntil = 0;
+            return false;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    async function updateFeedbackLimitDisplay() {
+        const isBanned = await checkFeedbackBan();
+        const bannedMessage = document.getElementById('feedbackBannedMessage');
+        const normalMessage = document.getElementById('feedbackNormalMessage');
+        
+        if (isBanned) {
+            bannedMessage.classList.remove('hidden');
+            normalMessage.classList.add('hidden');
+            const remainingTime = Math.ceil((gameState.bannedUntil - Date.now()) / (1000 * 60 * 60 * 24));
+            bannedMessage.innerHTML = `あなたは荒らし行為を疑われたため、約${remainingTime}日間フィードバックを送信できません。<br>データが消える可能性があるため、絶対にやめましょう。`;
+        } else {
+            bannedMessage.classList.add('hidden');
+            normalMessage.classList.remove('hidden');
+            
+            const today = new Date().toDateString();
+            if (gameState.lastFeedbackDate !== today) {
+                gameState.feedbackCount = 0;
+                gameState.lastFeedbackDate = today;
+            }
+            document.getElementById('feedbackLimit').textContent = `残り送信回数: ${2 - gameState.feedbackCount}/2 (今日)`;
+        }
+    }
+
+    document.getElementById('feedbackBtn').addEventListener('click', async () => {
+        playClickSound();
+        await updateFeedbackLimitDisplay();
+        switchScreen('feedbackScreen');
+    });
+
+    document.getElementById('backFromFeedbackBtn').addEventListener('click', () => {
+        playClickSound();
+        switchScreen('menuScreen');
+    });
+
+    document.getElementById('sendFeedbackBtn').addEventListener('click', async () => {
+        const message = document.getElementById('feedbackMessage').value.trim();
+        if (!message) {
+            alert('メッセージを入力してください');
+            return;
+        }
+
+        const isBanned = await checkFeedbackBan();
+        if (isBanned) {
+            alert('あなたはBANされているためフィードバックを送信できません');
+            return;
+        }
+
+        const today = new Date().toDateString();
+        if (gameState.lastFeedbackDate !== today) {
+            gameState.feedbackCount = 0;
+            gameState.lastFeedbackDate = today;
+        }
+
+        if (gameState.feedbackCount >= 2) {
+            alert('今日の送信回数制限に達しました');
+            return;
+        }
+
+        if (db) {
+            try {
+                await push(ref(db, 'feedbacks'), {
+                    userId: gameState.userId,
+                    userName: gameState.userName,
+                    message: message,
+                    timestamp: Date.now(),
+                    date: today
+                });
+
+                // 報酬付与
+                gameState.coins += 500;
+                gameState.feedbackCount++;
+                if (isEventActive()) {
+                    gameState.clovers += 1;
+                }
+
+                document.getElementById('feedbackMessage').value = '';
+                saveGameState();
+                await updateFeedbackLimitDisplay();
+                alert('フィードバックを送信しました！ 500💰' + (isEventActive() ? ' + 1🍀' : '') + ' を獲得！');
+            } catch(e) {
+                alert('送信に失敗しました');
+                console.error(e);
+            }
+        }
+    });
+
+    // 管理者向けフィードバック管理
+    async function loadFeedbackList() {
+        if (!db) return;
+        try {
+            const snap = await get(ref(db, 'feedbacks'));
+            const feedbacks = snap.val() ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data })) : [];
+            feedbacks.sort((a, b) => b.timestamp - a.timestamp);
+            
+            const list = document.getElementById('feedbackList');
+            list.innerHTML = feedbacks.map(f => `
+                <div class="feedback-item" data-id="${f.id}" data-userid="${f.userId}">
+                    <div class="feedback-header">
+                        <span class="feedback-user">${f.userName}</span>
+                        <span class="feedback-time">${new Date(f.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="feedback-content">${f.message}</div>
+                    <div class="feedback-actions">
+                        <button class="spam-btn" data-userid="${f.userId}" data-username="${f.userName}">荒らし報告</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 荒らしボタンのイベント
+            document.querySelectorAll('.spam-btn').forEach(btn => {
+                let confirmState = 0;
+                btn.addEventListener('click', async (e) => {
+                    const userId = btn.dataset.userid;
+                    const userName = btn.dataset.username;
+                    
+                    if (confirmState === 0) {
+                        btn.textContent = '本当に荒らし？';
+                        btn.classList.add('confirm');
+                        confirmState = 1;
+                        setTimeout(() => {
+                            btn.textContent = '荒らし報告';
+                            btn.classList.remove('confirm');
+                            confirmState = 0;
+                        }, 3000);
+                    } else if (confirmState === 1) {
+                        // 3日間BAN (259200000 ms)
+                        const banUntil = Date.now() + 3 * 24 * 60 * 60 * 1000;
+                        await set(ref(db, `feedbackBans/${userId}`), {
+                            until: banUntil,
+                            reason: 'spam',
+                            bannedBy: gameState.userName,
+                            bannedAt: Date.now()
+                        });
+                        alert(`${userName} を3日間BANしました`);
+                        loadFeedbackList();
+                    }
+                });
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    }
 
     // ========== ランキングリセット & 報酬処理 ==========
     function checkRankingReset() {
@@ -1561,6 +1769,7 @@
             document.getElementById('overlay').classList.add('active');
             loadBugReports();
             loadUserList();
+            loadFeedbackList();
         } else {
             alert('コードが違います');
         }
@@ -1628,6 +1837,7 @@
     });
     
     document.getElementById('refreshUserListBtn').addEventListener('click', loadUserList);
+    document.getElementById('refreshFeedbackBtn').addEventListener('click', loadFeedbackList);
     
     async function loadUserList() {
         if (!db) return;
@@ -1829,7 +2039,9 @@
             highScoreCombo: gameState.highScoreCombo,
             totalPlayCount: gameState.totalPlayCount,
             totalXPEarned: gameState.totalXPEarned,
-            clovers: gameState.clovers
+            clovers: gameState.clovers,
+            feedbackCount: gameState.feedbackCount,
+            lastFeedbackDate: gameState.lastFeedbackDate
         }).catch(() => {}); 
     }
     
@@ -1859,6 +2071,9 @@
             score100k: 0,
             combo150plus: 0
         };
+        if (!gameState.feedbackCount) gameState.feedbackCount = 0;
+        if (!gameState.lastFeedbackDate) gameState.lastFeedbackDate = '';
+        if (!gameState.bannedUntil) gameState.bannedUntil = 0;
         gameState.previousLevel = gameState.level;
         
         if (!gameState.eventTasks) {
@@ -2737,7 +2952,9 @@
                 highScoreCombo: gameState.highScoreCombo,
                 totalPlayCount: gameState.totalPlayCount,
                 totalXPEarned: gameState.totalXPEarned,
-                clovers: gameState.clovers
+                clovers: gameState.clovers,
+                feedbackCount: gameState.feedbackCount,
+                lastFeedbackDate: gameState.lastFeedbackDate
             }).catch(() => {});
         } else {
             syncFirebase();
