@@ -250,17 +250,16 @@
         .feedback-item-simple .user { color: var(--accent-blue); }
         .feedback-item-simple .preview { color: var(--text-gray); }
         
-        /* BANルーレット用スタイル */
+        /* BANルーレット用スタイル (閉じるボタンなし) */
         .roulette-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 20000; flex-direction: column; gap: 30px; }
         .roulette-wheel { width: 300px; height: 300px; border-radius: 50%; background: conic-gradient(from 0deg, #ff3333 0deg 180deg, #33ff33 180deg 360deg); position: relative; transition: transform 3s cubic-bezier(0.2, 0.9, 0.1, 1.1); box-shadow: 0 0 30px rgba(255,0,0,0.5); }
         .roulette-wheel::after { content: "▼"; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; color: white; text-shadow: 0 0 5px black; }
         .roulette-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; background: gold; border-radius: 50%; box-shadow: 0 0 15px gold; }
         .roulette-segment { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: white; text-shadow: 1px 1px 2px black; }
         .roulette-result { font-size: 32px; font-weight: bold; padding: 20px 40px; background: linear-gradient(135deg, gold, orange); border-radius: 60px; color: black; text-align: center; }
-        .roulette-spin-btn { padding: 15px 40px; font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #ff6600, #ff3300); border: none; border-radius: 50px; color: white; cursor: pointer; transition: 0.2s; }
+        .roulette-spin-btn { padding: 15px 40px; font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #ff6600, #ff3300); border: none; border-radius: 50px; color: white; cursor: pointer; transition: 0.2s; margin-top: 20px; }
         .roulette-spin-btn:hover { transform: scale(1.05); }
         .roulette-spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .roulette-close { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: #666; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 16px; }
         .roulette-message { font-size: 18px; color: white; text-align: center; max-width: 400px; }
     </style>
 </head>
@@ -1065,16 +1064,36 @@
     function useSkillDragonSummers() { if (!gameActive) return; const now = Date.now(); if (cooldowns.dragonSummers > now) return; cooldowns.dragonSummers = now + 45000; playSkillSound(); gameActive = false; clearInterval(gameTimer); tapModeActive = true; tapCount = 0; const container = document.createElement('div'); container.className = 'bar-game-container'; container.innerHTML = `<div style="text-align:center; color:white;"><div class="tap-button" id="tapButton">👆 連打！</div><div class="tap-count" id="tapCount">0</div><div>残り <span id="tapTime">2.0</span>秒</div></div>`; document.body.appendChild(container); let timeLeft = 2.0; const tapButton = document.getElementById('tapButton'); const tapCountEl = document.getElementById('tapCount'); const tapTimeEl = document.getElementById('tapTime'); tapButton.addEventListener('click', () => { if (tapModeActive) { tapCount++; tapCountEl.textContent = tapCount; } }); const spaceHandler = (e) => { if (e.code === 'Space' && tapModeActive) { e.preventDefault(); tapCount++; tapCountEl.textContent = tapCount; } }; document.addEventListener('keydown', spaceHandler); const tapInterval = setInterval(() => { timeLeft -= 0.1; tapTimeEl.textContent = timeLeft.toFixed(1); if (timeLeft <= 0) { clearInterval(tapInterval); document.removeEventListener('keydown', spaceHandler); container.remove(); const comboGain = Math.floor(tapCount / 5); currentCombo += comboGain; document.getElementById('comboDisplay').textContent = currentCombo; showAnimation(`✨ コンボ+${comboGain}!`); tapModeActive = false; gameActive = true; gameTimer = setInterval(() => { gameTime--; document.getElementById('timerDisplay').textContent = Math.floor(gameTime); if (gameTime <= 0) endGame(); }, 1000); } }, 100); updateSkillButtons(); }
     function isEventActive() { const now = new Date(); const eventEnd = new Date(now.getFullYear(), 2, 31); return now <= eventEnd; }
 
-    // ========== BANルーレット機能 ==========
+    // ========== BANルーレット機能 (オンライン全員に表示、閉じるボタンなし、自動クローズ) ==========
     let rouletteActive = false;
+    let rouletteCloseTimer = null;
     
-    function showRouletteForAll() {
-        // ルーレットUIを表示
+    // ルーレットを表示する関数 (Firebase経由で全員に通知)
+    function showRouletteGlobally() {
+        if (!db) return;
+        // Firebaseにルーレット開始イベントを送信
+        const eventRef = ref(db, 'rouletteEvent');
+        set(eventRef, {
+            active: true,
+            timestamp: Date.now(),
+            startedBy: gameState.userName
+        }).catch(e => console.error('ルーレットイベント送信エラー:', e));
+        
+        // 自分にも表示
+        createRouletteUI();
+    }
+    
+    // ルーレットUIを作成して表示 (閉じるボタンなし)
+    function createRouletteUI() {
+        // 既存のルーレットがあれば削除
+        const existing = document.getElementById('rouletteContainer');
+        if (existing) existing.remove();
+        if (rouletteCloseTimer) clearTimeout(rouletteCloseTimer);
+        
         const rouletteDiv = document.createElement('div');
         rouletteDiv.className = 'roulette-container';
         rouletteDiv.id = 'rouletteContainer';
         rouletteDiv.innerHTML = `
-            <button class="roulette-close" id="rouletteCloseBtn">✕ 閉じる</button>
             <div class="roulette-wheel" id="rouletteWheel"></div>
             <div class="roulette-message" id="rouletteMessage">🔮 BANルーレットが発動しました！</div>
             <button class="roulette-spin-btn" id="rouletteSpinBtn">🎲 ルーレットを回す！ 🎲</button>
@@ -1119,9 +1138,7 @@
             messageDiv.textContent = '🎡 ルーレットが回っています... 🎡';
             
             // イカサマ：必ずセーフ（180degの倍数に調整）
-            // ランダムな回転数を生成するが、最終的にセーフゾーン（180deg～360deg）に止まるように調整
             const baseRotation = Math.random() * 720 + 720; // 2～4回転
-            // セーフゾーンの中央（270deg）に止まるように微調整
             const targetRotation = baseRotation + 270;
             currentRotation = targetRotation;
             
@@ -1129,37 +1146,45 @@
             wheel.style.transition = 'transform 3s cubic-bezier(0.2, 0.9, 0.1, 1.1)';
             
             setTimeout(() => {
-                // 結果を計算（実際の角度から判定）
-                const finalAngle = currentRotation % 360;
-                // セーフゾーンは 180deg～360deg（表示上は緑色の領域）
-                const isBan = finalAngle >= 0 && finalAngle < 180;
-                
-                // イカサマ：絶対にセーフにする（裏設定）
-                const actualResult = false; // false = セーフ, true = BAN（実際には絶対BANにならない）
-                
-                if (!actualResult) {
-                    resultDiv.textContent = '✨ セーフ！ ✨\n運が良かったですね！';
-                    resultDiv.style.background = 'linear-gradient(135deg, #33ff33, #00aa00)';
-                    messageDiv.textContent = '🎉 ルーレットの結果は... セーフ！ BANされませんでした！ 🎉';
-                    playClearSound();
-                } else {
-                    // このコードは絶対に実行されない（イカサマ）
-                    resultDiv.textContent = '⚠️ BAN... ⚠️\nあなたはBANされました。';
-                    resultDiv.style.background = 'linear-gradient(135deg, #ff3333, #aa0000)';
-                    messageDiv.textContent = '💀 ルーレットの結果は... BAN！ 💀';
-                    playMissSound();
-                    // 実際にはBANしない（イカサマ）
-                }
+                // イカサマ：絶対にセーフ
+                resultDiv.textContent = '✨ セーフ！ ✨\n運が良かったですね！';
+                resultDiv.style.background = 'linear-gradient(135deg, #33ff33, #00aa00)';
+                messageDiv.textContent = '🎉 ルーレットの結果は... セーフ！ BANされませんでした！ 🎉';
+                playClearSound();
                 resultDiv.style.display = 'block';
                 spinBtn.disabled = false;
                 spinning = false;
-                messageDiv.textContent = '🔮 ルーレット終了！ もう一度回せます！ 🔮';
+                messageDiv.textContent = '🔮 ルーレット終了！ 🔮';
+                
+                // 3秒後に自動的に閉じる
+                if (rouletteCloseTimer) clearTimeout(rouletteCloseTimer);
+                rouletteCloseTimer = setTimeout(() => {
+                    const container = document.getElementById('rouletteContainer');
+                    if (container) container.remove();
+                    rouletteCloseTimer = null;
+                    // Firebaseのルーレットイベントをクリア
+                    if (db) {
+                        const eventRef = ref(db, 'rouletteEvent');
+                        set(eventRef, { active: false });
+                    }
+                }, 3000);
             }, 3000);
         });
-        
-        const closeBtn = document.getElementById('rouletteCloseBtn');
-        closeBtn.addEventListener('click', () => {
-            rouletteDiv.remove();
+    }
+    
+    // Firebaseのルーレットイベントを監視
+    function watchRouletteEvent() {
+        if (!db) return;
+        const eventRef = ref(db, 'rouletteEvent');
+        onValue(eventRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.active === true) {
+                // 自分が発動した場合でも、重複表示を防ぐためにチェック
+                const existing = document.getElementById('rouletteContainer');
+                if (!existing) {
+                    createRouletteUI();
+                }
+            }
         });
     }
     
@@ -1168,13 +1193,16 @@
         if (code === '1236') {
             const confirmStart = confirm('BANルーレットを起動しますか？\n全プレイヤーにルーレットUIが表示されます。');
             if (confirmStart) {
-                showRouletteForAll();
+                showRouletteGlobally();
                 alert('BANルーレットを起動しました！');
             }
         } else {
             alert('コードが違います');
         }
     }
+    
+    // ルーレットイベント監視を開始
+    watchRouletteEvent();
     
     // ========== 管理者モード ==========
     let bugReports = [];
