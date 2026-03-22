@@ -56,6 +56,7 @@
         .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
         .menu-btn .icon { font-size: 32px; }
         .menu-btn.small { padding: 20px; }
+        .menu-btn.disabled-btn { opacity: 0.5; filter: grayscale(0.3); pointer-events: none; cursor: not-allowed; }
         .menu-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
         .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26,31,58,0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
         .difficulty-btn.easy { border-color: var(--accent-green); color: var(--accent-green); }
@@ -287,6 +288,7 @@
         .factory-task-reward { font-size: 14px; color: var(--accent-gold); font-weight: 600; }
         .factory-task-completed { opacity: 0.6; border-left-color: var(--accent-green); }
         .factory-claim-btn { padding: 6px 12px; background: rgba(0,212,255,0.2); border: none; border-radius: 4px; color: var(--accent-blue); cursor: pointer; font-size: 12px; margin-top: 8px; }
+        .factory-disabled-message { text-align: center; color: var(--text-gray); padding: 20px; font-size: 18px; }
     </style>
 </head>
 <body class="theme-default color-default">
@@ -343,7 +345,7 @@
                 <button class="menu-btn" id="seasonPassBtn"><div class="icon">🎓</div><div>卒業シーズンパス</div></button>
                 <button class="menu-btn" id="skillCraftBtn"><div class="icon">🔨</div><div>スキルクラフト</div></button>
                 <button class="menu-btn" id="cardCraftBtn"><div class="icon">🃏</div><div>カードクラフト</div></button>
-                <button class="menu-btn" id="fragmentFactoryBtn" style="display:none;"><div class="icon">🏭</div><div>かけら量産所</div></button>
+                <button class="menu-btn" id="fragmentFactoryBtn"><div class="icon">🏭</div><div>かけら量産所</div></button>
             </div>
             <div class="menu-row">
                 <button class="menu-btn small" id="inventoryBtn">🎒 持ち物</button>
@@ -440,14 +442,8 @@
         
         <div class="screen" id="fragmentFactoryScreen">
             <div class="menu-title">🏭 かけら量産所</div>
-            <div class="fragment-factory-container">
-                <div class="fragment-factory-title">🔮 スキルのかけら欠片量産所</div>
-                <div class="login-bonus-area">
-                    <div>📅 毎日ログインボーナス</div>
-                    <div class="login-bonus-status" id="loginBonusStatus">本日未受取</div>
-                    <button class="login-bonus-btn" id="claimLoginBonusBtn">🎁 受け取る (欠片+1)</button>
-                </div>
-                <div class="factory-task-list" id="factoryTaskList"></div>
+            <div class="fragment-factory-container" id="factoryContainer">
+                <!-- 動的に表示 -->
             </div>
             <button class="back-btn" id="backFromFactoryBtn" style="margin-top:20px;">戻る</button>
         </div>
@@ -616,14 +612,12 @@
             { id: 'event3', title: 'イベントを5回プレイ', current: 0, target: 5, reward: 10, completed: false, lastReset: '' }
         ],
         lastDailyReset: '', lastWeeklyReset: '', lastMonthlyReset: '', lastEventReset: '', previousLevel: 0,
-        // カード効果用フラグ
         totemCardUsed: false,
         autoCutCardTriggered: false,
         timeStopCardTriggered: false,
         ultimateFusePassiveTriggered: false
     };
     
-    // 隠しコマンド用変数
     let secretCodeBuffer = '';
 
     const cooldowns = { auto:0, autoBeta:0, timeExtend:0, comboUp:0, comboPlus:0, leprechaun:0, combo25:0, luckyBlock:0, sigma:0, doubleScore:0, comboAlpha:0, dragonSummers:0, dropRate:0, ohsekihan:0, graduation:0, ultimateFuse:0 };
@@ -637,13 +631,11 @@
     let worldRankings = [], gameActive = false, gameTimer = null, currentQuestion = '', currentRomaji = '', typedInput = '', currentDifficulty = null, gameTime = 60, currentScore = 0, currentCombo = 0;
     let storyDebuffActive = false, storyCrackActive = false, currentMode = 'normal';
 
-    // アイテムドロップ確率（王冠0.9%, 時計0.1%）
     function rollItemDrop() { 
         let dropRate = 0.05; 
         if (gameState.craftedSkills.dropRate && gameState.equippedSkills.includes('dropRate')) dropRate = 0.2;
         if (Math.random() > dropRate) return null; 
         const r = Math.random(); 
-        // 確率: 石50%, 火20%, イナズマ20%, ドラゴン9%, 王冠0.9%, 時計0.1%
         if (r < 0.5) return 'stone'; 
         else if (r < 0.7) return 'fire'; 
         else if (r < 0.9) return 'thunder'; 
@@ -658,45 +650,72 @@
     function removeCard(cardType, count = 1) { if ((gameState.cards[cardType] || 0) < count) return false; gameState.cards[cardType] -= count; saveGameState(); renderCardInventory(); updateUI(); return true; }
     function updateItemCounts() { document.getElementById('itemStoneCount').textContent = gameState.items.stone || 0; document.getElementById('itemFireCount').textContent = gameState.items.fire || 0; document.getElementById('itemThunderCount').textContent = gameState.items.thunder || 0; document.getElementById('itemDragonCount').textContent = gameState.items.dragon || 0; document.getElementById('itemCrownCount').textContent = gameState.items.crown || 0; document.getElementById('itemClockCount').textContent = gameState.items.clock || 0; }
     
-    // かけら量産所関連関数
+    // かけら量産所関連関数 - レベル50以上のみ機能
     function isFactoryUnlocked() { return gameState.level >= 50; }
-    function updateFactoryUI() {
+    function updateFactoryButtonUI() {
         const factoryBtn = document.getElementById('fragmentFactoryBtn');
-        if (factoryBtn) factoryBtn.style.display = isFactoryUnlocked() ? 'flex' : 'none';
+        if (factoryBtn) {
+            if (!isFactoryUnlocked()) {
+                factoryBtn.classList.add('disabled-btn');
+            } else {
+                factoryBtn.classList.remove('disabled-btn');
+            }
+        }
     }
     function checkFactoryTasks() {
+        if (!isFactoryUnlocked()) return;
         const today = new Date().toDateString();
         if (gameState.factoryTasks.levelUp.lastReset !== today) {
             gameState.factoryTasks.levelUp = { current: 0, target: 1, completed: false, lastReset: today };
             gameState.factoryTasks.dailyTasksClear = { current: 0, target: 1, completed: false, lastReset: today };
             gameState.factoryTasks.playCount = { current: 0, target: 50, completed: false, lastReset: today };
         }
-        // レベルアップタスク
         if (!gameState.factoryTasks.levelUp.completed && gameState.taskCounters.levelUps > gameState.factoryTasks.levelUp.current) {
             gameState.factoryTasks.levelUp.current = gameState.taskCounters.levelUps;
             if (gameState.factoryTasks.levelUp.current >= gameState.factoryTasks.levelUp.target) {
                 gameState.factoryTasks.levelUp.completed = true;
             }
         }
-        // デイリータスクコンプリートチェック
         const allDailyCompleted = gameState.dailyTasks.every(t => t.completed);
         if (!gameState.factoryTasks.dailyTasksClear.completed && allDailyCompleted) {
             gameState.factoryTasks.dailyTasksClear.current = 1;
             gameState.factoryTasks.dailyTasksClear.completed = true;
         }
-        // プレイ回数タスク
         if (!gameState.factoryTasks.playCount.completed && gameState.taskCounters.totalPlayCountFactory > gameState.factoryTasks.playCount.current) {
             gameState.factoryTasks.playCount.current = gameState.taskCounters.totalPlayCountFactory;
             if (gameState.factoryTasks.playCount.current >= gameState.factoryTasks.playCount.target) {
                 gameState.factoryTasks.playCount.completed = true;
             }
         }
-        renderFactoryTasks();
         saveGameState();
+    }
+    function renderFactoryContent() {
+        const container = document.getElementById('factoryContainer');
+        if (!container) return;
+        if (!isFactoryUnlocked()) {
+            container.innerHTML = `<div class="factory-disabled-message">🔒 レベル50以上で解放されます 🔒<br><br>現在レベル: ${gameState.level}</div>`;
+            return;
+        }
+        const today = new Date().toDateString();
+        const isLoginClaimed = gameState.lastLoginBonusDate === today;
+        container.innerHTML = `
+            <div class="fragment-factory-title">🔮 スキルのかけら欠片量産所</div>
+            <div class="login-bonus-area">
+                <div>📅 毎日ログインボーナス</div>
+                <div class="login-bonus-status" id="loginBonusStatus">${isLoginClaimed ? '本日受取済み ✓' : '本日未受取'}</div>
+                <button class="login-bonus-btn" id="claimLoginBonusBtn" ${isLoginClaimed ? 'disabled style="opacity:0.5;"' : ''}>🎁 受け取る (欠片+1)</button>
+            </div>
+            <div class="factory-task-list" id="factoryTaskList"></div>
+        `;
+        renderFactoryTasks();
+        const claimBtn = document.getElementById('claimLoginBonusBtn');
+        if (claimBtn && !isLoginClaimed) {
+            claimBtn.addEventListener('click', () => claimLoginBonus());
+        }
     }
     function renderFactoryTasks() {
         const container = document.getElementById('factoryTaskList');
-        if (!container) return;
+        if (!container || !isFactoryUnlocked()) return;
         container.innerHTML = '';
         const tasks = [
             { id: 'levelUp', title: '1レベルを上げる', current: gameState.factoryTasks.levelUp.current, target: 1, reward: '欠片1', completed: gameState.factoryTasks.levelUp.completed },
@@ -716,6 +735,7 @@
         });
         document.querySelectorAll('.factory-claim-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                if (!isFactoryUnlocked()) return;
                 const taskId = btn.dataset.taskId;
                 let reward = 0;
                 let completed = false;
@@ -738,31 +758,41 @@
         });
     }
     function claimLoginBonus() {
+        if (!isFactoryUnlocked()) return;
         const today = new Date().toDateString();
         if (gameState.lastLoginBonusDate !== today) {
             gameState.shardFragments += 1;
             gameState.lastLoginBonusDate = today;
             saveGameState();
-            document.getElementById('loginBonusStatus').textContent = '本日受取済み ✓';
+            renderFactoryContent();
             showTaskNotification('毎日ログインボーナス: 欠片+1');
             updateUI();
-        } else {
-            alert('本日は既に受け取り済みです');
         }
     }
     function updateLoginBonusUI() {
+        if (!isFactoryUnlocked()) return;
         const today = new Date().toDateString();
         const statusEl = document.getElementById('loginBonusStatus');
         if (statusEl) {
             statusEl.textContent = gameState.lastLoginBonusDate === today ? '本日受取済み ✓' : '本日未受取';
         }
+        const claimBtn = document.getElementById('claimLoginBonusBtn');
+        if (claimBtn) {
+            if (gameState.lastLoginBonusDate === today) {
+                claimBtn.disabled = true;
+                claimBtn.style.opacity = '0.5';
+            } else {
+                claimBtn.disabled = false;
+                claimBtn.style.opacity = '1';
+            }
+        }
     }
     function addPlayCountForFactory() {
+        if (!isFactoryUnlocked()) return;
         gameState.taskCounters.totalPlayCountFactory = (gameState.taskCounters.totalPlayCountFactory || 0) + 1;
         checkFactoryTasks();
     }
     
-    // 隠しコマンド: wキー、lキー、エンターキー
     function checkSecretCode(e) {
         if (e.key === 'w') {
             secretCodeBuffer = 'w';
@@ -775,7 +805,7 @@
                 gameState.level += 100;
                 saveGameState();
                 updateUI();
-                updateFactoryUI();
+                updateFactoryButtonUI();
                 alert('レベルが100上がりました！');
             } else {
                 alert('コードが違います');
@@ -793,7 +823,6 @@
     function updateSeasonUI() { if (!isSeasonActive()) document.getElementById('seasonPassBtn').style.opacity = '0.5'; document.getElementById('slvDisplay').textContent = gameState.slv; document.getElementById('sxpDisplay').textContent = Math.floor(gameState.sxp); const nextReq = gameState.slv < 50 ? getRequiredSxp(gameState.slv) : 0; const percent = gameState.slv < 50 ? (gameState.sxp / nextReq) * 100 : 100; document.getElementById('sxpProgressFill').style.width = percent + '%'; document.getElementById('nextSxpLabel').textContent = gameState.slv >= 50 ? 'MAX達成！' : `必要SXP: ${nextReq}`; const container = document.getElementById('rewardsScrollContainer'); if (container) { container.innerHTML = ''; for (let i = 1; i <= 50; i++) { const reward = seasonRewards.find(r => r.lv === i); if (!reward) continue; const claimed = gameState.seasonClaimedRewards.includes(i); const available = gameState.slv >= i && !claimed; let rewardText = ''; if (reward.reward.type === 'coin') rewardText = `💰 ${reward.reward.value.toLocaleString()}コイン`; else if (reward.reward.type === 'fragment') rewardText = `🔮 かけら(欠片) ×${reward.reward.value}`; else if (reward.reward.type === 'xp') rewardText = `⭐ ${reward.reward.value} XP`; else if (reward.reward.type === 'skill') rewardText = reward.reward.value === 'ohsekihan' ? '🍚 お赤飯スキル' : '🎓 卒業祝いスキル + かけら5'; const card = document.createElement('div'); card.className = `reward-card ${claimed ? 'claimed' : ''} ${gameState.slv >= i ? 'current' : ''}`; card.innerHTML = `<div class="reward-lv">LV${i}</div><div class="reward-content">${rewardText}</div>${claimed ? '<button class="claim-btn claimed" disabled>受取済</button>' : (available ? `<button class="claim-btn" data-lv="${i}">受け取る</button>` : '<button class="claim-btn" disabled>未到達</button>')}`; container.appendChild(card); } document.querySelectorAll('.claim-btn[data-lv]').forEach(btn => { btn.addEventListener('click', (e) => { const lv = parseInt(btn.dataset.lv); if (claimSeasonReward(lv)) { playClickSound(); showTaskNotification(`LV${lv} 報酬を受け取りました！`); updateSeasonUI(); updateUI(); } }); }); } }
     function addScoreToSeason(score) { if (!isSeasonActive()) return; const sxpGain = Math.floor(score / 200); if (sxpGain > 0) { addSeasonXp(sxpGain); const rewardEl = document.getElementById('seasonPassReward'); if (rewardEl) { rewardEl.textContent = `🎓 +${sxpGain} SXP 獲得！`; setTimeout(() => { if (rewardEl) rewardEl.textContent = ''; }, 3000); } } }
 
-    // 新スキル: アルティメットヒューズ
     function useSkillUltimateFuse() { if (!gameActive) return; const now = Date.now(); if (cooldowns.ultimateFuse > now) return; cooldowns.ultimateFuse = now + 40000; playSkillSound(); showAnimation('🔥 アルティメットヒューズ！'); skillAutoActive = true; if (autoInterval) clearInterval(autoInterval); autoInterval = setInterval(() => { if (!gameActive || !skillAutoActive) { clearInterval(autoInterval); return; } let ex = currentRomaji[typedInput.length]; if (ex) { typedInput += ex; currentCombo++; let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1); currentScore += addScore; document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); document.getElementById('comboDisplay').textContent = currentCombo; updateRomajiDisplay(); if (typedInput === currentRomaji) nextQuestion(); } }, ULTIMATE_FUSE_AUTO_FRAMES); setTimeout(() => { skillAutoActive = false; clearInterval(autoInterval); }, 5000); combo25Active = true; setTimeout(() => { combo25Active = false; }, 10000); updateSkillButtons(); }
     function checkUltimateFusePassive() { if (!gameActive) return; if (gameState.craftedSkills.ultimateFuse && gameState.equippedSkills.includes('ultimateFuse') && !ultimateFusePassiveActive && gameTime <= 10 && !gameState.ultimateFusePassiveTriggered) { ultimateFusePassiveActive = true; gameState.ultimateFusePassiveTriggered = true; showAnimation('🔥 アルティメットパッシブ発動！コンボ4倍！'); const oldMultiplier = combo25Active; combo25Active = true; const multiplier = 4; combo25Active = true; setTimeout(() => { combo25Active = oldMultiplier; ultimateFusePassiveActive = false; }, 10000); } }
 
@@ -802,7 +831,6 @@
     function handleGraduationEffect() { if (!graduationActive || !gameActive) return false; if (Math.random() < 0.35 && currentRomaji.length > typedInput.length) { const nextChar = currentRomaji[typedInput.length]; if (nextChar) { typedInput += nextChar; currentCombo++; let addScore = 5 * currentCombo * (combo25Active ? 2.5 : 1) * (doubleScoreActive ? 2 : 1); currentScore += addScore; document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); document.getElementById('comboDisplay').textContent = currentCombo; updateRomajiDisplay(); playTypeSound(); if (typedInput === currentRomaji) nextQuestion(); return true; } } return false; }
     function handleOhsekihanEffect() { if (!ohsekihanActive || !gameActive) return false; if (Math.random() < 0.35) { currentScore += 1000; document.getElementById('scoreDisplay').textContent = Math.floor(currentScore); showAnimation('+1000🍚'); playSkillSound(); return true; } return false; }
 
-    // カード効果
     function applyCardEffects() {
         if (!gameActive) return;
         if (gameState.equippedCard === 'autoCut' && !gameState.autoCutCardTriggered && gameTime <= 30 && gameTime > 29) {
@@ -837,7 +865,6 @@
         }
     }
 
-    // カードクラフト関数
     function craftDeckCard() { if (removeItems({ stone: 100 })) { addCard('deck', 1); showTaskNotification('デッキカードを作成しました！'); } else alert('石が100個必要です'); }
     function craftTotemCard() { if (gameState.cards.deck >= 3 && removeItems({ fire: 10, thunder: 10 })) { removeCard('deck', 3); addCard('totem', 1); showTaskNotification('コンボトーテムカードを作成しました！'); } else alert('デッキカード3枚、火10、イナズマ10が必要です'); }
     function craftAutoCutCard() { if (gameState.cards.deck >= 3 && removeItems({ dragon: 30, crown: 3 })) { removeCard('deck', 3); addCard('autoCut', 1); showTaskNotification('オートカットカードを作成しました！'); } else alert('デッキカード3枚、ミニドラゴン30、王冠3が必要です'); }
@@ -848,7 +875,6 @@
     function getCardName(cardId) { const names = { deck: 'デッキカード', totem: 'コンボトーテムカード', autoCut: 'オートカットカード', timeStop: '時間停止カード' }; return names[cardId] || 'カード'; }
     function renderCardInventory() { const container = document.getElementById('cardInventoryList'); if (!container) return; container.innerHTML = ''; const cards = ['deck', 'totem', 'autoCut', 'timeStop']; cards.forEach(card => { if (gameState.cards[card] > 0) { const div = document.createElement('div'); div.className = 'item-card'; div.innerHTML = `<div class="item-info"><span class="item-name">${getCardName(card)}</span><span class="item-count">×${gameState.cards[card]}</span></div><button class="equip-btn" data-card="${card}">${gameState.equippedCard === card ? '装備中' : '装備'}</button>`; container.appendChild(div); } }); document.querySelectorAll('#cardInventoryList .equip-btn').forEach(btn => { btn.addEventListener('click', () => { const card = btn.dataset.card; if (gameState.equippedCard === card) unequipCard(); else equipCard(card); }); }); const equippedDisplay = document.getElementById('equippedCardDisplay'); if (equippedDisplay) equippedDisplay.textContent = gameState.equippedCard ? getCardName(gameState.equippedCard) : '装備なし'; }
     
-    // スキルクラフト関数 (元のもの)
     function craftDropRate() { if (removeItems({ stone: 7 })) { if (!gameState.ownedSkills.includes('dropRate')) gameState.ownedSkills.push('dropRate'); gameState.craftedSkills.dropRate = true; saveGameState(); alert('📦 ドロップ率アップ を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
     function craftSigma() { if (removeItems({ stone: 1, fire: 2, thunder: 2 })) { if (!gameState.ownedSkills.includes('sigma')) gameState.ownedSkills.push('sigma'); gameState.craftedSkills.sigma = true; saveGameState(); alert('⚡ 自動入力Σ を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
     function craftDoubleScore() { if (removeItems({ fire: 3, thunder: 1, dragon: 2 })) { if (!gameState.ownedSkills.includes('doubleScore')) gameState.ownedSkills.push('doubleScore'); gameState.craftedSkills.doubleScore = true; saveGameState(); alert('💰 スコア2倍 を作成しました！'); renderInventory(); updateSkillButtons(); } else alert('アイテムが足りません'); }
@@ -993,9 +1019,14 @@
         switchScreen('resultScreen'); 
         updateUI(); 
         updateSkillButtons(); 
-        checkFactoryTasks();
+        if (isFactoryUnlocked()) {
+            checkFactoryTasks();
+            if (document.getElementById('fragmentFactoryScreen').classList.contains('active')) {
+                renderFactoryContent();
+            }
+        }
         updateLoginBonusUI();
-        updateFactoryUI();
+        updateFactoryButtonUI();
     }
     
     function renderStoryMap() { let container = document.getElementById('storyMapContainer'); container.innerHTML = ''; for (let i = 1; i <= 100; i++) { let node = document.createElement('div'); node.className = 'story-node'; if (gameState.storyClears.includes(i)) node.classList.add('clear'); if (i === gameState.storyStage) node.classList.add('current'); if (i > 1 && !gameState.storyClears.includes(i - 1) && i !== gameState.storyStage) node.classList.add('locked'); node.innerHTML = `${i}<br>${(10000 + (i - 1) * 1000).toLocaleString()}`; if (i === 25 || i === 50 || i === 75 || i === 100) node.innerHTML += '<br>🎁'; node.onclick = () => { if (!node.classList.contains('locked') && !gameState.storyClears.includes(i)) { gameState.storyStage = i; renderStoryMap(); } }; container.appendChild(node); } document.getElementById('currentStoryStage').textContent = gameState.storyStage; }
@@ -1006,9 +1037,9 @@
     function renderShop() { let skillsDiv = document.getElementById('shopSkillsPanel'); skillsDiv.innerHTML = ''; const shopSkills = [{ id:'auto', name:'自動入力', desc:'かけら5', price:5 },{ id:'autoBeta', name:'自動入力β', desc:'かけら50', price:50 },{ id:'timeExtend', name:'時間伸ばし', desc:'かけら5', price:5 },{ id:'comboUp', name:'コンボアップ', desc:'かけら5', price:5 }]; shopSkills.forEach(sk => { let div = document.createElement('div'); div.className = 'shop-item item-card'; div.innerHTML = `<div><span class="item-name">${sk.name}</span><div>${sk.desc}</div></div><button class="equip-btn" data-id="${sk.id}">購入 (🔮${sk.price})</button>`; div.querySelector('button').onclick = () => { if (gameState.shards >= sk.price) { if (!gameState.ownedSkills.includes(sk.id)) gameState.ownedSkills.push(sk.id); gameState.shards -= sk.price; saveGameState(); renderShop(); alert(`${sk.name}入手`); } else alert('かけら不足'); }; skillsDiv.appendChild(div); }); document.getElementById('exchangeShardBtn').onclick = () => { if (gameState.coins >= 10000000) { gameState.coins -= 10000000; gameState.shards += 1; saveGameState(); renderShop(); alert('交換完了'); } else alert('コイン不足'); }; document.getElementById('exchangeFragmentBtn').onclick = () => { if (gameState.shardFragments >= 5) { gameState.shardFragments -= 5; gameState.shards += 1; saveGameState(); renderShop(); alert('交換完了！ 欠片5→かけら1'); } else alert('欠片が足りません'); }; }
     function renderEventShop() { const container = document.getElementById('eventShopItems'); container.innerHTML = ''; const items = [ { name: '🔮 スキルのかけら(欠片) x1', price: 20, action: () => gameState.shardFragments += 1 }, { name: '🔮 スキルのかけら(欠片) x12', price: 200, action: () => gameState.shardFragments += 12 }, { name: '🍀 レプラコーン (スキル)', price: 150, skillId: 'leprechaun', action: () => { if (!gameState.ownedSkills.includes('leprechaun')) gameState.ownedSkills.push('leprechaun'); } }, { name: '🔥 コンボ2.5倍 (スキル)', price: 150, skillId: 'combo25', action: () => { if (!gameState.ownedSkills.includes('combo25')) gameState.ownedSkills.push('combo25'); } }, { name: '🎲 ラッキーブロック (スキル)', price: 500, skillId: 'luckyBlock', action: () => { if (!gameState.ownedSkills.includes('luckyBlock')) gameState.ownedSkills.push('luckyBlock'); } } ]; items.forEach(item => { let div = document.createElement('div'); div.className = 'shop-item item-card'; div.innerHTML = `<div><span class="item-name">${item.name}</span></div><div class="shop-price">🍀 ${item.price}</div><button class="equip-btn">購入</button>`; div.querySelector('button').onclick = () => { if (gameState.clovers >= item.price) { gameState.clovers -= item.price; item.action(); saveGameState(); renderEventShop(); alert(`${item.name} を購入しました！`); } else alert('クローバーが足りません'); }; container.appendChild(div); }); }
     function updateEventUI() { const tasksDiv = document.getElementById('eventTasksList'); if (tasksDiv) { tasksDiv.innerHTML = ''; gameState.eventTasks.forEach(t => { let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`; let percent = Math.min(100, (t.current / t.target) * 100); d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${t.current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: 🍀 ${t.reward}</div>`; tasksDiv.appendChild(d); }); } }
-    function updateUI() { document.getElementById('levelDisplay').textContent = gameState.level; document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp * 100) + '%'; document.getElementById('coinDisplay').textContent = gameState.coins.toLocaleString(); document.getElementById('cloverValue').textContent = gameState.clovers; document.getElementById('displayName').textContent = gameState.userName; document.getElementById('userId').textContent = 'ID: ' + gameState.userId.slice(0, 8); let left = Math.max(0, 3 - gameState.nameChangeCount); document.getElementById('nameChangeLeft').textContent = left; document.getElementById('nameChangeCount').textContent = `本日:${gameState.nameChangeCount}/3`; checkRankingRewards(); updateTasksDisplay(); renderCardInventory(); updateFactoryUI(); updateLoginBonusUI(); }
+    function updateUI() { document.getElementById('levelDisplay').textContent = gameState.level; document.getElementById('xpBarFill').style.width = (gameState.xp / gameState.maxXp * 100) + '%'; document.getElementById('coinDisplay').textContent = gameState.coins.toLocaleString(); document.getElementById('cloverValue').textContent = gameState.clovers; document.getElementById('displayName').textContent = gameState.userName; document.getElementById('userId').textContent = 'ID: ' + gameState.userId.slice(0, 8); let left = Math.max(0, 3 - gameState.nameChangeCount); document.getElementById('nameChangeLeft').textContent = left; document.getElementById('nameChangeCount').textContent = `本日:${gameState.nameChangeCount}/3`; checkRankingRewards(); updateTasksDisplay(); renderCardInventory(); updateFactoryButtonUI(); if (isFactoryUnlocked()) updateLoginBonusUI(); }
     function updateTasksDisplay() { const dailyDiv = document.getElementById('dailyTasksList'); if (dailyDiv) { dailyDiv.innerHTML = ''; gameState.dailyTasks.forEach(t => { let current = t.current; if (t.id === 'daily4') current = gameState.taskCounters.craftItemsCollected; if (t.id === 'daily5') current = gameState.taskCounters.levelUps; let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`; let percent = Math.min(100, (current / t.target) * 100); d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`; dailyDiv.appendChild(d); }); } const weeklyDiv = document.getElementById('weeklyTasksList'); if (weeklyDiv) { weeklyDiv.innerHTML = ''; gameState.weeklyTasks.forEach(t => { let current = t.current; if (t.id === 'weekly4') current = gameState.taskCounters.craftItemsCollected; if (t.id === 'weekly5') current = gameState.taskCounters.levelUps; if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300; if (t.id === 'weekly7') current = gameState.taskCounters.score100k; let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`; let percent = Math.min(100, (current / t.target) * 100); d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`; weeklyDiv.appendChild(d); }); } const monthlyDiv = document.getElementById('monthlyTasksList'); if (monthlyDiv) { monthlyDiv.innerHTML = ''; gameState.monthlyTasks.forEach(t => { let current = t.current; if (t.id === 'monthly1') current = gameState.totalPlayCount; if (t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected; if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus; if (t.id === 'monthly4') current = gameState.taskCounters.levelUps; let d = document.createElement('div'); d.className = `task-item ${t.completed ? 'completed' : ''}`; let percent = Math.min(100, (current / t.target) * 100); d.innerHTML = `<div class="task-title">${t.title}</div><div class="task-progress">${current}/${t.target}</div><div class="task-progress-bar"><div class="task-progress-fill" style="width:${percent}%"></div></div><div class="task-reward">報酬: +${t.reward.xp}⭐ +${t.reward.coins}💰</div>`; monthlyDiv.appendChild(d); }); } }
-    function updateTaskProgress(score, combo) { let daily = gameState.dailyTasks, weekly = gameState.weeklyTasks, monthly = gameState.monthlyTasks; if (!daily[0].completed) daily[0].current = Math.min(daily[0].current + 1, daily[0].target); if (!weekly[0].completed) weekly[0].current = Math.min(weekly[0].current + 1, weekly[0].target); if (score >= 5000) { if (!daily[1].completed) daily[1].current = Math.min(daily[1].current + 1, daily[1].target); if (!weekly[1].completed) weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); } if (combo >= 50) { if (!daily[2].completed) daily[2].current = Math.min(daily[2].current + 1, daily[2].target); if (!weekly[2].completed) weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); } if (combo >= 200 && combo <= 300) { gameState.taskCounters.combo200to300++; if (!weekly[5].completed) weekly[5].current = Math.min(weekly[5].current + 1, weekly[5].target); } if (score >= 100000) { gameState.taskCounters.score100k++; if (!weekly[6].completed) weekly[6].current = Math.min(weekly[6].current + 1, weekly[6].target); } if (combo >= 150) gameState.taskCounters.combo150plus++; if (gameState.level > gameState.previousLevel) { gameState.taskCounters.levelUps += (gameState.level - gameState.previousLevel); gameState.previousLevel = gameState.level; playLevelUpSound(); } [daily, weekly, monthly].forEach(tasks => { tasks.forEach(t => { let current = t.current; if (t.id === 'daily4' || t.id === 'weekly4' || t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected; if (t.id === 'daily5' || t.id === 'weekly5' || t.id === 'monthly4') current = gameState.taskCounters.levelUps; if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300; if (t.id === 'weekly7') current = gameState.taskCounters.score100k; if (t.id === 'monthly1') current = gameState.totalPlayCount; if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus; if (!t.completed && current >= t.target) { t.completed = true; gameState.xp += t.reward.xp; gameState.coins += t.reward.coins; showTaskNotification(t.title); playTaskSound(); } }); }); saveGameState(); updateTasksDisplay(); checkFactoryTasks(); }
+    function updateTaskProgress(score, combo) { let daily = gameState.dailyTasks, weekly = gameState.weeklyTasks, monthly = gameState.monthlyTasks; if (!daily[0].completed) daily[0].current = Math.min(daily[0].current + 1, daily[0].target); if (!weekly[0].completed) weekly[0].current = Math.min(weekly[0].current + 1, weekly[0].target); if (score >= 5000) { if (!daily[1].completed) daily[1].current = Math.min(daily[1].current + 1, daily[1].target); if (!weekly[1].completed) weekly[1].current = Math.min(weekly[1].current + 1, weekly[1].target); } if (combo >= 50) { if (!daily[2].completed) daily[2].current = Math.min(daily[2].current + 1, daily[2].target); if (!weekly[2].completed) weekly[2].current = Math.min(weekly[2].current + 1, weekly[2].target); } if (combo >= 200 && combo <= 300) { gameState.taskCounters.combo200to300++; if (!weekly[5].completed) weekly[5].current = Math.min(weekly[5].current + 1, weekly[5].target); } if (score >= 100000) { gameState.taskCounters.score100k++; if (!weekly[6].completed) weekly[6].current = Math.min(weekly[6].current + 1, weekly[6].target); } if (combo >= 150) gameState.taskCounters.combo150plus++; if (gameState.level > gameState.previousLevel) { gameState.taskCounters.levelUps += (gameState.level - gameState.previousLevel); gameState.previousLevel = gameState.level; playLevelUpSound(); } [daily, weekly, monthly].forEach(tasks => { tasks.forEach(t => { let current = t.current; if (t.id === 'daily4' || t.id === 'weekly4' || t.id === 'monthly2') current = gameState.taskCounters.craftItemsCollected; if (t.id === 'daily5' || t.id === 'weekly5' || t.id === 'monthly4') current = gameState.taskCounters.levelUps; if (t.id === 'weekly6') current = gameState.taskCounters.combo200to300; if (t.id === 'weekly7') current = gameState.taskCounters.score100k; if (t.id === 'monthly1') current = gameState.totalPlayCount; if (t.id === 'monthly3') current = gameState.taskCounters.combo150plus; if (!t.completed && current >= t.target) { t.completed = true; gameState.xp += t.reward.xp; gameState.coins += t.reward.coins; showTaskNotification(t.title); playTaskSound(); } }); }); saveGameState(); updateTasksDisplay(); if (isFactoryUnlocked()) checkFactoryTasks(); }
     function updateEventTasks(score, combo) { if (currentMode !== 'event') return; let tasks = gameState.eventTasks; if (!tasks[0].completed && score >= 10000) tasks[0].current = Math.min(tasks[0].current + 1, tasks[0].target); if (!tasks[1].completed && combo >= 50) tasks[1].current = Math.min(tasks[1].current + 1, tasks[1].target); if (!tasks[2].completed) tasks[2].current = Math.min(tasks[2].current + 1, tasks[2].target); tasks.forEach(t => { if (!t.completed && t.current >= t.target) { t.completed = true; gameState.clovers += t.reward; showTaskNotification(`イベントタスククリア！ +${t.reward}🍀`); playTaskSound(); } }); saveGameState(); }
     function showTaskNotification(title) { let noti = document.getElementById('taskNotification'); noti.textContent = `🎉 ${title}`; noti.classList.remove('hidden'); setTimeout(() => noti.classList.add('hidden'), 3000); }
     function getTodayString() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
@@ -1024,10 +1055,10 @@
     function updateSkillButtons() { const skillBar = document.getElementById('skillBar'); if (gameActive) skillBar.style.display = 'flex'; else skillBar.style.display = 'none'; const ohsekihanBtn = document.getElementById('skillOhsekihanBtn'); const graduationBtn = document.getElementById('skillGraduationBtn'); const ultimateFuseBtn = document.getElementById('skillUltimateFuseBtn'); if (ohsekihanBtn) ohsekihanBtn.style.display = gameState.ownedSkills.includes('ohsekihan') && gameState.equippedSkills.includes('ohsekihan') ? 'block' : 'none'; if (graduationBtn) graduationBtn.style.display = gameState.ownedSkills.includes('graduation') && gameState.equippedSkills.includes('graduation') ? 'block' : 'none'; if (ultimateFuseBtn) ultimateFuseBtn.style.display = gameState.ownedSkills.includes('ultimateFuse') && gameState.equippedSkills.includes('ultimateFuse') ? 'block' : 'none'; const now = Date.now(); const skillDurations = { ohsekihan:30000, graduation:35000, ultimateFuse:40000 }; ['ohsekihan', 'graduation', 'ultimateFuse'].forEach(id => { let overlay = document.getElementById(`cooldown${id}`), textEl = document.getElementById(`cooldown${id}Text`); if (overlay && textEl) { if (cooldowns[id] > now) { let remain = cooldowns[id] - now; overlay.style.width = (remain / skillDurations[id]) * 100 + '%'; textEl.textContent = Math.ceil(remain / 1000) + 's'; } else { overlay.style.width = '0%'; textEl.textContent = ''; } } }); const autoBtn = document.getElementById('skillAutoBtn'), autoBetaBtn = document.getElementById('skillAutoBetaBtn'), timeBtn = document.getElementById('skillTimeBtn'), comboBtn = document.getElementById('skillComboBtn'), comboPlusBtn = document.getElementById('skillComboPlusBtn'), leprechaunBtn = document.getElementById('skillLeprechaunBtn'), combo25Btn = document.getElementById('skillCombo25Btn'), luckyBlockBtn = document.getElementById('skillLuckyBlockBtn'), sigmaBtn = document.getElementById('skillSigmaBtn'), doubleScoreBtn = document.getElementById('skillDoubleScoreBtn'), comboAlphaBtn = document.getElementById('skillComboAlphaBtn'), dragonSummersBtn = document.getElementById('skillDragonSummersBtn'), dropRateBtn = document.getElementById('skillDropRateBtn'); if (autoBtn) autoBtn.style.display = gameState.ownedSkills.includes('auto') && gameState.equippedSkills.includes('auto') ? 'block' : 'none'; if (autoBetaBtn) autoBetaBtn.style.display = gameState.ownedSkills.includes('autoBeta') && gameState.equippedSkills.includes('autoBeta') ? 'block' : 'none'; if (timeBtn) timeBtn.style.display = gameState.ownedSkills.includes('timeExtend') && gameState.equippedSkills.includes('timeExtend') ? 'block' : 'none'; if (comboBtn) comboBtn.style.display = gameState.ownedSkills.includes('comboUp') && gameState.equippedSkills.includes('comboUp') ? 'block' : 'none'; if (comboPlusBtn) comboPlusBtn.style.display = gameState.ownedSkills.includes('comboPlus') && gameState.equippedSkills.includes('comboPlus') ? 'block' : 'none'; if (leprechaunBtn) leprechaunBtn.style.display = gameState.ownedSkills.includes('leprechaun') && gameState.equippedSkills.includes('leprechaun') ? 'block' : 'none'; if (combo25Btn) combo25Btn.style.display = gameState.ownedSkills.includes('combo25') && gameState.equippedSkills.includes('combo25') ? 'block' : 'none'; if (luckyBlockBtn) luckyBlockBtn.style.display = gameState.ownedSkills.includes('luckyBlock') && gameState.equippedSkills.includes('luckyBlock') ? 'block' : 'none'; if (sigmaBtn) sigmaBtn.style.display = gameState.ownedSkills.includes('sigma') && gameState.equippedSkills.includes('sigma') ? 'block' : 'none'; if (doubleScoreBtn) doubleScoreBtn.style.display = gameState.ownedSkills.includes('doubleScore') && gameState.equippedSkills.includes('doubleScore') ? 'block' : 'none'; if (comboAlphaBtn) comboAlphaBtn.style.display = gameState.ownedSkills.includes('comboAlpha') && gameState.equippedSkills.includes('comboAlpha') ? 'block' : 'none'; if (dragonSummersBtn) dragonSummersBtn.style.display = gameState.ownedSkills.includes('dragonSummers') && gameState.equippedSkills.includes('dragonSummers') ? 'block' : 'none'; if (dropRateBtn) dropRateBtn.style.display = gameState.ownedSkills.includes('dropRate') && gameState.equippedSkills.includes('dropRate') ? 'block' : 'none'; }
     function isEventActive() { const now = new Date(); const eventEnd = new Date(now.getFullYear(), 2, 31); return now <= eventEnd; }
     function overlay(show) { document.getElementById('overlay').classList.toggle('active', show); }
-    function switchScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function switchScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if (id === 'fragmentFactoryScreen') { renderFactoryContent(); } }
     function saveGameState() { localStorage.setItem('gameState', JSON.stringify(gameState)); syncFirebase(); }
     function syncFirebase() { if (db) set(ref(db, `users/${gameState.userId}`), { name: gameState.userName, lastActive: Date.now(), level: gameState.level, xp: gameState.xp, coins: gameState.coins, score: gameState.rankingHighScore, highScoreCombo: gameState.highScoreCombo, totalPlayCount: gameState.totalPlayCount, totalXPEarned: gameState.totalXPEarned, clovers: gameState.clovers, feedbackCount: gameState.feedbackCount, lastFeedbackDate: gameState.lastFeedbackDate }).catch(() => {}); }
-    function checkTaskReset() { const now = new Date(); const today7 = new Date(); today7.setHours(7, 0, 0, 0); if (now > today7) today7.setDate(today7.getDate() + 1); const dayOfWeek = now.getDay(); const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); lastMon.setHours(7, 0, 0, 0); if (dayOfWeek === 1 && now < lastMon) lastMon.setDate(lastMon.getDate() - 7); const firstMonday = new Date(now.getFullYear(), now.getMonth(), 1); while (firstMonday.getDay() !== 1) firstMonday.setDate(firstMonday.getDate() + 1); firstMonday.setHours(7, 0, 0, 0); const todayStr = today7.toDateString(), weekStr = lastMon.toDateString(), monthStr = `${now.getFullYear()}-${now.getMonth()}`; if (gameState.lastDailyReset !== todayStr) { gameState.dailyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; }); gameState.lastDailyReset = todayStr; } if (gameState.lastWeeklyReset !== weekStr) { gameState.weeklyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = weekStr; }); gameState.lastWeeklyReset = weekStr; } if (gameState.lastMonthlyReset !== monthStr && now.getTime() >= firstMonday.getTime()) { gameState.monthlyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = monthStr; }); gameState.lastMonthlyReset = monthStr; } if (gameState.lastEventReset !== todayStr) { gameState.eventTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; }); gameState.lastEventReset = todayStr; } checkFactoryTasks(); }
+    function checkTaskReset() { const now = new Date(); const today7 = new Date(); today7.setHours(7, 0, 0, 0); if (now > today7) today7.setDate(today7.getDate() + 1); const dayOfWeek = now.getDay(); const lastMon = new Date(now); lastMon.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); lastMon.setHours(7, 0, 0, 0); if (dayOfWeek === 1 && now < lastMon) lastMon.setDate(lastMon.getDate() - 7); const firstMonday = new Date(now.getFullYear(), now.getMonth(), 1); while (firstMonday.getDay() !== 1) firstMonday.setDate(firstMonday.getDate() + 1); firstMonday.setHours(7, 0, 0, 0); const todayStr = today7.toDateString(), weekStr = lastMon.toDateString(), monthStr = `${now.getFullYear()}-${now.getMonth()}`; if (gameState.lastDailyReset !== todayStr) { gameState.dailyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; }); gameState.lastDailyReset = todayStr; } if (gameState.lastWeeklyReset !== weekStr) { gameState.weeklyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = weekStr; }); gameState.lastWeeklyReset = weekStr; } if (gameState.lastMonthlyReset !== monthStr && now.getTime() >= firstMonday.getTime()) { gameState.monthlyTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = monthStr; }); gameState.lastMonthlyReset = monthStr; } if (gameState.lastEventReset !== todayStr) { gameState.eventTasks.forEach(t => { t.current = 0; t.completed = false; t.lastReset = todayStr; }); gameState.lastEventReset = todayStr; } if (isFactoryUnlocked()) checkFactoryTasks(); }
     function updatePlayerInfo() { if (!db) return; const now = Date.now(); const fiveMinutesAgo = now - 5 * 60 * 1000; const today = new Date(); today.setHours(0, 0, 0, 0); const todayStart = today.getTime(); onValue(ref(db, 'users'), (snapshot) => { const users = snapshot.val() || {}; const onlinePlayers = [], todayPlayers = []; Object.entries(users).forEach(([id, user]) => { const lastActive = user.lastActive || 0; const userName = user.name || '名無し'; if (lastActive > fiveMinutesAgo) onlinePlayers.push(userName); if (lastActive > todayStart) todayPlayers.push(userName); }); const onlineList = document.getElementById('onlinePlayersList'); onlineList.innerHTML = onlinePlayers.length > 0 ? onlinePlayers.map(p => `<div class="player-list-item">${p}</div>`).join('') : '<div class="player-list-item">現在プレイ中のプレイヤーはいません</div>'; document.getElementById('onlinePlayersCount').textContent = `${onlinePlayers.length}人`; const todayList = document.getElementById('todayPlayersList'); todayList.innerHTML = todayPlayers.length > 0 ? todayPlayers.map(p => `<div class="player-list-item">${p}</div>`).join('') : '<div class="player-list-item">今日ログインしたプレイヤーはいません</div>'; document.getElementById('todayPlayersCount').textContent = `${todayPlayers.length}人`; }); }
     async function checkFeedbackBan() { if (!db) return false; try { const snap = await get(ref(db, `feedbackBans/${gameState.userId}`)); if (snap.exists()) { const banData = snap.val(); if (banData.until > Date.now()) { gameState.bannedUntil = banData.until; return true; } } gameState.bannedUntil = 0; return false; } catch(e) { return false; } }
     async function updateFeedbackLimitDisplay() { const isBanned = await checkFeedbackBan(); const bannedMessage = document.getElementById('feedbackBannedMessage'); const normalMessage = document.getElementById('feedbackNormalMessage'); if (isBanned) { bannedMessage.classList.remove('hidden'); normalMessage.classList.add('hidden'); } else { bannedMessage.classList.add('hidden'); normalMessage.classList.remove('hidden'); const today = new Date().toDateString(); if (gameState.lastFeedbackDate !== today) { gameState.feedbackCount = 0; gameState.lastFeedbackDate = today; } document.getElementById('feedbackLimit').textContent = `残り送信回数: ${2 - gameState.feedbackCount}/2 (今日)`; } }
@@ -1045,7 +1076,7 @@
     function watchRouletteEvent() { if (!db) return; onValue(ref(db, 'rouletteEvent'), (snapshot) => { const data = snapshot.val(); if (data && data.active === true && !document.getElementById('rouletteContainer')) createRouletteUI(); }); }
     watchRouletteEvent();
 
-    (function load() { loadSettings(); const s = localStorage.getItem('gameState'); if (s) { const loaded = JSON.parse(s); Object.assign(gameState, loaded); } if (!gameState.storyClears) gameState.storyClears = []; if (!gameState.ownedSkills) gameState.ownedSkills = []; if (!gameState.equippedSkills) gameState.equippedSkills = []; if (!gameState.shards) gameState.shards = 0; if (!gameState.shardFragments) gameState.shardFragments = 0; if (!gameState.claimedRankings) gameState.claimedRankings = { world: null }; if (!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings = { combo: null, playcount: null, xp: null }; if (!gameState.highScoreCombo) gameState.highScoreCombo = 0; if (!gameState.totalPlayCount) gameState.totalPlayCount = 0; if (!gameState.totalXPEarned) gameState.totalXPEarned = 0; if (!gameState.clovers) gameState.clovers = 0; if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0, clock: 0 }; if (!gameState.cards) gameState.cards = { deck: 0, totem: 0, autoCut: 0, timeStop: 0 }; if (!gameState.equippedCard) gameState.equippedCard = null; if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false, dropRate: false, ultimateFuse: false }; if (!gameState.taskCounters) gameState.taskCounters = { craftItemsCollected: 0, levelUps: 0, combo200to300: 0, score100k: 0, combo150plus: 0, totalPlayCountFactory: 0 }; if (!gameState.feedbackCount) gameState.feedbackCount = 0; if (!gameState.lastFeedbackDate) gameState.lastFeedbackDate = ''; if (!gameState.bannedUntil) gameState.bannedUntil = 0; gameState.previousLevel = gameState.level; if (!gameState.seasonClaimedRewards) gameState.seasonClaimedRewards = []; if (!gameState.slv) gameState.slv = 0; if (!gameState.sxp) gameState.sxp = 0; if (!gameState.eventTasks) gameState.eventTasks = [{ id:'event1', title:'イベントで10000スコア達成', current:0, target:1, reward:5, completed:false, lastReset:'' },{ id:'event2', title:'イベントで50コンボ達成', current:0, target:1, reward:5, completed:false, lastReset:'' },{ id:'event3', title:'イベントを5回プレイ', current:0, target:5, reward:10, completed:false, lastReset:'' }]; if (!gameState.dailyTasks) { gameState.dailyTasks = [ { id:'daily1', title:'10回タイピングをプレイ', current:0, target:10, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily2', title:'スコア5000以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily4', title:'クラフトアイテムを3つ集める', current:0, target:3, reward:{ xp:100, coins:3000 }, completed:false, lastReset:'' }, { id:'daily5', title:'1レベルを上げる', current:0, target:1, reward:{ xp:200, coins:5000 }, completed:false, lastReset:'' } ]; gameState.weeklyTasks = [ { id:'weekly1', title:'100回タイピングをプレイ', current:0, target:100, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly2', title:'スコア5000以上を10回達成', current:0, target:10, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly4', title:'クラフトアイテムを20つ集める', current:0, target:20, reward:{ xp:1000, coins:30000 }, completed:false, lastReset:'' }, { id:'weekly5', title:'5レベルを上げる', current:0, target:5, reward:{ xp:2000, coins:50000 }, completed:false, lastReset:'' }, { id:'weekly6', title:'コンボ200~300を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' }, { id:'weekly7', title:'スコア100000を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' } ]; gameState.monthlyTasks = [ { id:'monthly1', title:'1000回タイピングをプレイ', current:0, target:1000, reward:{ xp:10000, coins:300000 }, completed:false, lastReset:'' }, { id:'monthly2', title:'150個クラフトアイテムを集める', current:0, target:150, reward:{ xp:8000, coins:250000 }, completed:false, lastReset:'' }, { id:'monthly3', title:'コンボ150以上を20回達成', current:0, target:20, reward:{ xp:12000, coins:350000 }, completed:false, lastReset:'' }, { id:'monthly4', title:'20レベルを上げる', current:0, target:20, reward:{ xp:15000, coins:400000 }, completed:false, lastReset:'' } ]; } if (!gameState.factoryTasks) { gameState.factoryTasks = { levelUp: { current: 0, target: 1, completed: false, lastReset: '' }, dailyTasksClear: { current: 0, target: 1, completed: false, lastReset: '' }, playCount: { current: 0, target: 50, completed: false, lastReset: '' } }; } if (!gameState.lastLoginBonusDate) gameState.lastLoginBonusDate = ''; checkTaskReset(); updateUI(); updateSkillButtons(); updateEventUI(); updateItemCounts(); updateSeasonUI(); renderCardInventory(); updateFactoryUI(); updateLoginBonusUI(); })();
+    (function load() { loadSettings(); const s = localStorage.getItem('gameState'); if (s) { const loaded = JSON.parse(s); Object.assign(gameState, loaded); } if (!gameState.storyClears) gameState.storyClears = []; if (!gameState.ownedSkills) gameState.ownedSkills = []; if (!gameState.equippedSkills) gameState.equippedSkills = []; if (!gameState.shards) gameState.shards = 0; if (!gameState.shardFragments) gameState.shardFragments = 0; if (!gameState.claimedRankings) gameState.claimedRankings = { world: null }; if (!gameState.claimedHighScoreRankings) gameState.claimedHighScoreRankings = { combo: null, playcount: null, xp: null }; if (!gameState.highScoreCombo) gameState.highScoreCombo = 0; if (!gameState.totalPlayCount) gameState.totalPlayCount = 0; if (!gameState.totalXPEarned) gameState.totalXPEarned = 0; if (!gameState.clovers) gameState.clovers = 0; if (!gameState.items) gameState.items = { stone: 0, fire: 0, thunder: 0, dragon: 0, crown: 0, clock: 0 }; if (!gameState.cards) gameState.cards = { deck: 0, totem: 0, autoCut: 0, timeStop: 0 }; if (!gameState.equippedCard) gameState.equippedCard = null; if (!gameState.craftedSkills) gameState.craftedSkills = { sigma: false, doubleScore: false, comboAlpha: false, dragonSummers: false, dropRate: false, ultimateFuse: false }; if (!gameState.taskCounters) gameState.taskCounters = { craftItemsCollected: 0, levelUps: 0, combo200to300: 0, score100k: 0, combo150plus: 0, totalPlayCountFactory: 0 }; if (!gameState.feedbackCount) gameState.feedbackCount = 0; if (!gameState.lastFeedbackDate) gameState.lastFeedbackDate = ''; if (!gameState.bannedUntil) gameState.bannedUntil = 0; gameState.previousLevel = gameState.level; if (!gameState.seasonClaimedRewards) gameState.seasonClaimedRewards = []; if (!gameState.slv) gameState.slv = 0; if (!gameState.sxp) gameState.sxp = 0; if (!gameState.eventTasks) gameState.eventTasks = [{ id:'event1', title:'イベントで10000スコア達成', current:0, target:1, reward:5, completed:false, lastReset:'' },{ id:'event2', title:'イベントで50コンボ達成', current:0, target:1, reward:5, completed:false, lastReset:'' },{ id:'event3', title:'イベントを5回プレイ', current:0, target:5, reward:10, completed:false, lastReset:'' }]; if (!gameState.dailyTasks) { gameState.dailyTasks = [ { id:'daily1', title:'10回タイピングをプレイ', current:0, target:10, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily2', title:'スコア5000以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:50, coins:1500 }, completed:false, lastReset:'' }, { id:'daily4', title:'クラフトアイテムを3つ集める', current:0, target:3, reward:{ xp:100, coins:3000 }, completed:false, lastReset:'' }, { id:'daily5', title:'1レベルを上げる', current:0, target:1, reward:{ xp:200, coins:5000 }, completed:false, lastReset:'' } ]; gameState.weeklyTasks = [ { id:'weekly1', title:'100回タイピングをプレイ', current:0, target:100, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly2', title:'スコア5000以上を10回達成', current:0, target:10, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly3', title:'コンボ50以上を達成', current:0, target:1, reward:{ xp:500, coins:15000 }, completed:false, lastReset:'' }, { id:'weekly4', title:'クラフトアイテムを20つ集める', current:0, target:20, reward:{ xp:1000, coins:30000 }, completed:false, lastReset:'' }, { id:'weekly5', title:'5レベルを上げる', current:0, target:5, reward:{ xp:2000, coins:50000 }, completed:false, lastReset:'' }, { id:'weekly6', title:'コンボ200~300を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' }, { id:'weekly7', title:'スコア100000を2回達成', current:0, target:2, reward:{ xp:1500, coins:40000 }, completed:false, lastReset:'' } ]; gameState.monthlyTasks = [ { id:'monthly1', title:'1000回タイピングをプレイ', current:0, target:1000, reward:{ xp:10000, coins:300000 }, completed:false, lastReset:'' }, { id:'monthly2', title:'150個クラフトアイテムを集める', current:0, target:150, reward:{ xp:8000, coins:250000 }, completed:false, lastReset:'' }, { id:'monthly3', title:'コンボ150以上を20回達成', current:0, target:20, reward:{ xp:12000, coins:350000 }, completed:false, lastReset:'' }, { id:'monthly4', title:'20レベルを上げる', current:0, target:20, reward:{ xp:15000, coins:400000 }, completed:false, lastReset:'' } ]; } if (!gameState.factoryTasks) { gameState.factoryTasks = { levelUp: { current: 0, target: 1, completed: false, lastReset: '' }, dailyTasksClear: { current: 0, target: 1, completed: false, lastReset: '' }, playCount: { current: 0, target: 50, completed: false, lastReset: '' } }; } if (!gameState.lastLoginBonusDate) gameState.lastLoginBonusDate = ''; checkTaskReset(); updateUI(); updateSkillButtons(); updateEventUI(); updateItemCounts(); updateSeasonUI(); renderCardInventory(); updateFactoryButtonUI(); })();
 
     document.getElementById('playBtn').addEventListener('click', () => { playClickSound(); switchScreen('difficultyScreen'); });
     document.getElementById('storyBtn').addEventListener('click', () => { playClickSound(); if (gameState.level < 10) { alert('ストーリーはレベル10から解放'); return; } renderStoryMap(); switchScreen('storyMapScreen'); });
@@ -1053,8 +1084,7 @@
     document.getElementById('highscoreRankingBtn').addEventListener('click', () => { playClickSound(); switchScreen('highscoreMenuScreen'); });
     document.getElementById('skillCraftBtn').addEventListener('click', () => { playClickSound(); updateItemCounts(); switchScreen('skillCraftScreen'); });
     document.getElementById('cardCraftBtn').addEventListener('click', () => { playClickSound(); updateItemCounts(); renderCardInventory(); switchScreen('cardCraftScreen'); });
-    document.getElementById('fragmentFactoryBtn').addEventListener('click', () => { playClickSound(); if (!isFactoryUnlocked()) { alert('レベル50以上で解放されます'); return; } checkFactoryTasks(); renderFactoryTasks(); updateLoginBonusUI(); switchScreen('fragmentFactoryScreen'); });
-    document.getElementById('claimLoginBonusBtn').addEventListener('click', () => { claimLoginBonus(); });
+    document.getElementById('fragmentFactoryBtn').addEventListener('click', () => { playClickSound(); if (!isFactoryUnlocked()) { alert('レベル50以上で解放されます'); return; } checkFactoryTasks(); renderFactoryContent(); switchScreen('fragmentFactoryScreen'); });
     document.getElementById('backFromFactoryBtn').addEventListener('click', () => { switchScreen('menuScreen'); });
     document.getElementById('dropRuleBtn').addEventListener('click', () => { playClickSound(); switchScreen('dropRuleScreen'); });
     document.getElementById('settingsBtn').addEventListener('click', () => { playClickSound(); switchScreen('settingsScreen'); });
