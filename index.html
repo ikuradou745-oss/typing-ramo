@@ -3,514 +3,1277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ タイピングクラフト・卒業シーズンパス</title>
-    <script type="importmap">
-        { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js", "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js" } }
-    </script>
+    <title>デッキカードタイピング RPG</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary-dark: #0a0e27; --accent-blue: #00d4ff; --accent-green: #00ff88;
-            --accent-pink: #ff006e; --accent-purple: #7c3aed; --accent-gold: #ffd700;
-            --accent-green-light: #90EE90; --accent-green-dark: #006400;
-            --text-white: #f0f0f0; --text-gray: #a0a0a0;
-            --item-stone: #808080; --item-fire: #ff4500; --item-thunder: #ffd700;
-            --item-dragon: #8a2be2; --item-crown: #ffd700; --item-clock: #00ced1;
-            --admin-red: #ff3333; --admin-orange: #ff9933;
+        /* 全体のスタイルとリセット */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
         }
-        body.theme-default { --primary-dark: #0a0e27; --accent-blue: #00d4ff; --accent-green: #00ff88; --accent-pink: #ff006e; --accent-purple: #7c3aed; }
-        body.theme-neon { --primary-dark: #000000; --accent-blue: #00ffff; --accent-green: #00ff00; --accent-pink: #ff00ff; --accent-purple: #aa00ff; }
-        body.theme-classic { --primary-dark: #1a1a2e; --accent-blue: #4a90e2; --accent-green: #50c878; --accent-pink: #ff6b6b; --accent-purple: #9b59b6; }
-        body.theme-dot { --primary-dark: #000000; --accent-blue: #00ff00; --accent-green: #ffff00; --accent-pink: #ff00ff; --accent-purple: #00ffff; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 4px 4px; }
-        body.theme-oldclassic { --primary-dark: #2f4f4f; --accent-blue: #4682b4; --accent-green: #32cd32; --accent-pink: #ff6347; --accent-purple: #9370db; }
-        body.theme-white { --primary-dark: #ffffff; --accent-blue: #0000ff; --accent-green: #008000; --accent-pink: #ff1493; --accent-purple: #800080; --text-white: #000000; --text-gray: #666666; }
-        body.color-default { --accent-blue: #00d4ff; --accent-green: #00ff88; --accent-pink: #ff006e; --accent-purple: #7c3aed; }
-        body.color-red { --accent-blue: #ff5555; --accent-green: #ff7777; --accent-pink: #ff0000; --accent-purple: #ff4444; }
-        body.color-cyan { --accent-blue: #00ffff; --accent-green: #00ffff; --accent-pink: #00ffff; --accent-purple: #00ffff; }
-        body.color-yellow { --accent-blue: #ffff00; --accent-green: #ffff00; --accent-pink: #ffff00; --accent-purple: #ffff00; }
-        body.color-magenta { --accent-blue: #ff00ff; --accent-green: #ff00ff; --accent-pink: #ff00ff; --accent-purple: #ff00ff; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--primary-dark) 0%, #1a0033 100%); color: var(--text-white); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
-        .game-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: radial-gradient(circle at 20% 50%, rgba(124,58,237,0.1) 0%, transparent 50%); position: relative; }
-        /* サービス終了オーバーレイ */
-        .service-ended-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 99999;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
+            background-color: #16213e;
+            border: 2px solid #0f3460;
+        }
+        button:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button:disabled {
+            background-color: #555;
+            border-color: #333;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 画面コンテナ */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* レアリティ別の色定義 */
+        .rarity-Common { background: #808080; color: white; }
+        .rarity-Uncommon { background: #008000; color: white; }
+        .rarity-Rare { background: #0000FF; color: white; }
+        .rarity-Legend { background: #FFFF00; color: black; }
+        .rarity-Mythic { background: #FF0000; color: white; }
+        .rarity-Godly { background: linear-gradient(135deg, #0000FF, #FFFF00); color: white; }
+        .rarity-Volcano { background: linear-gradient(135deg, #FF0000, #FFA500); color: white; }
+        .rarity-Secret { background: linear-gradient(135deg, #000000, #FFFFFF); color: #FF0000; }
+        .rarity-Ultimate { background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet); color: white; }
+        .rarity-OG { background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet, gold, black, white); color: white; border: 3px solid gold;}
+
+        /* カードのスタイル */
+        .card {
+            width: 140px;
+            height: 200px;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            z-index: 10;
+        }
+        .card-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .card-type {
+            font-size: 11px;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        .card-desc {
+            font-size: 11px;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+        }
+        .card-count {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #e94560;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            backdrop-filter: blur(8px);
-            pointer-events: auto;
+            font-weight: bold;
+            border: 2px solid white;
+            z-index: 5;
         }
-        .service-ended-message {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(135deg, #2a1e3a, #1a0e2a);
-            border: 3px solid var(--accent-pink);
-            border-radius: 30px;
-            box-shadow: 0 0 50px rgba(255, 0, 110, 0.5);
-            animation: fadeInScale 0.5s ease-out;
+
+        /* ヘッダー情報（パック数など） */
+        .header-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            border: 1px solid #0f3460;
         }
-        .service-ended-message h1 {
-            font-size: 64px;
-            margin-bottom: 20px;
-            background: linear-gradient(90deg, var(--accent-pink), var(--accent-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+
+        /* ホーム画面 */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 50px;
+            width: 80%;
+            max-width: 600px;
         }
-        .service-ended-message p {
+        .menu-grid button {
+            height: 100px;
             font-size: 24px;
-            color: var(--text-gray);
-            margin-bottom: 30px;
         }
-        .service-ended-message .goodbye-icon {
-            font-size: 80px;
+
+        /* バトル画面 */
+        #battle-screen {
+            justify-content: space-between;
+        }
+        .battle-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 50px;
             margin-bottom: 20px;
-            display: block;
         }
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        .status-box {
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 15px;
+            width: 300px;
+            text-align: center;
+            border: 2px solid #e94560;
         }
-        /* 既存のスタイルは維持 */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(10,14,39,0.95); position: relative; }
-        .game-title { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
-        .debug-corner { position: absolute; top: 20px; left: 20px; display: flex; gap: 5px; }
-        .debug-corner .icon-btn { width: 35px; height: 35px; font-size: 16px; }
-        .header-right { display: flex; align-items: center; gap: 20px; margin-left: auto; }
-        .level-display { display: flex; flex-direction: column; gap: 5px; background: rgba(0,212,255,0.1); padding: 12px 20px; border-radius: 8px; }
-        .level-value { font-size: 20px; font-weight: 700; color: var(--accent-blue); }
-        .xp-bar { width: 150px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
-        .top-buttons { display: flex; gap: 10px; position: relative; }
-        .icon-btn { width: 45px; height: 45px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; }
-        .icon-btn:hover { background: rgba(0,212,255,0.15); transform: scale(1.05); }
-        .icon-btn.disabled { opacity: 0.3; pointer-events: none; }
-        .gift-badge { position: absolute; top: -5px; right: -5px; background: var(--accent-pink); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--primary-dark); }
-        .coin-display { position: absolute; bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,136,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; z-index: 10; }
-        .coin-value { color: var(--accent-green); }
-        .main-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; overflow-y: auto; }
-        .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: flex-start; gap: 30px; padding: 20px 0; }
-        .screen.active { display: flex; }
-        .menu-title { font-size: 48px; font-weight: 800; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
-        .menu-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 800px; margin: 0 auto; }
-        .menu-btn { padding: 25px; border: 2px solid rgba(0,212,255,0.3); background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); cursor: pointer; border-radius: 12px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s; }
-        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.2); }
-        .menu-btn .icon { font-size: 32px; }
-        .menu-btn.small { padding: 20px; }
-        .menu-btn.disabled-btn { opacity: 0.5; filter: grayscale(0.3); pointer-events: none; cursor: not-allowed; }
-        .menu-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
-        .difficulty-btn { padding: 25px 40px; border: 2px solid transparent; background: rgba(26,31,58,0.5); color: var(--text-white); cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 600; transition: all 0.3s; }
-        .difficulty-btn.easy { border-color: var(--accent-green); color: var(--accent-green); }
-        .difficulty-btn.normal { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .difficulty-btn.hard { border-color: var(--accent-pink); color: var(--accent-pink); }
-        .game-stats { display: flex; gap: 50px; }
-        .stat-box { text-align: center; }
-        .stat-label { font-size: 14px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 8px; }
-        .stat-value { font-size: 42px; font-weight: 700; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .timer { font-size: 56px; font-weight: 800; color: var(--accent-pink); font-variant-numeric: tabular-nums; }
-        .current-question { font-size: 48px; font-weight: 600; color: var(--accent-blue); text-align: center; font-family: 'Hiragino Maru Gothic', 'Yu Gothic', serif; }
-        .romaji-display { font-size: 32px; color: var(--accent-green); font-family: 'Courier New', monospace; text-transform: lowercase; letter-spacing: 3px; }
-        .romaji-typed { color: var(--accent-blue); font-weight: bold; }
-        .romaji-remaining { color: var(--text-gray); }
-        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; z-index: 999; }
-        .overlay.active { display: block; }
-        .side-panel { position: fixed; top: 0; right: -500px; width: 500px; height: 100%; background: linear-gradient(135deg, rgba(26,31,58,0.98) 0%, rgba(10,14,39,0.98) 100%); border-left: 1px solid rgba(0,212,255,0.3); overflow-y: auto; transition: right 0.4s ease; z-index: 1000; padding: 30px 20px; box-shadow: -5px 0 30px rgba(0,0,0,0.5); }
-        .side-panel.active { right: 0; }
-        .panel-header { font-size: 20px; font-weight: 700; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(0,212,255,0.3); display: flex; justify-content: space-between; align-items: center; }
-        .panel-close { background: none; border: none; color: var(--accent-blue); font-size: 24px; cursor: pointer; }
-        .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,212,255,0.2); flex-wrap: wrap; }
-        .tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-gray); cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
-        .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
-        .profile-section { margin-bottom: 30px; }
-        .user-name { font-size: 24px; font-weight: 700; color: var(--accent-blue); margin-bottom: 5px; }
-        .user-id { font-size: 12px; color: var(--text-gray); margin-bottom: 20px; }
-        .change-name-input { width: 100%; padding: 10px 12px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--text-white); font-size: 14px; margin-bottom: 10px; }
-        .change-name-btn { width: 100%; padding: 10px; background: rgba(0,212,255,0.2); border: 1px solid rgba(0,212,255,0.5); border-radius: 6px; color: var(--accent-blue); cursor: pointer; font-weight: 600; margin-bottom: 15px; }
-        .name-change-count { font-size: 12px; color: var(--text-gray); margin-bottom: 15px; }
-        .back-btn { padding: 12px 24px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.05); color: var(--accent-blue); cursor: pointer; border-radius: 8px; font-weight: 600; }
-        .ranking-mode-btn { padding: 25px 40px; border: 2px solid rgba(0,212,255,0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(124,58,237,0.1) 100%); color: var(--text-white); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 300px; }
-        .ranking-list { width: 100%; max-width: 600px; max-height: 400px; overflow-y: auto; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 20px; }
-        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,212,255,0.1); }
-        .ranking-rank { font-weight: 700; color: var(--accent-blue); min-width: 40px; }
-        .ranking-name { flex: 1; color: var(--text-white); margin: 0 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ranking-score { font-weight: 600; color: var(--accent-green); }
-        .gift-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg,#2a1e3a,#1a0e2a); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 40px; z-index: 2000; display: none; flex-direction: column; align-items: center; gap: 20px; max-width: 500px; width: 90%; }
-        .gift-dialog.active { display: flex; }
-        .gift-title { font-size: 32px; font-weight: 700; color: var(--accent-gold); }
-        .gift-button { padding: 15px 40px; background: linear-gradient(90deg,#ffd700,#ffa500); border: none; border-radius: 10px; color: var(--primary-dark); font-size: 20px; font-weight: 700; cursor: pointer; }
-        .gift-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-gray); font-size: 24px; cursor: pointer; }
-        .ranking-update-timer { font-size: 14px; color: var(--accent-green); background: rgba(0,255,136,0.1); padding: 8px 20px; border-radius: 40px; }
-        .hidden { display: none !important; }
-        /* その他スタイルは省略（元のコードと同様）... 全ての要素を保持 */
-        .story-map { display: grid; grid-template-columns: repeat(10,1fr); gap: 8px; max-width: 900px; max-height: 500px; overflow-y: auto; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 20px; }
-        .story-node { aspect-ratio: 1/1; background: rgba(0,212,255,0.1); border: 2px solid var(--accent-blue); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; transition: 0.2s; }
-        .story-node.clear { background: rgba(0,255,136,0.2); border-color: var(--accent-green); }
-        .story-node.current { border-color: var(--accent-gold); transform: scale(1.05); box-shadow: 0 0 20px gold; }
-        .story-node.locked { opacity: 0.3; border-color: gray; cursor: not-allowed; }
-        .story-info { background: rgba(0,0,0,0.5); padding: 10px 30px; border-radius: 40px; font-size: 20px; }
-        .darkness-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: black; opacity:0; pointer-events: none; transition: opacity 0.5s; z-index: 10000; }
-        .darkness-overlay.active { opacity:1; }
-        .screen-crack { position: fixed; top:0; left:0; width:100%; height:100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.7"><path d="M20 20 L40 80 L70 30 L90 70" stroke="%23ff4444" stroke-width="8" fill="none"/><path d="M10 90 L50 10 L80 90" stroke="%23ffaa00" stroke-width="10" fill="none"/></svg>') center/cover; opacity:0; pointer-events: none; transition: opacity 1s; z-index: 10001; }
-        .screen-crack.active { opacity:1; }
-        .item-grid { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
-        .item-card { background: rgba(0,212,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; justify-content: space-between; }
-        .item-card.skill { border-color: var(--accent-purple); }
-        .item-info { display: flex; flex-direction: column; gap: 4px; }
-        .item-name { font-weight: 600; color: var(--accent-blue); }
-        .item-desc { font-size: 12px; color: var(--text-gray); }
-        .item-count { color: var(--accent-green); font-weight: 600; }
-        .equip-btn { padding: 6px 12px; background: rgba(0,212,255,0.2); border: none; border-radius: 4px; color: var(--accent-blue); cursor: pointer; font-size: 12px; }
-        .shop-item { background: rgba(124,58,237,0.1); border: 1px solid var(--accent-purple); padding: 20px; border-radius: 8px; }
-        .shop-price { color: var(--accent-gold); font-weight: 700; }
-        .firebase-status { position: fixed; bottom: 10px; right: 10px; padding: 10px 16px; font-size: 12px; border-radius: 6px; z-index: 999; }
-        .firebase-status.connected { background: rgba(0,255,136,0.25); color: var(--accent-green); }
-        .bar-game-container { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 20000; }
-        .bar-game { width: 600px; height: 80px; background: #333; border-radius: 40px; position: relative; cursor: pointer; overflow: hidden; }
-        .bar-fill { height: 100%; width: 10%; background: linear-gradient(90deg, cyan, blue); border-radius: 40px; transition: width 0.05s; }
-        .bar-marker { position: absolute; top: -15px; width: 4px; height: 110px; background: white; left: 0; box-shadow: 0 0 10px white; }
-        .bar-zones { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; }
-        .zone { height:100%; border-right: 2px solid rgba(255,255,255,0.3); }
-        .zone-label { position: absolute; bottom: -25px; color: white; font-size: 12px; transform: translateX(-50%); }
-        .stop-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 40px; background: var(--accent-pink); border: none; border-radius: 40px; color: white; font-size: 20px; font-weight: 700; cursor: pointer; z-index: 20001; }
-        .story-goal-bar { width: 80%; max-width: 600px; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 10px; position: relative; }
-        .story-goal-fill { height: 100%; background: linear-gradient(90deg, gold, orange); border-radius: 10px; transition: width 0.2s; }
-        .story-goal-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: white; font-size: 12px; text-shadow: 1px 1px 2px black; }
-        @keyframes skillPop { 0% { scale:0; opacity:0; } 100% { scale:1; opacity:1; } }
-        .skill-animation { position: fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(124,58,237,0.9); padding:30px 60px; border-radius:60px; font-size:48px; color:white; z-index:20000; animation: skillPop 0.5s forwards; }
-        .task-item { background: rgba(0,212,255,0.07); border-left: 4px solid var(--accent-blue); padding: 18px; border-radius: 12px; margin-bottom: 15px; }
-        .task-item.completed { opacity: 0.7; border-left-color: var(--accent-green); background: rgba(0,255,136,0.05); }
-        .task-title { font-size: 16px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
-        .task-progress { font-size: 14px; color: var(--text-gray); margin-bottom: 8px; }
-        .task-progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
-        .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); transition: width 0.3s; }
-        .task-reward { margin-top: 10px; font-size: 14px; color: var(--accent-gold); font-weight: 600; }
-        .task-notify { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, gold, orange); color: black; padding: 16px 32px; border-radius: 60px; font-weight: 700; z-index: 3000; animation: fadeInOut 3s forwards; pointer-events: none; }
-        @keyframes fadeInOut { 0% { opacity:0; top:0; } 15% { opacity:1; top:20px; } 85% { opacity:1; top:20px; } 100% { opacity:0; top:0; } }
-        .skill-bar { position: fixed; bottom: 120px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
-        .skill-use-btn { padding: 12px 24px; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); border: none; border-radius: 40px; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 0 20px var(--accent-purple); transition: 0.2s; position: relative; overflow: hidden; }
-        .skill-use-btn:hover { transform: scale(1.05); }
-        .skill-use-btn.disabled { opacity: 0.4; pointer-events: none; }
-        .cooldown-overlay { position: absolute; top:0; left:0; height:100%; background: rgba(0,0,0,0.6); border-radius: 40px; pointer-events: none; }
-        .cooldown-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px black; z-index: 2; }
-        .admin-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(135deg, #1a1a2e, #16213e); border: 3px solid var(--admin-red); border-radius: 20px; padding: 30px; z-index: 10000; display: none; flex-direction: column; gap: 20px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
-        .admin-panel.active { display: flex; }
-        .admin-title { font-size: 24px; color: var(--admin-red); text-align: center; }
-        .admin-subtitle { font-size: 18px; color: var(--admin-orange); margin-top: 10px; }
-        .admin-warning { color: #ff8888; font-size: 14px; text-align: center; padding: 10px; background: rgba(255,0,0,0.2); border-radius: 8px; margin-bottom: 10px; }
-        .admin-input { padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--admin-red); border-radius: 8px; color: white; font-size: 14px; width: 100%; }
-        .admin-btn { padding: 10px; background: linear-gradient(135deg, var(--admin-red), #aa0000); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; }
-        .admin-btn.secondary { background: linear-gradient(135deg, #666, #333); }
-        .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .admin-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text-gray); font-size: 20px; cursor: pointer; }
-        .bug-report-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); width: 100%; }
-        .bug-message { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; word-wrap: break-word; }
-        .bug-name { color: var(--accent-blue); font-weight: bold; }
-        .user-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 10px; border-radius: 8px; }
-        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .user-item button { padding: 4px 8px; background: var(--admin-red); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px; }
-        .user-item button.confirm { background: var(--admin-orange); }
-        .user-item button:disabled { opacity: 0.3; cursor: not-allowed; }
-        .highscore-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; }
-        .event-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #00aa00, #006600); padding: 15px 30px; border-radius: 60px; font-weight: 700; color: gold; border: 3px solid gold; z-index: 50; font-size: 24px; white-space: nowrap; box-shadow: 0 0 30px gold; }
-        .clover-display { position: absolute; bottom: 40px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,0,0.1); padding: 12px 20px; border-radius: 8px; font-size: 18px; font-weight: 600; border: 1px solid var(--accent-green-light); z-index: 10; }
-        .clover-value { color: var(--accent-green-light); }
-        .item-stone { color: var(--item-stone); }
-        .item-fire { color: var(--item-fire); }
-        .item-thunder { color: var(--item-thunder); }
-        .item-dragon { color: var(--item-dragon); }
-        .item-crown { color: var(--item-crown); }
-        .item-clock { color: var(--item-clock); }
-        .item-drop-rule { margin-top: 10px; font-size: 14px; color: var(--text-gray); }
-        .craft-recipe { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; border-left: 3px solid var(--accent-gold); }
-        .drop-item { display: inline-block; padding: 4px 8px; margin: 2px; border-radius: 4px; background: rgba(255,255,255,0.1); }
-        .item-badge { display: inline-block; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 5px; }
-        .badge-stone { background: #808080; color: white; }
-        .badge-fire { background: #ff4500; color: white; }
-        .badge-thunder { background: #ffd700; color: black; }
-        .badge-dragon { background: #8a2be2; color: white; }
-        .badge-crown { background: #ffd700; color: black; }
-        .badge-clock { background: #00ced1; color: black; }
-        .tap-button { width: 200px; height: 200px; background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; animation: pulse 1s infinite; margin: 20px auto; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .tap-count { font-size: 32px; color: var(--accent-gold); text-align: center; }
-        .bug-board { width: 100%; max-width: 800px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
-        .bug-board .admin-input { width: 100%; padding: 15px; font-size: 16px; margin-bottom: 15px; }
-        .bug-board .bug-report-container { max-height: 500px; min-height: 300px; }
-        .player-info-panel { width: 100%; max-width: 600px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
-        .player-info-section { margin-bottom: 30px; }
-        .player-info-title { font-size: 20px; color: var(--accent-blue); margin-bottom: 15px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px; }
-        .player-list { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
-        .player-list-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-white); display: flex; align-items: center; gap: 8px; }
-        .player-list-item:last-child { border-bottom: none; }
-        .player-count { font-size: 14px; color: var(--accent-green); margin-top: 5px; }
-        .settings-panel { width: 100%; max-width: 700px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
-        .settings-section { margin-bottom: 30px; }
-        .settings-title { font-size: 20px; color: var(--accent-blue); margin-bottom: 15px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .setting-label { font-size: 16px; color: var(--text-white); }
-        .setting-value { color: var(--accent-green); }
-        .setting-select { background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); color: var(--text-white); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .setting-checkbox { width: 20px; height: 20px; cursor: pointer; }
-        .color-preview { display: inline-block; width: 20px; height: 20px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
-        .feedback-panel { width: 100%; max-width: 700px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
-        .feedback-warning { color: #ff8888; font-size: 14px; text-align: center; padding: 10px; background: rgba(255,0,0,0.2); border-radius: 8px; margin-bottom: 10px; }
-        .feedback-input { width: 100%; padding: 15px; background: rgba(0,212,255,0.1); border: 1px solid var(--accent-blue); border-radius: 8px; color: var(--text-white); font-size: 16px; margin-bottom: 15px; min-height: 150px; resize: vertical; font-family: inherit; }
-        .feedback-limit { font-size: 12px; color: var(--text-gray); text-align: right; margin-bottom: 10px; }
-        .feedback-banned { background: rgba(255,0,0,0.1); border: 2px solid var(--admin-red); padding: 20px; border-radius: 10px; text-align: center; color: #ff8888; font-size: 16px; margin-bottom: 15px; }
-        .feedback-view-panel { width: 100%; max-width: 800px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 20px; }
-        .feedback-view-list { max-height: 500px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 15px; }
-        .feedback-view-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
-        .feedback-view-item:last-child { border-bottom: none; }
-        .feedback-view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px; }
-        .feedback-view-user { color: var(--accent-blue); font-weight: bold; }
-        .feedback-view-time { font-size: 11px; color: var(--text-gray); }
-        .feedback-view-content { font-size: 14px; margin: 8px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; word-wrap: break-word; white-space: pre-wrap; min-height: 60px; }
-        .feedback-view-actions { display: flex; gap: 10px; justify-content: flex-end; }
-        .feedback-view-actions button { padding: 6px 12px; background: var(--admin-red); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px; }
-        .feedback-view-actions button.confirm { background: var(--admin-orange); }
-        .feedback-list-simple { max-height: 200px; overflow-y: auto; border: 1px solid var(--admin-red); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); margin-bottom: 10px; font-size: 12px; }
-        .feedback-item-simple { padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .feedback-item-simple .user { color: var(--accent-blue); }
-        .feedback-item-simple .preview { color: var(--text-gray); }
-        .roulette-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 20000; flex-direction: column; gap: 30px; }
-        .roulette-wheel { width: 300px; height: 300px; border-radius: 50%; background: conic-gradient(from 0deg, #ff3333 0deg 180deg, #33ff33 180deg 360deg); position: relative; transition: transform 3s cubic-bezier(0.2, 0.9, 0.1, 1.1); box-shadow: 0 0 30px rgba(255,0,0,0.5); }
-        .roulette-wheel::after { content: "▼"; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; color: white; text-shadow: 0 0 5px black; }
-        .roulette-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; background: gold; border-radius: 50%; box-shadow: 0 0 15px gold; }
-        .roulette-segment { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: white; text-shadow: 1px 1px 2px black; }
-        .roulette-result { font-size: 32px; font-weight: bold; padding: 20px 40px; background: linear-gradient(135deg, gold, orange); border-radius: 60px; color: black; text-align: center; }
-        .roulette-spin-btn { padding: 15px 40px; font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #ff6600, #ff3300); border: none; border-radius: 50px; color: white; cursor: pointer; transition: 0.2s; margin-top: 20px; }
-        .roulette-spin-btn:hover { transform: scale(1.05); }
-        .roulette-spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .roulette-message { font-size: 18px; color: white; text-align: center; max-width: 400px; }
+        .hp-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .hp-bar {
+            height: 100%;
+            background: #e94560;
+            width: 100%;
+            transition: width 0.3s;
+        }
+        .player-hp-bar {
+            background: #4caf50;
+        }
         
-        /* シーズンパス用スタイル */
-        .season-pass-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(10,14,39,0.98), rgba(26,31,58,0.98)); z-index: 10000; display: none; flex-direction: column; overflow: hidden; }
-        .season-pass-container.active { display: flex; }
-        .season-pass-header { padding: 20px 40px; border-bottom: 2px solid var(--accent-gold); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); }
-        .season-pass-title { font-size: 32px; font-weight: 800; background: linear-gradient(90deg, var(--accent-gold), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .season-pass-close { background: none; border: none; color: var(--text-white); font-size: 32px; cursor: pointer; padding: 10px; }
-        .season-pass-stats { display: flex; gap: 40px; padding: 20px 40px; background: rgba(0,0,0,0.3); flex-wrap: wrap; justify-content: center; }
-        .stat-card { background: rgba(0,212,255,0.1); border-radius: 16px; padding: 15px 30px; text-align: center; border: 1px solid rgba(0,212,255,0.3); }
-        .stat-card-label { font-size: 14px; color: var(--text-gray); margin-bottom: 8px; }
-        .stat-card-value { font-size: 36px; font-weight: 700; color: var(--accent-gold); }
-        .season-pass-progress { flex: 1; min-width: 250px; background: rgba(0,212,255,0.1); border-radius: 16px; padding: 15px 30px; }
-        .progress-label { font-size: 14px; color: var(--text-gray); margin-bottom: 5px; }
-        .progress-bar-container { width: 100%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-gold), var(--accent-pink)); width: 0%; transition: width 0.3s; border-radius: 10px; }
-        .season-pass-rewards { flex: 1; overflow-y: auto; padding: 20px 40px; }
-        .rewards-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; min-height: 300px; }
-        .reward-card { min-width: 180px; background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(124,58,237,0.1)); border-radius: 16px; padding: 20px; text-align: center; border: 2px solid rgba(0,212,255,0.3); transition: all 0.3s; position: relative; }
-        .reward-card.claimed { opacity: 0.6; border-color: var(--accent-green); }
-        .reward-card.current { border-color: var(--accent-gold); box-shadow: 0 0 20px var(--accent-gold); transform: scale(1.02); }
-        .reward-lv { font-size: 24px; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px; }
-        .reward-content { font-size: 14px; color: var(--text-white); margin-bottom: 15px; }
-        .claim-btn { background: linear-gradient(90deg, var(--accent-gold), #ffaa00); border: none; border-radius: 8px; padding: 8px 16px; color: black; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .claim-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .claim-btn.claimed { background: var(--accent-green); color: white; }
-        .season-pass-footer { padding: 20px; text-align: center; border-top: 1px solid rgba(0,212,255,0.2); font-size: 12px; color: var(--text-gray); }
-        .red-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,0,0,0.3); pointer-events: none; z-index: 14999; animation: redFlash 0.3s ease-out; }
-        @keyframes redFlash { 0% { background: rgba(255,0,0,0.8); } 100% { background: rgba(255,0,0,0); } }
-        .rice-effect { position: fixed; top: -100px; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15000; }
-        .rice-particle { position: absolute; width: 20px; height: 20px; background: radial-gradient(circle, #ff8888, #ff4444); border-radius: 50%; transform: rotate(45deg); animation: riceFall 1s linear forwards; }
-        @keyframes riceFall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-        .confetti { position: absolute; width: 10px; height: 10px; background: gold; animation: confettiFall 3s linear forwards; }
-        @keyframes confettiFall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-        .card-equip-area { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; margin-top: 20px; border: 1px solid var(--accent-gold); }
-        .card-equip-title { font-size: 18px; color: var(--accent-gold); margin-bottom: 10px; }
-        .equipped-card-name { font-weight: bold; color: var(--accent-green); }
-        .fragment-factory-container { background: linear-gradient(135deg, #2a1e3a, #1a0e2a); border-radius: 20px; padding: 30px; width: 100%; max-width: 800px; border: 2px solid var(--accent-gold); }
-        .fragment-factory-title { font-size: 32px; color: var(--accent-gold); text-align: center; margin-bottom: 30px; }
-        .login-bonus-area { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 16px; margin-bottom: 30px; text-align: center; }
-        .login-bonus-btn { padding: 12px 30px; background: linear-gradient(90deg, var(--accent-gold), #ffaa00); border: none; border-radius: 40px; color: black; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
-        .login-bonus-status { font-size: 14px; color: var(--text-gray); margin-top: 10px; }
-        .factory-task-list { display: flex; flex-direction: column; gap: 15px; }
-        .factory-task-item { background: rgba(0,212,255,0.05); border-radius: 12px; padding: 15px; border-left: 4px solid var(--accent-blue); }
-        .factory-task-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .factory-task-progress { font-size: 14px; color: var(--text-gray); margin-bottom: 8px; }
-        .factory-task-reward { font-size: 14px; color: var(--accent-gold); font-weight: 600; }
-        .factory-task-completed { opacity: 0.6; border-left-color: var(--accent-green); }
-        .factory-claim-btn { padding: 6px 12px; background: rgba(0,212,255,0.2); border: none; border-radius: 4px; color: var(--accent-blue); cursor: pointer; font-size: 12px; margin-top: 8px; }
-        .factory-disabled-message { text-align: center; color: var(--text-gray); padding: 20px; font-size: 18px; }
+        .timer-container {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+
+        .typing-area {
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #0f3460;
+            border-radius: 15px;
+            padding: 30px;
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        .japanese-text {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        .romaji-text {
+            font-size: 48px;
+            letter-spacing: 5px;
+            font-family: monospace;
+            color: #555; /* 未入力部分 */
+        }
+        .romaji-text span.typed {
+            color: #00ffcc; /* 入力済み部分（明るい色） */
+            text-shadow: 0 0 10px #00ffcc;
+        }
+        .romaji-text span.error {
+            color: #ff3333;
+            text-shadow: 0 0 10px #ff3333;
+        }
+
+        .hand-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .battle-log {
+            margin-top: 10px;
+            height: 100px;
+            width: 80%;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .battle-log p {
+            margin: 2px 0;
+        }
+
+        /* ポップアップエフェクト */
+        .effect-popup {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffea00;
+            text-shadow: 2px 2px 5px black, 0 0 10px red;
+            pointer-events: none;
+            animation: floatUp 1.5s forwards ease-out;
+            z-index: 100;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1); }
+        }
+
+        /* 持ち物・装備・ガチャ画面共通 */
+        .card-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .filter-bar select, .filter-bar button {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+        
+        /* 装備画面特有 */
+        .equipped-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            min-height: 220px;
+            padding: 15px;
+            background: rgba(255,215,0,0.1);
+            border: 2px dashed gold;
+            border-radius: 15px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+        .equipped-slot {
+            width: 140px;
+            height: 200px;
+            border: 2px solid #555;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #555;
+            font-size: 24px;
+        }
+
+        /* ガチャリザルト */
+        .gacha-result-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .gacha-result-overlay.active {
+            display: flex;
+        }
+        .gacha-result-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            max-width: 900px;
+        }
+
+        /* モーダル */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #e94560;
+        }
+        .modal-content button {
+            margin: 10px;
+        }
     </style>
 </head>
-<body class="theme-default color-default">
-<div class="game-container">
+<body>
 
-    <div class="header">
-        <div class="debug-corner">
-            <button class="icon-btn" id="adminBtn">🚫</button>
-            <button class="icon-btn" id="feedbackBtn">📮</button>
-        </div>
-        <div class="game-title">⚡ タイピングクラフト</div>
-        <div class="header-right">
-            <div class="level-display">
-                <div style="font-size:12px;">Lv</div>
-                <div class="level-value" id="levelDisplay">1</div>
-                <div class="xp-bar"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
-            </div>
-            <div class="top-buttons">
-                <button class="icon-btn" id="giftBtn">🎁<span class="gift-badge" id="giftBadge">0</span></button>
-                <button class="icon-btn" id="taskBtn">📋</button>
-                <button class="icon-btn" id="playerInfoBtn">👥</button>
-            </div>
+    <div class="header-info" id="global-header">
+        パック: <span id="display-packs">0</span> | セーブ状態: <span id="save-status" style="color: yellow;">同期中...</span>
+    </div>
+
+    <div id="home-screen" class="screen active">
+        <h1 style="font-size: 48px; margin-top: 50px; color: #e94560;">デッキカードタイピング</h1>
+        <div class="menu-grid">
+            <button onclick="GameController.showDifficultySelect()">カードモード（バトル）</button>
+            <button onclick="GameController.switchScreen('gacha-screen'); UIController.updateGachaScreen();">カードを引く</button>
+            <button onclick="GameController.switchScreen('inventory-screen'); UIController.renderInventory();">持ち物</button>
+            <button onclick="GameController.switchScreen('equip-screen'); UIController.renderEquipScreen();">ベストを装備</button>
         </div>
     </div>
 
-    <div class="skill-bar" id="skillBar" style="display: none;">
-        <!-- スキルボタン群は省略（元のコード通り）-->
+    <div id="difficulty-modal" class="modal">
+        <div class="modal-content">
+            <h2>難易度を選択</h2>
+            <p>※60秒間（またはターン制）のボスバトルが始まります</p>
+            <br>
+            <button style="background: #4caf50;" onclick="BattleController.startBattle('easy')">簡単 (ボスHP: 350)</button><br>
+            <button style="background: #ff9800;" onclick="BattleController.startBattle('medium')">中級 (ボスHP: 1000)</button><br>
+            <button style="background: #f44336;" onclick="BattleController.startBattle('hard')">難しい (ボスHP: 3000)</button><br>
+            <button style="background: #800080;" onclick="BattleController.startBattle('extreme')">鬼むず (ボスHP: 10000)</button><br>
+            <br>
+            <button onclick="document.getElementById('difficulty-modal').classList.remove('active')">キャンセル</button>
+        </div>
     </div>
 
-    <div class="main-content">
-        <!-- 全画面要素は元のコードと同様（長いため省略）-->
-        <div class="screen active" id="menuScreen">
-            <div class="menu-title">⚔️ タイピングクラフト</div>
-            <div class="menu-buttons">
-                <button class="menu-btn" id="playBtn"><div class="icon">🚀</div><div>PLAY</div></button>
-                <button class="menu-btn" id="storyBtn"><div class="icon">📖</div><div>STORY</div></button>
-                <button class="menu-btn" id="rankingBtn"><div class="icon">🏆</div><div>RANKING</div></button>
-                <button class="menu-btn" id="highscoreRankingBtn"><div class="icon">📊</div><div>ハイスコア</div></button>
-                <button class="menu-btn" id="eventBtn"><div class="icon">🍀</div><div>イベント</div></button>
-                <button class="menu-btn" id="seasonPassBtn"><div class="icon">🎓</div><div>卒業シーズンパス</div></button>
-                <button class="menu-btn" id="skillCraftBtn"><div class="icon">🔨</div><div>スキルクラフト</div></button>
-                <button class="menu-btn" id="cardCraftBtn"><div class="icon">🃏</div><div>カードクラフト</div></button>
-                <button class="menu-btn" id="fragmentFactoryBtn"><div class="icon">🏭</div><div>かけら量産所</div></button>
+    <div id="battle-screen" class="screen">
+        <div class="timer-container">残り時間: <span id="battle-timer">60</span>秒</div>
+        
+        <div class="battle-header">
+            <div class="status-box">
+                <h3>あなた</h3>
+                <div style="font-size: 24px;">HP: <span id="player-hp">1000</span> / <span id="player-max-hp">1000</span></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar player-hp-bar" id="player-hp-bar"></div>
+                </div>
+                <div id="player-buffs" style="color: #00ffcc; margin-top: 10px; font-weight: bold; height: 20px;"></div>
             </div>
-            <div class="menu-row">
-                <button class="menu-btn small" id="inventoryBtn">🎒 持ち物</button>
-                <button class="menu-btn small" id="shopBtn">🏪 ショップ</button>
-                <button class="menu-btn small" id="profileBtn">👤 プロフィール</button>
-                <button class="menu-btn small" id="dropRuleBtn">📜 ドロップルール</button>
-                <button class="menu-btn small" id="settingsBtn">⚙️ 設定</button>
+            
+            <div class="status-box">
+                <h3 id="boss-name">ボス</h3>
+                <div style="font-size: 24px;">HP: <span id="boss-hp">350</span> / <span id="boss-max-hp">350</span></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="boss-hp-bar"></div>
+                </div>
+                <div id="boss-status" style="color: #ffcc00; margin-top: 10px; font-weight: bold; height: 20px;"></div>
             </div>
         </div>
-        <!-- その他の画面は省略（元のコードと同じ）-->
-        <div class="screen" id="gameScreen">
-            <div id="storyGoalContainer" style="width:100%; display:flex; justify-content:center; margin-bottom:10px; display:none;"><div class="story-goal-bar"><div class="story-goal-fill" id="storyGoalFill" style="width:0%"></div><div class="story-goal-text" id="storyGoalText">0/10000</div></div></div>
-            <div class="game-stats"><div class="stat-box"><div class="stat-label">Score</div><div class="stat-value" id="scoreDisplay">0</div></div><div class="stat-box"><div class="stat-label">Combo</div><div class="stat-value" id="comboDisplay">0</div></div></div>
-            <div class="timer" id="timerDisplay">60</div>
-            <div class="current-question" id="questionDisplay">準備中...</div>
-            <div class="romaji-display" id="romajiDisplay"></div>
+
+        <div class="typing-area" id="typing-area">
+            <div id="typing-message" style="font-size: 24px; color: #aaa;">下のカードから1つ選んでください</div>
+            <div class="japanese-text" id="typing-ja"></div>
+            <div class="romaji-text" id="typing-en"></div>
         </div>
-        <div class="screen" id="resultScreen">
-            <div class="menu-title">結果</div>
-            <div style="text-align:center;"><div style="font-size:14px;">FINAL SCORE</div><div id="finalScore" style="font-size:48px; color:var(--accent-green);">0</div><div>+<span id="earnedCoins">0</span>💰 +<span id="earnedXP">0</span>⭐</div><div id="itemDropResult" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div><div id="eventReward" style="font-size:18px; margin-top:10px; color:var(--accent-green-light);"></div><div id="seasonPassReward" style="font-size:18px; margin-top:10px; color:var(--accent-gold);"></div></div>
-            <button class="menu-btn" id="continueBtn">続ける</button>
+
+        <div class="battle-log" id="battle-log"></div>
+
+        <div class="hand-container" id="battle-hand">
+            </div>
+
+        <button style="margin-top: 10px; background: #888;" onclick="BattleController.flee()">逃げる（ホームに戻る）</button>
+    </div>
+
+    <div id="gacha-screen" class="screen">
+        <h2>カードを引く</h2>
+        <p style="margin-bottom: 20px; color: #aaa;">所持パック: <span id="gacha-pack-count">0</span></p>
+        
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+            <button onclick="GachaController.drawCards(1)">1パック引く</button>
+            <button onclick="GachaController.drawCards(3)">3パック引く</button>
+            <button onclick="GachaController.drawCards(10)">10パック引く</button>
+            <button onclick="GachaController.drawCards(100)">100パック引く</button>
+            <button onclick="GachaController.drawAll()">全て引く</button>
+        </div>
+
+        <div style="margin-top: 30px; text-align: left; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px;">
+            <h3>排出確率</h3>
+            <p>コモン: 40% | アンコモン: 30% | レア: 15% | レジェンド: 8%</p>
+            <p>ミシック: 4% | ゴッドリー: 2% | ボルケーノ: 0.8% | シークレット: 0.15%</p>
+            <p>アルティメット: 0.04% | OG: 0.01%</p>
+        </div>
+
+        <button style="margin-top: 30px; background: #555;" onclick="GameController.switchScreen('home-screen')">戻る</button>
+    </div>
+
+    <div id="gacha-result" class="gacha-result-overlay">
+        <h2 style="font-size: 40px; margin-bottom: 20px; color: #fff; text-shadow: 0 0 20px gold;">獲得カード</h2>
+        <div class="gacha-result-cards" id="gacha-result-cards"></div>
+        <button onclick="document.getElementById('gacha-result').classList.remove('active')" style="font-size: 24px; padding: 15px 40px;">閉じる</button>
+    </div>
+
+    <div id="inventory-screen" class="screen">
+        <h2>持ち物</h2>
+        <div class="filter-bar">
+            <select id="inv-rarity-filter" onchange="UIController.renderInventory()">
+                <option value="All">すべてのレアリティ</option>
+                <option value="Common">コモン</option>
+                <option value="Uncommon">アンコモン</option>
+                <option value="Rare">レア</option>
+                <option value="Legend">レジェンド</option>
+                <option value="Mythic">ミシック</option>
+                <option value="Godly">ゴッドリー</option>
+                <option value="Volcano">ボルケーノ</option>
+                <option value="Secret">シークレット</option>
+                <option value="Ultimate">アルティメット</option>
+                <option value="OG">OG</option>
+            </select>
+            <select id="inv-type-filter" onchange="UIController.renderInventory()">
+                <option value="All">すべてのタイプ</option>
+                <option value="attack">攻撃系</option>
+                <option value="heal">回復系</option>
+                <option value="assist">アシスト系（バフ・リセット等）</option>
+            </select>
+        </div>
+        <div class="card-grid" id="inventory-grid"></div>
+        <button style="margin-top: 20px; background: #555;" onclick="GameController.switchScreen('home-screen')">ホームに戻る</button>
+    </div>
+
+    <div id="equip-screen" class="screen">
+        <h2>ベストを装備</h2>
+        <p style="color: #ccc; margin-bottom: 10px;">5つの異なるカードを装備できます。装備したカードはバトル中に35%の確率で出現します。</p>
+        
+        <div class="equipped-container" id="equipped-cards-container">
+            </div>
+
+        <h3>所持カードから選ぶ</h3>
+        <div class="filter-bar">
+            <select id="equip-rarity-filter" onchange="UIController.renderEquipScreen()">
+                <option value="All">すべてのレアリティ</option>
+                <option value="Common">コモン</option>
+                <option value="Uncommon">アンコモン</option>
+                <option value="Rare">レア</option>
+                <option value="Legend">レジェンド</option>
+                <option value="Mythic">ミシック</option>
+                <option value="Godly">ゴッドリー</option>
+                <option value="Volcano">ボルケーノ</option>
+                <option value="Secret">シークレット</option>
+                <option value="Ultimate">アルティメット</option>
+                <option value="OG">OG</option>
+            </select>
+        </div>
+        <div class="card-grid" id="equip-inventory-grid"></div>
+        
+        <button style="margin-top: 20px; background: #555;" onclick="GameController.switchScreen('home-screen')">ホームに戻る</button>
+    </div>
+
+    <div id="battle-result-modal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+            <h2 id="result-title" style="font-size: 36px;"></h2>
+            <p id="result-desc" style="font-size: 20px; margin: 20px 0;"></p>
+            <button onclick="GameController.switchScreen('home-screen'); document.getElementById('battle-result-modal').classList.remove('active');" style="font-size: 20px;">ホームへ</button>
         </div>
     </div>
 
-    <div class="clover-display"><div style="font-size:24px;">🍀</div><div class="clover-value" id="cloverValue">0</div></div>
-    <div class="coin-display"><div style="font-size:24px;">💰</div><div class="coin-value" id="coinDisplay">0</div></div>
-    <div class="overlay" id="overlay"></div>
 
-    <!-- サービス終了オーバーレイ -->
-    <div id="serviceEndedOverlay" class="service-ended-overlay" style="display: flex;">
-        <div class="service-ended-message">
-            <span class="goodbye-icon">⚡👋⚡</span>
-            <h1>サービス終了しました</h1>
-            <p>長らくのご愛顧、誠にありがとうございました。<br>タイピングクラフトは本日をもってサービスを終了いたしました。</p>
-            <p style="font-size: 16px; margin-top: 20px;">※ すべての機能が利用できません</p>
-        </div>
-    </div>
+    <script type="module">
+        // ==========================================
+        // Firebase の初期化と設定
+        // ==========================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-    <div class="firebase-status connected" id="firebaseStatus">✅ 接続済み</div>
-</div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcds20u1-6-nk7710P4xddsa-m1wDL0TQ",
+            authDomain: "iikotowaruikoto-d5aa7.firebaseapp.com",
+            databaseURL: "https://iikotowaruikoto-d5aa7-default-rtdb.firebaseio.com",
+            projectId: "iikotowaruikoto-d5aa7",
+            storageBucket: "iikotowaruikoto-d5aa7.firebasestorage.app",
+            messagingSenderId: "455780219216",
+            appId: "1:455780219216:web:225461fcf24c1a46f69455",
+            measurementId: "G-YQD459DBSG"
+        };
 
-<script type="module">
-    // サービス終了処理: すべての操作を無効化し、何もできないようにする
-    (function() {
-        // 全クリックイベントをキャプチャしてブロック
-        const blockAllClicks = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-        
-        // すべてのボタンやクリック可能な要素を無効化
-        const disableAllInteractions = () => {
-            const allInteractive = document.querySelectorAll('button, .menu-btn, .icon-btn, .difficulty-btn, .back-btn, .ranking-mode-btn, .equip-btn, .claim-btn, .skill-use-btn, .admin-btn, .gift-button, .change-name-btn, .panel-close, .tab-btn, .season-pass-close, .stop-btn, .factory-claim-btn, .login-bonus-btn');
-            allInteractive.forEach(el => {
-                el.style.pointerEvents = 'none';
-                el.style.opacity = '0.5';
-                el.disabled = true;
-                el.classList.add('disabled');
-            });
-            
-            // キーボード入力もブロック
-            document.addEventListener('keydown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, true);
-            
-            // タッチイベントもブロック
-            document.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                return false;
-            }, true);
-            
-            // マウスイベントもブロック
-            document.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                return false;
-            }, true);
-            
-            // オーバーレイにクリックを伝搬させない
-            const overlay = document.getElementById('serviceEndedOverlay');
-            if (overlay) {
-                overlay.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-                overlay.addEventListener('mousedown', (e) => {
-                    e.stopPropagation();
-                });
-            }
-        };
-        
-        // 全てのスクリーン切り替えを無効化
-        const disableScreenSwitch = () => {
-            const screens = document.querySelectorAll('.screen');
-            screens.forEach(screen => {
-                screen.classList.remove('active');
-            });
-            // メニュー画面だけ表示するが、ボタンは全て無効化されているので操作不可
-            const menuScreen = document.getElementById('menuScreen');
-            if (menuScreen) menuScreen.classList.add('active');
-        };
-        
-        // 既存のゲームループやタイマーを停止
-        const stopAllGameLoops = () => {
-            if (window.gameTimer) clearInterval(window.gameTimer);
-            if (window.autoInterval) clearInterval(window.autoInterval);
-            if (window.tapInterval) clearInterval(window.tapInterval);
-            window.gameActive = false;
-        };
-        
-        // Firebaseからのデータ読み込みも抑制（既存のfirebase参照を無効化）
-        const suppressFirebase = () => {
-            // 既存のdb参照をオーバーライド
-            if (window.db) {
-                window.db = null;
-            }
-            console.log('Firebase interactions disabled');
-        };
-        
-        // 実行
-        disableAllInteractions();
-        disableScreenSwitch();
-        stopAllGameLoops();
-        suppressFirebase();
-        
-        // 追加: 既存のゲーム状態変数をロック
-        if (window.gameState) {
-            window.gameState = { ...window.gameState, serviceEnded: true };
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // ユーザーIDの生成と取得（ローカルストレージを使用して永続化）
+        let userId = localStorage.getItem('typerpg_userId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
+            localStorage.setItem('typerpg_userId', userId);
         }
-    })();
-</script>
+
+        // ==========================================
+        // ゲームデータ定義
+        // ==========================================
+
+        // カードデータベース（全種類を網羅）
+        const ALL_CARDS = [
+            // コモン (40%)
+            { id: "c1", name: "パンチ", type: "attack", rarity: "Common", baseEffect: 30, desc: "敵に30ダメージ" },
+            { id: "c2", name: "キック", type: "attack", rarity: "Common", baseEffect: 40, desc: "敵に40ダメージ" },
+            { id: "c3", name: "絆創膏", type: "heal", rarity: "Common", baseEffect: 30, desc: "HPを30回復" },
+            { id: "c4", name: "手札入れ替え", type: "assist", rarity: "Common", baseEffect: 2, desc: "カードを2枚リセット" },
+            
+            // アンコモン (30%)
+            { id: "u1", name: "スラッシュ", type: "attack", rarity: "Uncommon", baseEffect: 60, desc: "敵に60ダメージ" },
+            { id: "u2", name: "ファイア", type: "attack", rarity: "Uncommon", baseEffect: 80, desc: "敵に80ダメージ" },
+            { id: "u3", name: "ポーション", type: "heal", rarity: "Uncommon", baseEffect: 80, desc: "HPを80回復" },
+            { id: "u4", name: "集中", type: "assist", rarity: "Uncommon", baseEffect: 1.5, desc: "次ターンのダメージ1.5倍" },
+            { id: "u5", name: "ドロー", type: "assist", rarity: "Uncommon", baseEffect: 4, desc: "カードを4枚リセット" },
+
+            // レア (15%)
+            { id: "r1", name: "サンダー", type: "attack", rarity: "Rare", baseEffect: 150, desc: "敵に150ダメージ" },
+            { id: "r2", name: "アイススピア", type: "attack", rarity: "Rare", baseEffect: 130, desc: "敵に130ダメージ" },
+            { id: "r3", name: "ハイポーション", type: "heal", rarity: "Rare", baseEffect: 200, desc: "HPを200回復" },
+            { id: "r4", name: "気合い", type: "assist", rarity: "Rare", baseEffect: 2.0, desc: "次ターンのダメージ2倍" },
+            { id: "r5", name: "フルリロード", type: "assist", rarity: "Rare", baseEffect: 5, desc: "カードを5枚リセット" },
+
+            // レジェンド (8%)
+            { id: "l1", name: "メテオ", type: "attack", rarity: "Legend", baseEffect: 350, desc: "敵に350ダメージ" },
+            { id: "l2", name: "エクスカリバー", type: "attack", rarity: "Legend", baseEffect: 400, desc: "敵に400ダメージ" },
+            { id: "l3", name: "エリクサー", type: "heal", rarity: "Legend", baseEffect: 500, desc: "HPを500回復" },
+            { id: "l4", name: "覚醒", type: "assist", rarity: "Legend", baseEffect: 3.0, desc: "次ターンのダメージ3倍" },
+
+            // ミシック (4%)
+            { id: "m1", name: "神の裁き", type: "attack", rarity: "Mythic", baseEffect: 800, desc: "敵に800ダメージ" },
+            { id: "m2", name: "完全回復", type: "heal", rarity: "Mythic", baseEffect: 1000, desc: "HPを1000回復" },
+            { id: "m3", name: "時止め", type: "assist", rarity: "Mythic", baseEffect: 1, desc: "敵のターンを1回スキップ" },
+
+            // ゴッドリー (2%)
+            { id: "g1", name: "崩星咆哮砲", type: "attack", rarity: "Godly", baseEffect: 1500, desc: "敵に1500ダメージ" },
+            { id: "g2", name: "神の加護", type: "assist", rarity: "Godly", baseEffect: 5.0, desc: "次ターンのダメージ5倍" },
+
+            // ボルケーノ (0.8%)
+            { id: "v1", name: "超新星爆発", type: "attack", rarity: "Volcano", baseEffect: 3000, desc: "敵に3000ダメージ" },
+            
+            // シークレット (0.15%)
+            { id: "s1", name: "虚無への誘い", type: "attack", rarity: "Secret", baseEffect: 6000, desc: "敵に6000ダメージ" },
+            { id: "s2", name: "無限の命", type: "heal", rarity: "Secret", baseEffect: 9999, desc: "HPを全回復" },
+
+            // アルティメット (0.04%)
+            { id: "ul1", name: "終焉の光", type: "attack", rarity: "Ultimate", baseEffect: 12000, desc: "敵に12000ダメージ" },
+
+            // OG (0.01%)
+            { id: "og1", name: "管理者権限", type: "attack", rarity: "OG", baseEffect: 99999, desc: "敵を消し飛ばす" }
+        ];
+
+        // レアリティの確率設定
+        const RARITY_WEIGHTS = [
+            { rarity: "Common", chance: 40.0 },
+            { rarity: "Uncommon", chance: 30.0 },
+            { rarity: "Rare", chance: 15.0 },
+            { rarity: "Legend", chance: 8.0 },
+            { rarity: "Mythic", chance: 4.0 },
+            { rarity: "Godly", chance: 2.0 },
+            { rarity: "Volcano", chance: 0.8 },
+            { rarity: "Secret", chance: 0.15 },
+            { rarity: "Ultimate", chance: 0.04 },
+            { rarity: "OG", chance: 0.01 }
+        ];
+
+        // タイピング問題集（日本語とローマ字の完全マッピング）
+        const TYPING_WORDS = [
+            { ja: "あいうえお", en: "aiueo" },
+            { ja: "こうげき", en: "kougeki" },
+            { ja: "かいふく", en: "kaifuku" },
+            { ja: "ぼうぎょ", en: "bougyo" },
+            { ja: "ひっさつわざ", en: "hissatsuwaza" },
+            { ja: "すきるをはつどう", en: "sukiruwohatsudou" },
+            { ja: "たいぴんぐばとる", en: "taipingubatoru" },
+            { ja: "でっきをくむ", en: "dekkiwokumu" },
+            { ja: "かーどをひく", en: "ka-dowohiku" },
+            { ja: "れじぇんどかーど", en: "rejendoka-do" },
+            { ja: "きゅうきょくのちから", en: "kyuukyokunochikara" },
+            { ja: "あきらめないこころ", en: "akirumenaikokoro" },
+            { ja: "すーぱーこんぼ", en: "su-pa-konbo" },
+            { ja: "ぜったいぜつめい", en: "zettaizetsumei" },
+            { ja: "きしかいせい", en: "kishikaisei" },
+            { ja: "うんめいのどろー", en: "unmeinodoro-" },
+            { ja: "ますたー", en: "masuta-" },
+            { ja: "えきすぱーと", en: "ekisupa-to" },
+            { ja: "げんかいとっぱ", en: "genkaitoppa" },
+            { ja: "さいきょうのせんし", en: "saikyounosenshi" }
+        ];
+
+        // プレイヤーステート
+        window.playerData = {
+            packs: 3, // 初期は3パック
+            inventory: {}, // { cardId: count }
+            equipped: [] // [cardId, cardId, ...] 最大5つ
+        };
+
+        // バトルステート
+        window.battleState = {
+            isActive: false,
+            timeLeft: 60,
+            timerInterval: null,
+            difficulty: '',
+            boss: { hp: 0, maxHp: 0, attack: 0, name: "" },
+            playerHp: 1000,
+            playerMaxHp: 1000,
+            hand: [],
+            activeCard: null,
+            currentWord: null,
+            typedIndex: 0,
+            mistakes: 0,
+            typingStartTime: 0,
+            nextTurnMultiplier: 1.0,
+            enemyFrozen: false
+        };
+
+        // ==========================================
+        // データ保存・読み込み管理 (GameDataManager)
+        // ==========================================
+        const GameDataManager = {
+            saveData: function() {
+                const statusEl = document.getElementById('save-status');
+                statusEl.textContent = '保存中...';
+                statusEl.style.color = 'orange';
+
+                set(ref(database, 'users/' + userId), window.playerData)
+                    .then(() => {
+                        statusEl.textContent = '保存完了';
+                        statusEl.style.color = 'lime';
+                        UIController.updateGlobalHeader();
+                    })
+                    .catch((error) => {
+                        console.error("Save failed:", error);
+                        statusEl.textContent = 'エラー';
+                        statusEl.style.color = 'red';
+                    });
+            },
+            loadData: function() {
+                const statusEl = document.getElementById('save-status');
+                statusEl.textContent = '読み込み中...';
+                
+                get(ref(database, 'users/' + userId)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        window.playerData.packs = data.packs || 0;
+                        window.playerData.inventory = data.inventory || {};
+                        window.playerData.equipped = data.equipped || [];
+                    }
+                    statusEl.textContent = '同期済';
+                    statusEl.style.color = 'lime';
+                    UIController.updateGlobalHeader();
+                }).catch((error) => {
+                    console.error("Load failed:", error);
+                    statusEl.textContent = 'オフライン';
+                    statusEl.style.color = 'gray';
+                });
+            }
+        };
+
+        // ==========================================
+        // UI・画面遷移管理 (UIController)
+        // ==========================================
+        const UIController = {
+            updateGlobalHeader: function() {
+                document.getElementById('display-packs').textContent = window.playerData.packs;
+            },
+            getCardById: function(id) {
+                return ALL_CARDS.find(c => c.id === id);
+            },
+            createCardHTML: function(card, count = 0, onClickAction = "") {
+                const countBadge = count > 1 ? `<div class="card-count">*${count}</div>` : '';
+                return `
+                    <div class="card rarity-${card.rarity}" ${onClickAction ? `onclick="${onClickAction}"` : ''} style="${onClickAction ? 'cursor:pointer;' : ''}">
+                        ${countBadge}
+                        <div class="card-name">${card.name}</div>
+                        <div class="card-type">${this.getTypeName(card.type)}</div>
+                        <div class="card-desc">${card.desc}</div>
+                    </div>
+                `;
+            },
+            getTypeName: function(type) {
+                if(type === 'attack') return '攻撃';
+                if(type === 'heal') return '回復';
+                if(type === 'assist') return 'アシスト';
+                return type;
+            },
+            renderInventory: function() {
+                const rarityFilter = document.getElementById('inv-rarity-filter').value;
+                const typeFilter = document.getElementById('inv-type-filter').value;
+                const grid = document.getElementById('inventory-grid');
+                grid.innerHTML = '';
+
+                let hasCards = false;
+
+                for (const [cardId, count] of Object.entries(window.playerData.inventory)) {
+                    const card = this.getCardById(cardId);
+                    if (!card) continue;
+                    
+                    if (rarityFilter !== 'All' && card.rarity !== rarityFilter) continue;
+                    if (typeFilter !== 'All' && card.type !== typeFilter) continue;
+
+                    grid.innerHTML += this.createCardHTML(card, count);
+                    hasCards = true;
+                }
+
+                if (!hasCards) {
+                    grid.innerHTML = '<p style="color:#aaa; width:100%; text-align:center;">条件に一致するカードがありません。</p>';
+                }
+            },
+            renderEquipScreen: function() {
+                // 装備中エリアの描画
+                const equippedContainer = document.getElementById('equipped-cards-container');
+                equippedContainer.innerHTML = '';
+                
+                for(let i=0; i<5; i++) {
+                    const equippedId = window.playerData.equipped[i];
+                    if (equippedId) {
+                        const card = this.getCardById(equippedId);
+                        equippedContainer.innerHTML += this.createCardHTML(card, 0, `EquipController.unequipCard('${equippedId}')`);
+                    } else {
+                        equippedContainer.innerHTML += `<div class="equipped-slot">空き</div>`;
+                    }
+                }
+
+                // 所持カード（選択可能）エリアの描画
+                const rarityFilter = document.getElementById('equip-rarity-filter').value;
+                const grid = document.getElementById('equip-inventory-grid');
+                grid.innerHTML = '';
+
+                for (const [cardId, count] of Object.entries(window.playerData.inventory)) {
+                    if (window.playerData.equipped.includes(cardId)) continue; // 既に装備中は非表示
+
+                    const card = this.getCardById(cardId);
+                    if (!card) continue;
+                    if (rarityFilter !== 'All' && card.rarity !== rarityFilter) continue;
+
+                    grid.innerHTML += this.createCardHTML(card, count, `EquipController.equipCard('${cardId}')`);
+                }
+            },
+            updateGachaScreen: function() {
+                document.getElementById('gacha-pack-count').textContent = window.playerData.packs;
+            },
+            showEffectPopup: function(text, x, y, color = "#ffea00") {
+                const popup = document.createElement('div');
+                popup.className = 'effect-popup';
+                popup.textContent = text;
+                popup.style.left = x + 'px';
+                popup.style.top = y + 'px';
+                popup.style.color = color;
+                document.body.appendChild(popup);
+                setTimeout(() => popup.remove(), 1500);
+            }
+        };
+
+        // ==========================================
+        // 装備管理 (EquipController)
+        // ==========================================
+        window.EquipController = {
+            equipCard: function(cardId) {
+                if (window.playerData.equipped.length >= 5) {
+                    alert("装備できるのは5つまでです。先に外してください。");
+                    return;
+                }
+                if (window.playerData.equipped.includes(cardId)) {
+                    alert("同じカードは複数装備できません。");
+                    return;
+                }
+                window.playerData.equipped.push(cardId);
+                GameDataManager.saveData();
+                UIController.renderEquipScreen();
+            },
+            unequipCard: function(cardId) {
+                window.playerData.equipped = window.playerData.equipped.filter(id => id !== cardId);
+                GameDataManager.saveData();
+                UIController.renderEquipScreen();
+            }
+        };
+
+        // ==========================================
+        // ガチャ管理 (GachaController)
+        // ==========================================
+        window.GachaController = {
+            drawCards: function(amount) {
+                if (window.playerData.packs < amount) {
+                    alert("パックが足りません！");
+                    return;
+                }
+
+                window.playerData.packs -= amount;
+                
+                const results = [];
+                for(let i=0; i<amount; i++) {
+                    const card = this.rollSingleCard();
+                    results.push(card);
+                    // インベントリに追加
+                    if (!window.playerData.inventory[card.id]) {
+                        window.playerData.inventory[card.id] = 0;
+                    }
+                    window.playerData.inventory[card.id]++;
+                }
+
+                GameDataManager.saveData();
+                UIController.updateGachaScreen();
+                this.showResult(results);
+            },
+            drawAll: function() {
+                const amount = window.playerData.packs;
+                if (amount <= 0) {
+                    alert("パックがありません！");
+                    return;
+                }
+                this.drawCards(amount);
+            },
+            rollSingleCard: function() {
+                const rand = Math.random() * 100;
+                let cumulative = 0;
+                let selectedRarity = "Common";
+
+                for (const rw of RARITY_WEIGHTS) {
+                    cumulative += rw.chance;
+                    if (rand <= cumulative) {
+                        selectedRarity = rw.rarity;
+                        break;
+                    }
+                }
+
+                // そのレアリティのカードからランダムに1つ選ぶ
+                const cardsOfRarity = ALL_CARDS.filter(c => c.rarity === selectedRarity);
+                const randomCard = cardsOfRarity[Math.floor(Math.random() * cardsOfRarity.length)];
+                return randomCard;
+            },
+            showResult: function(cards) {
+                const resultDiv = document.getElementById('gacha-result-cards');
+                resultDiv.innerHTML = '';
+
+                // 大量に引いた場合はまとめる
+                if (cards.length > 20) {
+                    const counts = {};
+                    cards.forEach(c => {
+                        counts[c.id] = (counts[c.id] || 0) + 1;
+                    });
+                    for (const [id, count] of Object.entries(counts)) {
+                        const c = UIController.getCardById(id);
+                        resultDiv.innerHTML += UIController.createCardHTML(c, count);
+                    }
+                } else {
+                    cards.forEach(c => {
+                        resultDiv.innerHTML += UIController.createCardHTML(c);
+                    });
+                }
+
+                document.getElementById('gacha-result').classList.add('active');
+            }
+        };
+
+        // ==========================================
+        // バトル管理 (BattleController)
+        // ==========================================
+        window.BattleController = {
+            startBattle: function(difficulty) {
+                document.getElementById('difficulty-modal').classList.remove('active');
+                GameController.switchScreen('battle-screen');
+
+                window.battleState = {
+                    isActive: true,
+                    timeLeft: 60,
+                    timerInterval: null,
+                    difficulty: difficulty,
+                    playerHp: 1000,
+                    playerMaxHp: 1000,
+                    hand: [],
+                    activeCard: null,
+                    currentWord: null,
+                    typedIndex: 0,
+                    mistakes: 0,
+                    typingStartTime: 0,
+                    nextTurnMultiplier: 1.0,
+                    enemyFrozen: false
+                };
+
+                // ボスの設定
+                const boss = window.battleState.boss;
+                switch(difficulty) {
+                    case 'easy': boss.maxHp = 350; boss.hp = 350; boss.attack = 30; boss.name = "スライム (簡単)"; break;
+                    case 'medium': boss.maxHp = 1000; boss.hp = 1000; boss.attack = 80; boss.name = "オーク (中級)"; break;
+                    case 'hard': boss.maxHp = 3000; boss.hp = 3000; boss.attack = 200; boss.name = "ドラゴン (難しい)"; break;
+                    case 'extreme': boss.maxHp = 10000; boss.hp = 10000; boss.attack = 500; boss.name = "魔王 (鬼むず)"; break;
+                }
+
+                document.getElementById('boss-name').textContent = boss.name;
+                document.getElementById('battle-log').innerHTML = '<p>バトル開始！</p>';
+                this.updateHPUI();
+
+                // タイマー開始
+                document.getElementById('battle-timer').textContent = window.battleState.timeLeft;
+                window.battleState.timerInterval = setInterval(() => {
+                    if (!window.battleState.isActive) return;
+                    window.battleState.timeLeft--;
+                    document.getElementById('battle-timer').textContent = window.battleState.timeLeft;
+                    if (window.battleState.timeLeft <= 0) {
+                        this.endBattle(false, "タイムアップ！");
+                    }
+                }, 1000);
+
+                this.drawHand(5);
+                this.resetTypingUI();
+            },
+            drawHand: function(count) {
+                window.battleState.hand = [];
+                for(let i=0; i<count; i++) {
+                    // 35%の確率で装備カードから抽選（装備がある場合）
+                    if (window.playerData.equipped.length > 0 && Math.random() < 0.35) {
+                        const randomEquipId = window.playerData.equipped[Math.floor(Math.random() * window.playerData.equipped.length)];
+                        window.battleState.hand.push(UIController.getCardById(randomEquipId));
+                    } else {
+                        // それ以外は所持カードからランダム（所持ゼロならコモンのパンチ）
+                        const ownedKeys = Object.keys(window.playerData.inventory);
+                        if (ownedKeys.length > 0) {
+                            const randomOwnedId = ownedKeys[Math.floor(Math.random() * ownedKeys.length)];
+                            window.battleState.hand.push(UIController.getCardById(randomOwnedId));
+                        } else {
+                            window.battleState.hand.push(ALL_CARDS[0]); // パンチ
+                        }
+                    }
+                }
+                this.renderHand();
+            },
+            renderHand: function() {
+                const handDiv = document.getElementById('battle-hand');
+                handDiv.innerHTML = '';
+                window.battleState.hand.forEach((card, index) => {
+                    handDiv.innerHTML += UIController.createCardHTML(card, 0, `BattleController.selectCard(${index})`);
+                });
+            },
+            selectCard: function(index) {
+                if (!window.battleState.isActive || window.battleState.activeCard) return;
+
+                window.battleState.activeCard = window.battleState.hand[index];
+                
+                // カードを手札から削除
+                window.battleState.hand.splice(index, 1);
+                this.renderHand();
+
+                // タイピング問題を設定
+                const word = TYPING_WORDS[Math.floor(Math.random() * TYPING_WORDS.length)];
+                window.battleState.currentWord = word;
+                window.battleState.typedIndex = 0;
+                window.battleState.mistakes = 0;
+                window.battleState.typingStartTime = performance.now();
+
+                this.updateTypingUI();
+                document.getElementById('typing-message').textContent = `「${window.battleState.activeCard.name}」発動！タイピングせよ！`;
+            },
+            updateTypingUI: function() {
+                const word = window.battleState.currentWord;
+                if (!word) return;
+
+                document.getElementById('typing-ja').textContent = word.ja;
+                
+                const typedPart = word.en.substring(0, window.battleState.typedIndex);
+                const remainingPart = word.en.substring(window.battleState.typedIndex);
+
+                document.getElementById('typing-en').innerHTML = `<span class="typed">${typedPart}</span><span>${remainingPart}</span>`;
+            },
+            resetTypingUI: function() {
+                document.getElementById('typing-message').textContent = "下のカードから1つ選んでください";
+                document.getElementById('typing-ja').textContent = "";
+                document.getElementById('typing-en').innerHTML = "";
+            },
+            handleTyping: function(key) {
+                if (!window.battleState.isActive || !window.battleState.activeCard || !window.battleState.currentWord) return;
+
+                const targetChar = window.battleState.currentWord.en[window.battleState.typedIndex];
+
+                if (key.toLowerCase() === targetChar.toLowerCase()) {
+                    window.battleState.typedIndex++;
+                    this.updateTypingUI();
+
+                    // 完了チェック
+                    if (window.battleState.typedIndex >= window.battleState.currentWord.en.length) {
+                        this.executeCardEffect();
+                    }
+                } else {
+                    // ミス
+                    window.battleState.mistakes++;
+                    const enDiv = document.getElementById('typing-en');
+                    enDiv.classList.add('error');
+                    setTimeout(() => enDiv.classList.remove('error'), 100);
+                }
+            },
+            executeCardEffect: function() {
+                const timeTaken = performance.now() - window.battleState.typingStartTime;
+                const card = window.battleState.activeCard;
+                const mistakes = window.battleState.mistakes;
+
+                let effectValue = card.baseEffect;
+                let logMsg = `【${card.name}】発動！ `;
+                
+                // ポップアップ位置計算用
+                const typingAreaRect = document.getElementById('typing-area').getBoundingClientRect();
+                const popupX = typingAreaRect.left + typingAreaRect.width / 2 - 50;
+                const popupY = typingAreaRect.top + 50;
+
+                // ボーナスとペナルティの計算
+                if (mistakes === 0) {
+                    // パーフェクトボーナス
+                    if (card.type === 'assist' && card.baseEffect < 10) {
+                        effectValue += 1; // 倍率系や枚数系は+1
+                    } else {
+                        effectValue += 5; // ダメージ回復は+5
+                    }
+                    UIController.showEffectPopup("パーフェクト！", popupX, popupY, "#00ffcc");
+                    logMsg += "パーフェクト！ ";
+
+                    // 神速ボーナス (1秒以内)
+                    if (timeTaken <= 1000) {
+                        if (card.type === 'assist' && card.baseEffect < 10) {
+                            effectValue += 1;
+                        } else {
+                            effectValue += 10;
+                        }
+                        setTimeout(() => UIController.showEffectPopup("神速！", popupX, popupY - 40, "#ff00ff"), 300);
+                        logMsg += "神速ボーナス！ ";
+                    }
+                } else {
+                    // ミスペナルティ
+                    UIController.showEffectPopup("威力ダウン...", popupX, popupY, "#ff3333");
+                    logMsg += `(ミス${mistakes}回で威力ダウン) `;
+                    if (card.type === 'assist' && card.baseEffect < 10) {
+                        effectValue -= 0.1 * mistakes; // 倍率低下
+                        if (effectValue < 1) effectValue = 1; // 最低1
+                    } else if (card.type === 'assist') {
+                         effectValue -= 1 * mistakes; // 枚数低下
+                         if (effectValue < 1) effectValue = 1;
+                    } else {
+                        effectValue -= 1 * mistakes; // ダメージ低下
+                        if (effectValue < 1) effectValue = 1;
+                    }
+                }
+
+                // 効果の適用
+                effectValue = Math.round(effectValue * 10) / 10; // 小数点第一位まで
+                let finalDamage = 0;
+
+                if (card.type === 'attack') {
+                    finalDamage = Math.floor(effectValue * window.battleState.nextTurnMultiplier);
+                    window.battleState.boss.hp -= finalDamage;
+                    if(window.battleState.boss.hp < 0) window.battleState.boss.hp = 0;
+                    logMsg += `敵に ${finalDamage} のダメージ！`;
+                    window.battleState.nextTurnMultiplier = 1.0; // 倍率リセット
+                    document.getElementById('player-buffs').textContent = "";
+                } else if (card.type === 'heal') {
+                    window.battleState.playerHp += effectValue;
+                    if(window.battleState.playerHp > window.battleState.playerMaxHp) window.battleState.playerHp = window.battleState.playerMaxHp;
+                    logMsg += `HPが ${effectValue} 回復した！`;
+                } else if (card.type === 'assist') {
+                    if (card.name.includes("リセット") || card.name.includes("ドロー") || card.name.includes("入れ替え")) {
+                        this.drawHand(Math.floor(effectValue));
+                        logMsg += `手札を ${Math.floor(effectValue)} 枚引き直した！`;
+                    } else if (card.name === "時止め") {
+                        window.battleState.enemyFrozen = true;
+                        logMsg += `敵のターンを1回スキップ！`;
+                    } else {
+                        // 倍率バフ
+                        window.battleState.nextTurnMultiplier = effectValue;
+                        logMsg += `次の攻撃ダメージが ${effectValue} 倍になった！`;
+                        document.getElementById('player-buffs').textContent = `攻撃 ${effectValue} 倍！`;
+                    }
+                }
+
+                this.logBattle(logMsg);
+                this.updateHPUI();
+                this.resetTypingUI();
+                window.battleState.activeCard = null;
+
+                // 勝利判定
+                if (window.battleState.boss.hp <= 0) {
+                    this.endBattle(true, "ボスの撃破に成功した！");
+                    return;
+                }
+
+                // 敵のターンへ
+                setTimeout(() => this.enemyTurn(), 1000);
+            },
+            enemyTurn: function() {
+                if (!window.battleState.isActive) return;
+
+                if (window.battleState.enemyFrozen) {
+                    this.logBattle("【敵のターン】敵は時を止められて動けない！");
+                    window.battleState.enemyFrozen = false;
+                    this.checkHand();
+                    return;
+                }
+
+                const boss = window.battleState.boss;
+                // 敵の行動パターン (20%の確率で特殊行動)
+                if (Math.random() < 0.2) {
+                    // 特殊: 回復
+                    const healAmount = Math.floor(boss.maxHp * 0.1);
+                    boss.hp += healAmount;
+                    if(boss.hp > boss.maxHp) boss.hp = boss.maxHp;
+                    this.logBattle(`【敵のターン】ボスは特殊技を使った！ HPを ${healAmount} 回復した。`);
+                } else {
+                    // 通常攻撃
+                    window.battleState.playerHp -= boss.attack;
+                    if (window.battleState.playerHp < 0) window.battleState.playerHp = 0;
+                    this.logBattle(`【敵のターン】ボスの攻撃！ あなたは ${boss.attack} のダメージを受けた。`);
+                }
+
+                this.updateHPUI();
+
+                // 敗北判定
+                if (window.battleState.playerHp <= 0) {
+                    this.endBattle(false, "HPが0になってしまった...");
+                    return;
+                }
+
+                this.checkHand();
+            },
+            checkHand: function() {
+                // 手札が0枚なら自動補充
+                if (window.battleState.hand.length === 0) {
+                    this.logBattle("手札がなくなったため、5枚ドローした。");
+                    this.drawHand(5);
+                }
+            },
+            updateHPUI: function() {
+                document.getElementById('player-hp').textContent = Math.floor(window.battleState.playerHp);
+                document.getElementById('boss-hp').textContent = Math.floor(window.battleState.boss.hp);
+                
+                const pPct = (window.battleState.playerHp / window.battleState.playerMaxHp) * 100;
+                const bPct = (window.battleState.boss.hp / window.battleState.boss.maxHp) * 100;
+                
+                document.getElementById('player-hp-bar').style.width = pPct + '%';
+                document.getElementById('boss-hp-bar').style.width = bPct + '%';
+            },
+            logBattle: function(msg) {
+                const logDiv = document.getElementById('battle-log');
+                logDiv.innerHTML = `<p>${msg}</p>` + logDiv.innerHTML;
+            },
+            endBattle: function(isWin, reason) {
+                window.battleState.isActive = false;
+                clearInterval(window.battleState.timerInterval);
+
+                const modal = document.getElementById('battle-result-modal');
+                const title = document.getElementById('result-title');
+                const desc = document.getElementById('result-desc');
+
+                if (isWin) {
+                    let reward = 0;
+                    switch(window.battleState.difficulty) {
+                        case 'easy': reward = 1; break;
+                        case 'medium': reward = 3; break;
+                        case 'hard': reward = 5; break;
+                        case 'extreme': reward = 10; break;
+                    }
+                    title.textContent = "YOU WIN!";
+                    title.style.color = "gold";
+                    desc.textContent = `${reason} 報酬として ${reward} パック獲得しました！`;
+                    window.playerData.packs += reward;
+                    GameDataManager.saveData();
+                } else {
+                    title.textContent = "YOU LOSE...";
+                    title.style.color = "red";
+                    desc.textContent = `${reason}`;
+                }
+
+                modal.classList.add('active');
+            },
+            flee: function() {
+                if (confirm("逃げますか？（ホームに戻ります）")) {
+                    window.battleState.isActive = false;
+                    clearInterval(window.battleState.timerInterval);
+                    GameController.switchScreen('home-screen');
+                }
+            }
+        };
+
+        // ==========================================
+        // グローバルイベント・制御 (GameController)
+        // ==========================================
+        window.GameController = {
+            switchScreen: function(screenId) {
+                document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+                document.getElementById(screenId).classList.add('active');
+            },
+            showDifficultySelect: function() {
+                document.getElementById('difficulty-modal').classList.add('active');
+            }
+        };
+
+        // キーボード入力リスナー（タイピング用）
+        document.addEventListener('keydown', (e) => {
+            // アルファベットのみ処理
+            if (/^[a-zA-Z-]$/.test(e.key)) {
+                BattleController.handleTyping(e.key);
+            }
+        });
+
+        // ==========================================
+        // アプリケーション起動時の処理
+        // ==========================================
+        window.onload = function() {
+            // Firebaseからデータをロード
+            GameDataManager.loadData();
+            // ホーム画面を初期化
+            UIController.updateGlobalHeader();
+        };
+
+    </script>
 </body>
 </html>
